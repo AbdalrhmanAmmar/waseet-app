@@ -15,11 +15,10 @@ export const ScreenNames = {
   // Bottom Tab screens
   HomeScreen: 'HomeScreen',
   ProductsScreen: 'ProductsScreen',
-  CartScreen: 'CartScreen',
+  CreateOrder: 'CreateOrder',
   MenuScreen: 'MenuScreen',
 
   // App-level screens (inside AppStack)
-  CheckoutScreen: 'CheckoutScreen',
   OrderSuccess: 'OrderSuccess',
   ProductDetails: 'ProductDetails',
 

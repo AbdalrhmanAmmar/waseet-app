@@ -4,6 +4,7 @@ import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { useFocusEffect } from 'expo-router';
 import { CustomText as Text, HeaderComponent, ScreenContainer } from '@/components/shared';
 import { Button, Card, ui } from '@/components/shared/ui';
+import { BalanceCard } from '@/components/shared/home/BalanceCard';
 import { useSession } from '@/hooks/shared/use-session';
 import { useAppDispatch } from '@/hooks/shared/use-store';
 import { GetUserProfile, logout } from '@/store/slices/auth';
@@ -64,6 +65,7 @@ export default function ProfileScreen({ navigation }: ScreenProps) {
         }
       />
       <ScrollView
+        testID="profile-content"
         contentContainerStyle={ui.page}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={p.primary} />
@@ -85,15 +87,7 @@ export default function ProfileScreen({ navigation }: ScreenProps) {
           icon="account-edit-outline"
           onPress={() => navigation.navigate('EditProfileScreen')}
         />
-        {role === 'Merchant' && userData?.dollarBalance != null && (
-          <Card style={{ backgroundColor: p.deep }}>
-            <Text style={{ color: '#C6E2D3' }}>رصيد الحساب</Text>
-            <Text style={s.balance}>
-              {Number(userData.dollarBalance).toLocaleString('en-US', { minimumFractionDigits: 2 })}{' '}
-              USD
-            </Text>
-          </Card>
-        )}
+        {role === 'Merchant' && <BalanceCard key={String(userId)} />}
         <Card>
           <Text style={ui.title}>بيانات الحساب</Text>
           {details.map(([label, value]) => (

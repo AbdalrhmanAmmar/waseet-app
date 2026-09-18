@@ -69,6 +69,7 @@ export default function OrderDetails({
                     {String(item.productName ?? item.name ?? 'منتج')}
                   </Text>
                   <Text style={ui.caption}>الكمية: {String(item.quantity ?? 'غير متوفر')}</Text>
+                  {!!item.color && <Text style={ui.caption}>اللون: {String(item.color)}</Text>}
                 </View>
                 <Text style={ui.link}>
                   {String(item.actualSellPriceUSD ?? item.price ?? '—')} USD

@@ -13,7 +13,7 @@ test('API modules can reload against the same base API during development', () =
         const assert = require('node:assert/strict');
         const { baseApi } = require('./src/api/base-api.ts');
         const files = [
-          './src/api/shared/catalog.ts', './src/api/shared/orders.ts',
+          './src/api/shared/catalog.ts', './src/api/shared/orders.ts', './src/api/shared/home.ts',
           './src/api/shared/account.ts', './src/api/merchant/index.ts',
           './src/api/management-employee/index.ts', './src/api/delivery-agent/index.ts',
         ];

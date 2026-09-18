@@ -29,7 +29,7 @@ export function useScreenProps() {
         AppStack: base,
         HomeScreen: base,
         ProductsScreen: `${base}/products`,
-        CartScreen: `${base}/cart`,
+        CreateOrder: `${base}/create-order`,
         MyOrders:
           currentRole === 'ManagementEmployee' || currentRole === 'DeliveryAgent'
             ? base
@@ -37,7 +37,6 @@ export function useScreenProps() {
         ProfileScreen: `${base}/profile`,
         MenuStack: '/account/menu',
         MenuScreen: '/account/menu',
-        CheckoutScreen: `${base}/checkout`,
         OrderSuccess: `${base}/order-success`,
         ProductDetails: `${base}/product`,
         OrderDetails: `${base}/order`,

@@ -6,13 +6,10 @@ import { CustomText, HeaderComponent, ScreenContainer } from '@/components/share
 import { AsyncState } from '@/components/shared/AsyncState';
 import ProductCard from '@/components/shared/ProductCard';
 import { useSession } from '@/hooks/shared/use-session';
-import { useAppDispatch } from '@/hooks/shared/use-store';
 import type { ScreenProps } from '@/navigation/use-screen-props';
-import { addToCartLocal } from '@/store/slices/cart';
 import { Alert, FlatList, Pressable, View } from 'react-native';
 export default function FavoriteProducts({ navigation }: ScreenProps) {
   const { userData } = useSession();
-  const dispatch = useAppDispatch();
   const query = useFavoritesQuery(userData?.userId ?? '', {
     skip: !userData || !backendFeatures.favorites,
   });
@@ -39,7 +36,7 @@ export default function FavoriteProducts({ navigation }: ScreenProps) {
               item={item}
               index={index}
               onPress={() => navigation.navigate('ProductDetails', { product: item })}
-              onAddToCart={() => dispatch(addToCartLocal(item))}
+              onCreateOrder={() => navigation.navigate('CreateOrder', { product: item })}
             />
             <Pressable
               disabled={result.isLoading}

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Image, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import Text from '../CustomText';
-import { useAppSelector } from '@/hooks/shared/use-store';
 import { palette as p, typography as t } from '@/theme/tokens';
 import Images from '@/theme/images';
 import type { Product } from '@/types/models';
@@ -10,20 +9,17 @@ import { suggestedPrice } from '@/domain/product-details';
 export default function ProductCard({
   item,
   onPress,
-  onAddToCart,
+  onCreateOrder,
   style,
 }: {
   item: Product;
   index?: number;
   onPress: () => void;
-  onAddToCart?: () => void;
+  onCreateOrder?: () => void;
   style?: StyleProp<ViewStyle>;
 }) {
   const [brokenImage, setBrokenImage] = useState(false);
-  const added = useAppSelector((state) =>
-    state.cart.userCart.data.some((row) => String(row.productCode) === String(item.productCode)),
-  );
-  const out = item.stock <= 0;
+  const out = !Number.isFinite(item.stock) || item.stock <= 0;
   const price = item.effectiveExpectedSellPrice ?? item.price;
   return (
     <View style={[s.card, style]}>
@@ -63,21 +59,14 @@ export default function ProductCard({
       </Pressable>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`إضافة ${item.title} للسلة`}
+        accessibilityLabel={`إنشاء طلب ${item.title}`}
         accessibilityState={{ disabled: out }}
         disabled={out}
-        onPress={onAddToCart}
-        style={({ pressed }) => [
-          s.add,
-          added && { backgroundColor: p.primary },
-          out && { opacity: 0.45 },
-          pressed && { opacity: 0.8 },
-        ]}
+        onPress={onCreateOrder}
+        style={({ pressed }) => [s.add, out && { opacity: 0.45 }, pressed && { opacity: 0.8 }]}
       >
-        <Icon name={added ? 'cart-check' : 'plus'} color={added ? '#fff' : p.primary} size={18} />
-        <Text style={[s.addText, added && { color: '#fff' }]}>
-          {added ? 'أضف المزيد' : 'إضافة للسلة'}
-        </Text>
+        <Icon name="file-document-plus-outline" color={p.primary} size={18} />
+        <Text style={s.addText}>إنشاء طلب</Text>
       </Pressable>
     </View>
   );

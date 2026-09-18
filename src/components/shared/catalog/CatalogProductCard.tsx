@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { Image, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import Text from '@/components/shared/CustomText';
-import { useAppDispatch, useAppSelector } from '@/hooks/shared/use-store';
-import { addToCartLocal, removeFromCartLocal, updateCartQuantityLocal } from '@/store/slices/cart';
 import { palette as p, typography as t } from '@/theme/tokens';
 import type { Product } from '@/types/models';
 import { salePrice } from './catalog-model';
@@ -14,30 +12,20 @@ export function CatalogProductCard({
   list,
   merchant,
   onPress,
+  onCreateOrder,
 }: {
   item: Product;
   list: boolean;
   merchant: boolean;
   onPress: () => void;
+  onCreateOrder: () => void;
 }) {
   const [failedUri, setFailedUri] = useState<string>();
   const { width, fontScale } = useWindowDimensions();
   const inline = list && width >= 380 && fontScale <= 1.25;
-  const dispatch = useAppDispatch();
-  const cart = useAppSelector((state) =>
-    state.cart.userCart.data.find((row) => String(row.productCode) === String(item.productCode)),
-  );
   const out = !Number.isFinite(item.stock) || item.stock <= 0;
   const price = salePrice(item);
   const validPrice = Number.isFinite(price) && price >= 0;
-  const add = () => {
-    if (!out && validPrice) dispatch(addToCartLocal(item));
-  };
-  const minus = () => {
-    if (!cart) return;
-    if (cart.quantity <= 1) dispatch(removeFromCartLocal(cart.cart_id));
-    else dispatch(updateCartQuantityLocal({ cart_id: cart.cart_id, quantity: cart.quantity - 1 }));
-  };
   return (
     <View
       style={[s.card, list && s.list, inline && s.inline]}
@@ -97,53 +85,16 @@ export function CatalogProductCard({
         </View>
       </Pressable>
       <View style={inline ? s.inlineAction : list ? s.listAction : s.action}>
-        {cart ? (
-          <View style={s.stepper}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`تقليل كمية ${item.title}`}
-              onPress={minus}
-              style={s.step}
-            >
-              <Icon name="minus" size={20} color={p.primary} />
-            </Pressable>
-            <Text
-              accessibilityLiveRegion="polite"
-              accessibilityLabel={`الكمية ${cart.quantity}`}
-              style={s.quantity}
-            >
-              {cart.quantity}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`زيادة كمية ${item.title}`}
-              accessibilityState={{ disabled: out || cart.quantity >= item.stock }}
-              disabled={out || cart.quantity >= item.stock}
-              onPress={add}
-              style={[s.step, (out || cart.quantity >= item.stock) && s.disabled]}
-            >
-              <Icon name="plus" size={20} color={p.primary} />
-            </Pressable>
-          </View>
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`إضافة ${item.title} للسلة`}
-            accessibilityState={{ disabled: out || !validPrice }}
-            disabled={out || !validPrice}
-            onPress={add}
-            style={({ pressed }) => [
-              s.add,
-              (out || !validPrice) && s.unavailable,
-              pressed && s.disabled,
-            ]}
-          >
-            {!out && validPrice && <Icon name="plus" size={19} color="#fff" />}
-            <Text style={[s.addText, (out || !validPrice) && s.outText]}>
-              {out ? 'غير متوفر' : !validPrice ? 'السعر غير متاح' : 'إضافة للسلة'}
-            </Text>
-          </Pressable>
-        )}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`إنشاء طلب ${item.title}`}
+          disabled={out}
+          onPress={onCreateOrder}
+          style={[s.add, out && s.unavailable]}
+        >
+          <Icon name="file-document-plus-outline" size={20} color={out ? p.muted : '#fff'} />
+          <Text style={[s.addText, out && { color: p.muted }]}>إنشاء طلب</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -208,15 +159,6 @@ const s = StyleSheet.create({
   merchantPrice: { color: p.primary, fontFamily: t.bold, fontSize: 13, lineHeight: 20 },
   action: { marginTop: 'auto' },
   listAction: { alignSelf: 'flex-start', minWidth: 144 },
-  stepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#EAF5EF',
-    borderRadius: 10,
-  },
-  step: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  quantity: { fontSize: 16, fontFamily: t.bold, color: p.deep },
   add: {
     minHeight: 44,
     borderRadius: 10,
@@ -229,5 +171,4 @@ const s = StyleSheet.create({
   },
   addText: { fontFamily: t.bold, color: '#fff', fontSize: 12 },
   unavailable: { backgroundColor: '#EEF0EC' },
-  disabled: { opacity: 0.4 },
 });

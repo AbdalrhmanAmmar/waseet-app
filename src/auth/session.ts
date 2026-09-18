@@ -1,4 +1,5 @@
 import type { User } from '@/types/models';
+import { balanceUpdate } from '@/domain/balance';
 import { normalizeRole } from './roles';
 export function normalizeUser(raw: Record<string, any>, previous?: User | null): User {
   const role = normalizeRole(raw.role ?? previous?.role);
@@ -7,5 +8,13 @@ export function normalizeUser(raw: Record<string, any>, previous?: User | null):
   const userId = raw.userId ?? raw.id ?? raw.user_id ?? previous?.userId;
   if (!token || !userId) throw new Error('بيانات الجلسة غير مكتملة. سجل الدخول مجددًا.');
   // A profile refresh can remove a previously supplied reason; do not keep stale review copy.
-  return { ...previous, ...raw, rejectionReason: raw.rejectionReason, userId, role, token };
+  return {
+    ...previous,
+    ...raw,
+    ...balanceUpdate(raw, previous),
+    rejectionReason: raw.rejectionReason,
+    userId,
+    role,
+    token,
+  };
 }

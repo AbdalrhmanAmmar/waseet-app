@@ -52,3 +52,22 @@ test('only an unauthorized request from the current session invalidates it', asy
   assert.equal(expired, 1);
   configureSession(null);
 });
+
+test('dashboard success:false envelope rejects order submission', async () => {
+  await assert.rejects(
+    client.post(
+      'orders',
+      {},
+      {
+        adapter: async (config) => ({
+          data: { success: false, message: 'Color required' },
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config,
+        }),
+      },
+    ),
+    (error) => (error as { message: string }).message === 'Color required',
+  );
+});

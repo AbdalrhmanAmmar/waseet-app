@@ -27,7 +27,7 @@ export default function ProductDetails(props: ScreenProps) {
 }
 function Details({ navigation, id, initial }: ScreenProps & { id: string; initial?: Product }) {
   const detail = useProductDetails(id, initial);
-  const { product, merchant, stock, cart } = detail;
+  const { product, merchant, stock } = detail;
   const [copied, setCopied] = useState('');
   const [descriptionOpen, setDescriptionOpen] = useState(false);
   const { width, fontScale } = useWindowDimensions();
@@ -41,7 +41,10 @@ function Details({ navigation, id, initial }: ScreenProps & { id: string; initia
       setCopied('تعذر النسخ. يمكنك تحديد الكود ونسخه.');
     }
   };
-  const openCart = () => navigation.navigate('CartScreen');
+  const createOrder = () => {
+    if (detail.canCreate && product)
+      navigation.navigate('CreateOrder', { product, quantity: detail.quantity });
+  };
   const goBack = () => {
     if (navigation.canGoBack()) navigation.goBack();
     else navigation.replace('ProductsScreen');
@@ -50,17 +53,11 @@ function Details({ navigation, id, initial }: ScreenProps & { id: string; initia
   const description = product?.description?.trim();
   const longDescription =
     !!description && (description.length > 180 || description.split('\n').length > 4);
-  const footerTitle = detail.viewCart
-    ? 'عرض السلة'
-    : detail.busy
-      ? 'جارٍ تحديث البيانات…'
-      : stock === 0
-        ? 'غير متوفر حاليًا'
-        : cart
-          ? detail.quantity === 0
-            ? 'حذف من السلة'
-            : 'تحديث السلة'
-          : 'إضافة إلى السلة';
+  const footerTitle = detail.busy
+    ? 'جارٍ تحديث البيانات…'
+    : stock === 0
+      ? 'غير متوفر حاليًا'
+      : 'إنشاء طلب بهذا المنتج';
   return (
     <ScreenContainer edges={['top', 'bottom']} backgroundColor={p.background}>
       <View style={s.header}>
@@ -77,19 +74,9 @@ function Details({ navigation, id, initial }: ScreenProps & { id: string; initia
         <Text accessibilityRole="header" style={s.headerTitle}>
           تفاصيل المنتج
         </Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`فتح السلة، ${detail.cartCount} قطعة`}
-          onPress={openCart}
-          style={s.iconButton}
-        >
-          <Icon name="cart-outline" size={25} color={p.primary} />
-          {detail.cartCount > 0 && (
-            <View style={s.cartBadge}>
-              <Text style={s.cartBadgeText}>{detail.cartCount}</Text>
-            </View>
-          )}
-        </Pressable>
+        <View style={s.iconButton}>
+          <Icon name="package-variant-closed" size={25} color={p.primary} />
+        </View>
       </View>
       {missing ? (
         <View style={s.state}>
@@ -210,12 +197,9 @@ function Details({ navigation, id, initial }: ScreenProps & { id: string; initia
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="تقليل الكمية"
-                  disabled={detail.quantity <= (cart ? 0 : 1) || !detail.ready}
+                  disabled={detail.quantity <= 1 || !detail.ready}
                   onPress={() => detail.change(-1)}
-                  style={[
-                    s.step,
-                    (detail.quantity <= (cart ? 0 : 1) || !detail.ready) && s.disabled,
-                  ]}
+                  style={[s.step, (detail.quantity <= 1 || !detail.ready) && s.disabled]}
                 >
                   <Icon name="minus" size={23} color={p.deep} />
                 </Pressable>
@@ -239,26 +223,12 @@ function Details({ navigation, id, initial }: ScreenProps & { id: string; initia
               <Text style={s.centerCaption}>
                 {stock == null ? 'الكمية المتاحة غير محددة' : `المتاح: ${stock} قطعة`}
               </Text>
-              {!!cart && <Text style={s.centerCaption}>في السلة حاليًا: {cart.quantity} قطعة</Text>}
               {detail.unitPrice != null && (
                 <Text style={s.centerCaption}>
-                  سعر البيع في السلة: {formatMoney(detail.unitPrice)} · يمكن تعديله بالسلة
-                </Text>
-              )}
-              {!!cart && detail.quantity !== cart.quantity && (
-                <Text style={s.centerCaption}>
-                  اضغط «{detail.quantity === 0 ? 'حذف من السلة' : 'تحديث السلة'}» لحفظ التغيير.
+                  سعر البيع المبدئي: {formatMoney(detail.unitPrice)} · يمكن تعديله عند إنشاء الطلب
                 </Text>
               )}
             </View>
-            {!!detail.notice && (
-              <View style={s.notice}>
-                <Icon name="check-circle" size={22} color={p.primary} />
-                <Text accessibilityLiveRegion="polite" style={s.noticeText}>
-                  {detail.notice}
-                </Text>
-              </View>
-            )}
             <View style={s.about}>
               <Text accessibilityRole="header" style={s.sectionTitle}>
                 عن المنتج
@@ -291,27 +261,21 @@ function Details({ navigation, id, initial }: ScreenProps & { id: string; initia
           </ScrollView>
           <View style={[s.footer, compact && s.stacked]}>
             <View style={s.total}>
-              <Text style={s.caption}>
-                {detail.viewCart ? 'إجمالي المنتج في السلة' : 'إجمالي الإضافة'}
-              </Text>
+              <Text style={s.caption}>قيمة المنتجات المبدئية</Text>
               <Text testID="detail-total" style={s.totalPrice}>
                 {formatMoney(
                   detail.unitPrice == null
                     ? null
-                    : Math.round(
-                        detail.unitPrice *
-                          (detail.viewCart ? cart!.quantity : detail.quantity) *
-                          100,
-                      ) / 100,
+                    : Math.round(detail.unitPrice * detail.quantity * 100) / 100,
                 )}
               </Text>
             </View>
             <Button
               title={footerTitle}
-              icon="cart-outline"
-              disabled={!detail.viewCart && !detail.canSave}
-              onPress={detail.viewCart ? openCart : detail.save}
-              style={s.footerButton}
+              icon="file-document-plus-outline"
+              disabled={!detail.canCreate}
+              onPress={createOrder}
+              style={{ flex: 1 }}
             />
           </View>
         </>

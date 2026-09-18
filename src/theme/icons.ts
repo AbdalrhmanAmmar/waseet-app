@@ -7,8 +7,6 @@ const icons = {
   userActive: 'account',
   product: 'product-open-page-variant-outline',
   productActive: 'product-open-page-variant',
-  cart: 'cart-outline',
-  cartActive: 'cart',
   star: 'star-circle-outline',
   starActive: 'star-circle',
   menu: 'view-dashboard-outline',

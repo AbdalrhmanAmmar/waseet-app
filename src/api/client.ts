@@ -15,7 +15,11 @@ client.interceptors.request.use((config) => {
 });
 client.interceptors.response.use(
   (response) => {
-    if (response.data?.isSuccess === false || response.data?.status === 'error') {
+    if (
+      response.data?.isSuccess === false ||
+      response.data?.success === false ||
+      response.data?.status === 'error'
+    ) {
       return Promise.reject({
         status: response.status,
         message: response.data.message ?? 'رفض الخادم الطلب',

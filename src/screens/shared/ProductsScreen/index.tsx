@@ -14,7 +14,6 @@ import {
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import Text from '@/components/shared/CustomText';
 import ScreenContainer from '@/components/shared/ScreenContainer';
-import LinearGradient from '@/components/shared/LinearGradient';
 import { CatalogProductCard } from '@/components/shared/catalog/CatalogProductCard';
 import { CatalogFilters } from '@/components/shared/catalog/CatalogFilters';
 import {
@@ -26,7 +25,6 @@ import {
 import type { CatalogController } from '@/hooks/shared/use-catalog';
 import { useCatalogView } from '@/hooks/shared/use-catalog-view';
 import { useSession } from '@/hooks/shared/use-session';
-import { useAppSelector } from '@/hooks/shared/use-store';
 import type { ScreenProps } from '@/navigation/use-screen-props';
 import type { Product } from '@/types/models';
 import { catalogErrorMessage } from '@/domain/catalog-error';
@@ -54,8 +52,6 @@ export default function ProductsScreen({
   const [filters, setFilters] = useState<Filters>({ ...defaultFilters });
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const cart = useAppSelector((state) => state.cart.userCart.data);
-  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   useFocusEffect(
     useCallback(() => {
       setFocused(true);
@@ -152,16 +148,11 @@ export default function ProductsScreen({
             </View>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`فتح السلة، ${cartCount} قطعة`}
-              onPress={() => navigation.navigate('CartScreen')}
-              style={s.cartIcon}
+              accessibilityLabel="إنشاء طلب جديد"
+              onPress={() => navigation.navigate('CreateOrder')}
+              style={s.createIcon}
             >
-              <Icon name="cart-outline" size={26} color={p.deep} />
-              {cartCount > 0 && (
-                <View style={s.badge}>
-                  <Text style={s.badgeText}>{cartCount}</Text>
-                </View>
-              )}
+              <Icon name="file-document-plus-outline" size={26} color={p.deep} />
             </Pressable>
           </View>
           <Text accessibilityRole="header" style={s.title}>
@@ -383,6 +374,7 @@ export default function ProductsScreen({
               list={listView}
               merchant={role === 'Merchant'}
               onPress={() => navigation.navigate('ProductDetails', { product })}
+              onCreateOrder={() => navigation.navigate('CreateOrder', { product })}
             />
           ))}
           {Array.from({ length: columns - item.items.length }, (_, i) => (
@@ -424,30 +416,6 @@ export default function ProductsScreen({
           ) : null
         }
       />
-      {cartCount > 0 && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`عرض السلة، ${cartCount} قطعة`}
-          onPress={() => navigation.navigate('CartScreen')}
-          style={s.cartBar}
-        >
-          <LinearGradient
-            colors={['#148970', '#08725C']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={s.cartInner}
-          >
-            <View style={s.cartGroup}>
-              <Icon name="cart-outline" size={23} color="#fff" />
-              <Text style={s.cartText}>{cartCount} قطع في السلة</Text>
-            </View>
-            <View style={s.cartGroup}>
-              <Text style={s.cartText}>عرض السلة</Text>
-              <Icon name="chevron-left" size={23} color="#fff" />
-            </View>
-          </LinearGradient>
-        </Pressable>
-      )}
       {filtersOpen && (
         <CatalogFilters
           initial={filters}

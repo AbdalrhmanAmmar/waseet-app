@@ -1,8 +1,13 @@
+import { View } from 'react-native';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter, type Href } from 'expo-router';
+import { useSession } from '@/hooks/shared/use-session';
+import { rolePaths } from '@/auth/roles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export function RoleTabs({ commerce }: { commerce: boolean }) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { role } = useSession();
   return (
     <Tabs
       screenOptions={{
@@ -59,10 +64,29 @@ export function RoleTabs({ commerce }: { commerce: boolean }) {
       )}
       {commerce && (
         <Tabs.Screen
-          name="cart"
+          name="new-order"
+          listeners={{
+            tabPress: (event) => {
+              event.preventDefault();
+              if (role) router.push(`${rolePaths[role]}/create-order` as Href);
+            },
+          }}
           options={{
-            title: 'السلة',
-            tabBarIcon: ({ color, size }) => <Icon name="cart-outline" color={color} size={size} />,
+            title: 'طلب جديد',
+            tabBarIcon: () => (
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: '#147D64',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Icon name="plus" color="#fff" size={27} />
+              </View>
+            ),
           }}
         />
       )}

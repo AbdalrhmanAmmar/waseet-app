@@ -1,4 +1,7 @@
 import { CustomText, HeaderComponent, ScreenContainer, OrderCard } from '@/components/shared';
+import { Button } from '@/components/shared/ui';
+import { useSession } from '@/hooks/shared/use-session';
+import { can } from '@/auth/permissions';
 import { AsyncState } from '@/components/shared/AsyncState';
 import { orderStatuses } from '@/components/shared/orders/statuses';
 import type { useOrderList } from '@/hooks/shared/use-order-list';
@@ -19,6 +22,7 @@ type Props = ScreenProps & {
   summary?: React.ReactNode;
 };
 export default function OrdersScreen({ navigation, title, controller, summary }: Props) {
+  const { role } = useSession();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const filtered = useMemo(
@@ -35,6 +39,13 @@ export default function OrdersScreen({ navigation, title, controller, summary }:
   return (
     <ScreenContainer>
       <HeaderComponent title={title} showBack={false} />
+      {can(role, 'orders.create') && (
+        <Button
+          title="إنشاء طلب جديد"
+          onPress={() => navigation.navigate('CreateOrder')}
+          style={{ marginHorizontal: 18, marginBottom: 12 }}
+        />
+      )}
       <TextInput
         style={styles.search}
         value={search}

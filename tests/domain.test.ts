@@ -4,14 +4,6 @@ import { order, page, product } from '../src/api/normalizers';
 import { can, isAccountRestricted } from '../src/auth/permissions';
 import { ROLES, normalizeRole, rolePaths } from '../src/auth/roles';
 import { normalizeUser } from '../src/auth/session';
-import cart, {
-  addToCartLocal,
-  clearCartLocal,
-  removeFromCartLocal,
-  updateCartItemPriceLocal,
-  updateCartQuantityLocal,
-} from '../src/store/slices/cart';
-
 test('all roles have distinct destinations, legacy Sales is normalized, unknown roles fail closed', () => {
   assert.equal(new Set(Object.values(rolePaths)).size, 4);
   for (const role of ROLES) assert.equal(normalizeRole(` ${role.toLowerCase()} `), role);
@@ -66,24 +58,4 @@ test('API pages retain pagination and never fall back to fictitious records', ()
   assert.deepEqual(page({}, {}, product).items, []);
   assert.equal(order({ orderId: 1, orderTotalUSD: 0, totalPrice: 100 }).orderTotalUSD, 0);
   assert.deepEqual(order({ id: 1 }).items, []);
-});
-test('cart caps stock, rejects negative/non-finite prices, calculates totals and clears', () => {
-  let state = cart(undefined, addToCartLocal({ productCode: 1, name: 'A', stock: 2, price: 10 }));
-  state = cart(state, addToCartLocal({ productCode: 1, name: 'A', stock: 2, price: 10 }));
-  state = cart(state, addToCartLocal({ productCode: 1, name: 'A', stock: 2, price: 10 }));
-  assert.equal(state.userCart.data[0].quantity, 2);
-  assert.equal(state.userCart.totalPrice, 20);
-  state = cart(state, updateCartItemPriceLocal({ cart_id: '1', sellingPrice: -5 }));
-  assert.equal(state.userCart.totalPrice, 20);
-  state = cart(state, updateCartQuantityLocal({ cart_id: '1', quantity: 99 }));
-  assert.equal(state.userCart.data[0].quantity, 2);
-  state = cart(state, updateCartItemPriceLocal({ cart_id: '1', sellingPrice: 0 }));
-  assert.equal(state.userCart.totalPrice, 0);
-  state = cart(state, removeFromCartLocal('1'));
-  assert.deepEqual(state.userCart.data, []);
-  assert.deepEqual(cart(state, clearCartLocal()).userCart.data, []);
-});
-test('out-of-stock products do not enter the cart', () => {
-  const state = cart(undefined, addToCartLocal({ productCode: 1, name: 'A', stock: 0, price: 10 }));
-  assert.equal(state.userCart.data.length, 0);
 });

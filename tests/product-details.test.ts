@@ -7,7 +7,6 @@ import {
   suggestedPrice,
   updatedDate,
 } from '../src/domain/product-details';
-import cart, { setCartProductLocal, updateCartItemPriceLocal } from '../src/store/slices/cart';
 test('product prices retain missing suggested price, genuine zero, media and description without inventing category', () => {
   const item = product({
     productCode: 104,
@@ -31,40 +30,4 @@ test('product prices retain missing suggested price, genuine zero, media and des
   assert.equal(optionalPrice('NaN'), null);
   assert.equal(mediaUrl('javascript:alert(1)'), undefined);
   assert.equal(updatedDate('invalid'), undefined);
-});
-test('details atomically saves desired cart quantity and exact displayed total, caps stock and preserves chosen sale price', () => {
-  const item = product({
-    productCode: 104,
-    quantity: 3,
-    merchantSellPrice: 25,
-    expectedSellPrice: 35,
-  });
-  let state = cart(
-    undefined,
-    setCartProductLocal({ product: item, quantity: 2, sellingPrice: 35 }),
-  );
-  assert.equal(state.userCart.totalPrice, 70);
-  state = cart(state, setCartProductLocal({ product: item, quantity: 2, sellingPrice: 35 }));
-  assert.equal(state.userCart.data[0].quantity, 2);
-  assert.equal(product(state.userCart.data[0]).stock, 3);
-  state = cart(state, updateCartItemPriceLocal({ cart_id: '104', sellingPrice: 40 }));
-  state = cart(
-    state,
-    setCartProductLocal({
-      product: item,
-      quantity: 3,
-      sellingPrice: state.userCart.data[0].sellingPrice,
-    }),
-  );
-  assert.equal(state.userCart.totalPrice, 120);
-  for (const [quantity, sellingPrice] of [
-    [4, 35],
-    [1, -1],
-    [1, NaN],
-    [1.5, 35],
-  ])
-    state = cart(state, setCartProductLocal({ product: item, quantity, sellingPrice }));
-  assert.equal(state.userCart.totalPrice, 120);
-  state = cart(state, setCartProductLocal({ product: item, quantity: 0, sellingPrice: 40 }));
-  assert.equal(state.userCart.data.length, 0);
 });

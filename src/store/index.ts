@@ -15,9 +15,8 @@ import auth, {
   sessionError,
   setFirst,
 } from './slices/auth';
-import cart from './slices/cart';
 const listener = createListenerMiddleware();
-const reducers = combineReducers({ AuthSlice: auth, cart, [baseApi.reducerPath]: baseApi.reducer });
+const reducers = combineReducers({ AuthSlice: auth, [baseApi.reducerPath]: baseApi.reducer });
 export const store = configureStore({
   reducer: (
     state: ReturnType<typeof reducers> | undefined,

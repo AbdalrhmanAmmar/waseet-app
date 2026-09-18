@@ -1,157 +1,225 @@
-import { useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { AppState, Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
-import { useOrdersQuery } from '@/api/shared/orders';
-import { CustomText as Text, ScreenContainer, OrderCard } from '@/components/shared';
-import ProductCard from '@/components/shared/ProductCard';
-import { AsyncState } from '@/components/shared/AsyncState';
-import { Brand, SectionTitle, ui } from '@/components/shared/ui';
+import ScreenContainer from '@/components/shared/ScreenContainer';
+import Text from '@/components/shared/CustomText';
+import { Button } from '@/components/shared/ui';
+import { BalanceCard } from '@/components/shared/home/BalanceCard';
+import { OrderActivity } from '@/components/shared/home/OrderActivity';
+import { RecentOrder } from '@/components/shared/home/RecentOrder';
+import { s } from '@/components/shared/home/styles';
 import { useSession } from '@/hooks/shared/use-session';
 import { useAppDispatch } from '@/hooks/shared/use-store';
-import type { CatalogController } from '@/hooks/shared/use-catalog';
-import { addToCartLocal } from '@/store/slices/cart';
-import { roleLabels } from '@/auth/roles';
-import { palette as p, typography as t } from '@/theme/tokens';
+import { GetUserProfile } from '@/store/slices/auth';
+import { useHomeTotalsQuery, useHomeActivityQuery, homeApi } from '@/api/shared/home';
+import { useOrdersQuery, ordersApi } from '@/api/shared/orders';
+import { periodBounds } from '@/domain/home-orders';
+import { palette as p } from '@/theme/tokens';
 import type { ScreenProps } from '@/navigation/use-screen-props';
-export default function HomeScreen({
-  navigation,
-  catalog,
-}: {
-  navigation: ScreenProps['navigation'];
-  catalog: CatalogController;
-}) {
+export default function HomeScreen({ navigation }: ScreenProps) {
   const { userData, role } = useSession();
   const dispatch = useAppDispatch();
-  const orders = useOrdersQuery({ page: 1, pageSize: 3 });
+  const [days, setDays] = useState<7 | 30>(7);
+  const [bounds, setBounds] = useState(() => periodBounds(7));
   const [refreshing, setRefreshing] = useState(false);
+  const userId = String(userData?.userId ?? '');
+  const totals = useHomeTotalsQuery(userId, { skip: !userData, refetchOnMountOrArgChange: 30 });
+  const activityArgs = { userId, ...bounds, days };
+  const activity = useHomeActivityQuery(activityArgs, {
+    skip: !userData,
+    refetchOnMountOrArgChange: 30,
+  });
+  const recent = useOrdersQuery(
+    { page: 1, pageSize: 3 },
+    { skip: !userData, refetchOnMountOrArgChange: 30 },
+  );
+  const refreshOrders = useCallback(async () => {
+    if (!userId) return;
+    const next = periodBounds(days);
+    setBounds(next);
+    await Promise.all([
+      dispatch(
+        homeApi.endpoints.homeTotals.initiate(userId, { subscribe: false, forceRefetch: true }),
+      ),
+      dispatch(
+        homeApi.endpoints.homeActivity.initiate(
+          { userId, ...next, days },
+          { subscribe: false, forceRefetch: true },
+        ),
+      ),
+      dispatch(
+        ordersApi.endpoints.orders.initiate(
+          { page: 1, pageSize: 3 },
+          { subscribe: false, forceRefetch: true },
+        ),
+      ),
+    ]);
+  }, [dispatch, days, userId]);
+  useFocusEffect(
+    useCallback(() => {
+      setBounds(periodBounds(days));
+      let previous = AppState.currentState;
+      const listener = AppState.addEventListener('change', (next) => {
+        if (next === 'active' && previous !== 'active') void refreshOrders();
+        previous = next;
+      });
+      return () => listener.remove();
+    }, [days, refreshOrders]),
+  );
   const refresh = async () => {
+    if (refreshing) return;
     setRefreshing(true);
     try {
-      await Promise.all([catalog.refresh(), orders.refetch()]);
+      await Promise.all([refreshOrders(), userData && dispatch(GetUserProfile(userData.userId))]);
     } finally {
       setRefreshing(false);
     }
   };
+  const greeting = new Date().getHours() < 12 ? 'صباح الخير' : 'مساء الخير';
+  const stats = [
+    {
+      title: 'إجمالي الطلبات',
+      value: totals.data?.total,
+      icon: 'clipboard-text-outline' as const,
+      color: p.deep,
+    },
+    {
+      title: 'قيد المعالجة',
+      value: totals.data?.processing,
+      icon: 'clock-outline' as const,
+      color: '#BC7B29',
+    },
+    {
+      title: 'تم التسليم',
+      value: totals.data?.delivered,
+      icon: 'check-circle-outline' as const,
+      color: p.primary,
+    },
+  ];
   return (
     <ScreenContainer>
       <ScrollView
+        contentContainerStyle={s.page}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={s.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={p.primary} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => void refresh()}
+            tintColor={p.primary}
+          />
         }
       >
-        <View style={ui.section}>
-          <Brand compact />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="فتح القائمة"
-            onPress={() => navigation.navigate('MenuScreen')}
-            style={s.menu}
-          >
-            <Icon name="menu" size={24} color={p.ink} />
-          </Pressable>
-        </View>
-        <View>
-          <Text style={s.greeting}>أهلًا، {userData?.firstName || 'بك'}</Text>
-          <Text style={ui.caption}>{role ? roleLabels[role] : ''} · لننجز المزيد اليوم</Text>
-        </View>
-        <View style={s.hero}>
-          <View style={ui.section}>
-            <Text style={s.heroLabel}>{role === 'Merchant' ? 'رصيد حسابك' : 'مساحة المبيعات'}</Text>
-            <Icon
-              name={role === 'Merchant' ? 'wallet-outline' : 'chart-line'}
-              size={25}
-              color="#B5D8C6"
-            />
+        <View style={s.row}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.caption}>
+              {greeting}، {userData?.firstName || 'بك'}
+            </Text>
+            <Text accessibilityRole="header" style={s.heading}>
+              نظرة على حسابك
+            </Text>
           </View>
-          <Text style={s.balance}>
-            {role === 'Merchant'
-              ? userData?.dollarBalance != null
-                ? `${Number(userData.dollarBalance).toLocaleString('en-US', { minimumFractionDigits: 2 })} USD`
-                : 'الرصيد غير متوفر'
-              : 'من المنتج إلى الطلب'}
-          </Text>
-          <Text style={s.heroHint}>
-            {role === 'Merchant'
-              ? 'تابع رصيدك وتفاصيل طلباتك من مكان واحد.'
-              : 'اختر المنتجات وجهّز طلب العميل بخطوات بسيطة.'}
-          </Text>
           <Pressable
             accessibilityRole="button"
-            onPress={() => navigation.navigate('ProductsScreen')}
-            style={s.heroAction}
+            accessibilityLabel="فتح حسابي"
+            onPress={() => navigation.navigate('ProfileScreen')}
+            style={s.avatar}
           >
-            <Text style={s.heroActionText}>ابدأ طلبًا جديدًا</Text>
-            <Icon name="arrow-left" size={19} color={p.deep} />
+            <Text style={s.initials}>{userData?.firstName?.[0] || 'و'}</Text>
           </Pressable>
+        </View>
+        {role === 'Merchant' ? (
+          <BalanceCard key={userId} />
+        ) : (
+          <View style={[s.card, { backgroundColor: p.deep }]}>
+            <Icon name="clipboard-check-outline" color="#C6E7DB" size={30} />
+            <Text style={[s.heading, { color: '#fff' }]}>طلباتك، في مكان واحد</Text>
+            <Text style={[s.caption, { color: '#C6E7DB' }]}>
+              ابدأ طلب العميل وتابع تقدمه خطوة بخطوة.
+            </Text>
+          </View>
+        )}
+        <View style={{ gap: 10 }}>
+          <Button
+            title="إنشاء طلب جديد"
+            icon="plus"
+            onPress={() => navigation.navigate('CreateOrder')}
+            style={{ borderRadius: 18, minHeight: 56 }}
+          />
+          <Button
+            title="متابعة الطلبات"
+            icon="chevron-left"
+            secondary
+            onPress={() => navigation.navigate('MyOrders')}
+            style={{ borderRadius: 18, backgroundColor: '#fff' }}
+          />
         </View>
         <View style={s.stats}>
-          <Pressable
-            accessibilityRole="button"
-            style={s.stat}
-            onPress={() => navigation.navigate('ProductsScreen')}
-          >
-            <Icon name="package-variant-closed" size={23} color={p.primary} />
-            <Text style={s.statNumber}>
-              {catalog.loading || catalog.error ? '—' : catalog.totalCount}
-            </Text>
-            <Text style={ui.caption}>منتج في الكتالوج</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            style={s.stat}
-            onPress={() => navigation.navigate('MyOrders')}
-          >
-            <Icon name="clipboard-list-outline" size={23} color={p.primary} />
-            <Text style={s.statNumber}>{orders.data?.totalCount ?? '—'}</Text>
-            <Text style={ui.caption}>طلب في حسابك</Text>
-          </Pressable>
-        </View>
-        <SectionTitle
-          title="اكتشف المنتجات"
-          subtitle="اختر ما يناسب طلب عميلك"
-          action="عرض الكل"
-          onPress={() => navigation.navigate('ProductsScreen')}
-        />
-        <AsyncState
-          loading={catalog.loading}
-          error={catalog.error}
-          onRetry={catalog.refresh}
-          empty={
-            !catalog.loading && !catalog.error && !catalog.data.length
-              ? 'لا توجد منتجات حاليًا'
-              : undefined
-          }
-        />
-        <View style={s.products}>
-          {catalog.data.slice(0, 4).map((item) => (
-            <ProductCard
-              key={item.id}
-              item={item}
-              onPress={() => navigation.navigate('ProductDetails', { product: item })}
-              onAddToCart={() => dispatch(addToCartLocal(item))}
-            />
+          {stats.map((stat) => (
+            <Pressable
+              key={stat.title}
+              accessibilityRole="button"
+              accessibilityLabel={`${stat.title}: ${stat.value ?? 'غير متوفر'}`}
+              onPress={() => navigation.navigate('MyOrders')}
+              style={s.stat}
+            >
+              <Icon name={stat.icon} size={23} color={stat.color} />
+              <Text style={[s.caption, { textAlign: 'center', minHeight: 42 }]}>{stat.title}</Text>
+              {totals.isLoading ? (
+                <View style={[s.skeleton, { width: 35, height: 30 }]} />
+              ) : (
+                <Text style={s.statNumber}>{stat.value ?? '—'}</Text>
+              )}
+            </Pressable>
           ))}
         </View>
-        <SectionTitle
-          title="آخر الطلبات"
-          action="عرض الكل"
-          onPress={() => navigation.navigate('MyOrders')}
+        {!totals.isFetching &&
+          (!totals.data || Object.values(totals.data).some((value) => value == null)) && (
+            <View style={{ gap: 8 }}>
+              <Text style={s.caption}>بعض إحصائيات الطلبات غير متاحة حاليًا.</Text>
+              <Button title="تحديث الإحصائيات" secondary onPress={() => void refreshOrders()} />
+            </View>
+          )}
+        <OrderActivity
+          days={days}
+          from={bounds.from}
+          data={activity.currentData}
+          busy={activity.isFetching}
+          error={!!activity.error}
+          onDays={(value) => {
+            setDays(value);
+            setBounds(periodBounds(value));
+          }}
+          onRetry={() => void refreshOrders()}
         />
-        <AsyncState
-          loading={orders.isLoading}
-          error={orders.error}
-          onRetry={orders.refetch}
-          empty={
-            !orders.isLoading && !orders.error && !orders.data?.items.length
-              ? 'طلباتك الجديدة ستظهر هنا'
-              : undefined
-          }
-        />
-        <View>
-          {orders.data?.items.map((order) => (
-            <OrderCard
+        <View style={s.row}>
+          <Text style={s.title}>آخر الطلبات</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="عرض كل الطلبات"
+            onPress={() => navigation.navigate('MyOrders')}
+            style={{ padding: 8 }}
+          >
+            <Text style={s.link}>عرض الكل</Text>
+          </Pressable>
+        </View>
+        <View style={s.card}>
+          {recent.isLoading ? (
+            [1, 2, 3].map((key) => <View key={key} style={[s.skeleton, { height: 60 }]} />)
+          ) : recent.error ? (
+            <>
+              <Text style={s.alert}>تعذر تحديث آخر الطلبات.</Text>
+              <Button title="إعادة تحميل الطلبات" secondary onPress={() => void refreshOrders()} />
+            </>
+          ) : !recent.data?.items.length ? (
+            <View style={s.empty}>
+              <Icon name="package-variant-closed" color={p.primary} size={38} />
+              <Text style={s.title}>ابدأ أول طلب لك</Text>
+              <Text style={s.caption}>طلباتك الجديدة ستظهر هنا لمتابعتها بسهولة.</Text>
+            </View>
+          ) : null}
+          {recent.data?.items.slice(0, 3).map((order) => (
+            <RecentOrder
               key={order.orderId}
               order={order}
               onPress={() => navigation.navigate('OrderDetails', { orderId: order.orderId })}
@@ -162,57 +230,3 @@ export default function HomeScreen({
     </ScreenContainer>
   );
 }
-const s = StyleSheet.create({
-  content: {
-    padding: 20,
-    paddingBottom: 32,
-    gap: 22,
-    maxWidth: 780,
-    width: '100%',
-    alignSelf: 'center',
-  },
-  menu: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: p.border,
-    backgroundColor: p.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  greeting: { fontSize: 26, lineHeight: 38, fontFamily: t.bold },
-  hero: { backgroundColor: p.deep, borderRadius: 26, padding: 24, gap: 12 },
-  heroLabel: { color: '#C6E2D3', fontSize: 14 },
-  balance: { color: '#fff', fontFamily: t.bold, fontSize: 28, lineHeight: 40 },
-  heroHint: { color: '#C6E2D3', fontSize: 13 },
-  heroAction: {
-    backgroundColor: p.accent,
-    borderRadius: 12,
-    padding: 12,
-    flexDirection: 'row-reverse',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 12,
-    marginTop: 6,
-  },
-  heroActionText: { color: p.deep, fontFamily: t.bold },
-  stats: { flexDirection: 'row-reverse', gap: 12 },
-  stat: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: p.border,
-    backgroundColor: p.surface,
-    alignItems: 'flex-end',
-    gap: 6,
-  },
-  statNumber: { fontSize: 25, lineHeight: 34, fontFamily: t.bold },
-  products: {
-    flexDirection: 'row-reverse',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: 14,
-  },
-});

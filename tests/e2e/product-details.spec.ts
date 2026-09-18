@@ -71,6 +71,7 @@ async function setup(
   await page.getByPlaceholder('أدخل بريدك الإلكتروني').fill('test@example.com');
   await page.getByPlaceholder('أدخل كلمة المرور').fill('test-password');
   await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
+  await page.getByRole('tab', { name: /المنتجات/ }).click();
   await page.getByRole('button', { name: 'تفاصيل منتج الكتالوج', exact: true }).click();
   return {
     calls,
@@ -83,7 +84,7 @@ async function setup(
     },
   };
 }
-test('fresh details and prices use Product/id only, copy, expand and save exact quantities', async ({
+test('fresh details and prices use Product/id only, copy, expand and prefill an order', async ({
   page,
   context,
 }) => {
@@ -108,17 +109,19 @@ test('fresh details and prices use Product/id only, copy, expand and save exact 
   await expect(page.getByTestId('detail-total')).toHaveText('70.00 USD');
   await page.getByRole('button', { name: 'عرض المزيد', exact: true }).click();
   await expect(page.getByRole('button', { name: 'عرض أقل', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'إضافة إلى السلة', exact: true }).click();
-  await expect(page.getByText('تمت إضافة 2 قطعة إلى السلة', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'عرض أقل', exact: true }).click();
   await page.getByRole('radio', { name: 'الصورة', exact: true }).scrollIntoViewIfNeeded();
   await page.screenshot({ path: 'test-results/details-content.png', fullPage: true });
-  await page.getByRole('button', { name: 'زيادة الكمية', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'زيادة الكمية', exact: true })).toBeDisabled();
-  await page.getByRole('button', { name: 'تحديث السلة', exact: true }).click();
-  await page.getByRole('button', { name: 'عرض السلة', exact: true }).click();
-  await expect(page.getByRole('textbox', { name: 'سعر بيع سماعات لاسلكية' })).toHaveValue('35');
+  await page.getByRole('button', { name: 'إنشاء طلب بهذا المنتج', exact: true }).click();
+  await expect(page).toHaveURL(/\/merchant\/create-order/);
+  await expect(page.getByRole('textbox', { name: 'كمية سماعات لاسلكية', exact: true })).toHaveValue(
+    '2',
+  );
+  await expect(
+    page.getByRole('textbox', { name: 'سعر بيع سماعات لاسلكية (USD)', exact: true }),
+  ).toHaveValue('35');
 });
+
 test('missing suggested price is explicit and sales users do not request or see merchant pricing', async ({
   page,
 }) => {
@@ -127,13 +130,15 @@ test('missing suggested price is explicit and sales users do not request or see 
   await expect(page.getByTestId('detail-merchant-price')).toHaveCount(0);
   await expect(page.getByRole('radio', { name: 'الفيديو', exact: true })).toHaveCount(0);
   expect(api.calls.some((path) => path.includes('merchant-price'))).toBe(false);
-  await page.getByRole('button', { name: 'إضافة إلى السلة', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'عرض السلة', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'إنشاء طلب بهذا المنتج', exact: true }).click();
+  await expect(page).toHaveURL(/\/sales-employee\/create-order/);
 });
 test('deleted product never falls back to stale card data', async ({ page }) => {
   await setup(page, { fail: 404 });
   await expect(page.getByRole('heading', { name: 'المنتج غير موجود', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'إضافة إلى السلة', exact: true })).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: 'إنشاء طلب بهذا المنتج', exact: true }),
+  ).toHaveCount(0);
   await page.getByRole('button', { name: 'العودة للمنتجات', exact: true }).click();
   await expect(page).toHaveURL(/\/merchant\/products/);
 });
@@ -143,7 +148,9 @@ test('failed details block additions until retry, image errors recover at 320px'
   await page.setViewportSize({ width: 320, height: 700 });
   const api = await setup(page, { fail: 503, imageFail: true });
   await expect(page.getByRole('alert')).toContainText('تعذر تحميل تفاصيل المنتج');
-  await expect(page.getByRole('button', { name: 'إضافة إلى السلة', exact: true })).toBeDisabled();
+  await expect(
+    page.getByRole('button', { name: 'إنشاء طلب بهذا المنتج', exact: true }),
+  ).toBeDisabled();
   api.recover(true);
   await page.getByRole('button', { name: 'إعادة المحاولة', exact: true }).click();
   await expect(
@@ -152,17 +159,22 @@ test('failed details block additions until retry, image errors recover at 320px'
   api.recover();
   await page.getByRole('button', { name: 'إعادة محاولة الصورة', exact: true }).click();
   await expect(page.getByRole('button', { name: 'تكبير صورة المنتج' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'إضافة إلى السلة', exact: true })).toBeEnabled();
+  await expect(
+    page.getByRole('button', { name: 'إنشاء طلب بهذا المنتج', exact: true }),
+  ).toBeEnabled();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 test('stock refresh on return disables a sold-out product', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   const api = await setup(page);
-  await expect(page.getByRole('button', { name: 'إضافة إلى السلة', exact: true })).toBeEnabled();
+  await expect(
+    page.getByRole('button', { name: 'إنشاء طلب بهذا المنتج', exact: true }),
+  ).toBeEnabled();
   api.setStock(0);
-  await page.getByRole('button', { name: 'فتح السلة، 0 قطعة', exact: true }).click();
-  await page.goBack();
+  await page.getByRole('button', { name: 'إنشاء طلب بهذا المنتج', exact: true }).click();
+  await page.getByRole('button', { name: 'رجوع', exact: true }).click();
+  await page.getByRole('button', { name: 'تجاهل البيانات والمغادرة', exact: true }).click();
   await expect(page.getByText('نفدت الكمية', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'غير متوفر حاليًا', exact: true })).toBeDisabled();
   expect(api.calls.filter((path) => path === 'Product/104').length).toBeGreaterThan(1);

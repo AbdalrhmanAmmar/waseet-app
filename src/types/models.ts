@@ -17,6 +17,9 @@ export interface User {
   accountStatus?: string;
   status?: string;
   priceListId?: Id;
+  dollarBalance?: number | null;
+  balanceUpdatedAt?: number;
+  balanceStale?: boolean;
   [key: string]: unknown;
 }
 export interface Product {
@@ -38,11 +41,6 @@ export interface Product {
   stockKnown?: boolean;
   description?: string;
   [key: string]: unknown;
-}
-export interface CartItem extends Product {
-  cart_id: string;
-  quantity: number;
-  sellingPrice: number;
 }
 export interface Order {
   orderId: Id;
@@ -84,7 +82,7 @@ export interface OrderInput {
   customerMobile: string;
   customerArea: string;
   customerAddress: string;
-  items: { productCode: number; quantity: number; actualSellPriceUSD: number; color?: string }[];
+  items: { productCode: number; quantity: number; actualSellPriceUSD: number; color: string }[];
 }
 export interface StatusInput {
   orderId: Id;

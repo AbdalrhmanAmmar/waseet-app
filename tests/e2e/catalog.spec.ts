@@ -82,33 +82,21 @@ async function setup(
     },
   };
 }
-test('catalog loads all pages, changes quantities within stock and opens cart', async ({
-  page,
-}) => {
+test('catalog loads all pages and starts an order without a cart', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.setViewportSize({ width: 390, height: 1100 });
   const api = await setup(page);
   await expect(page.getByText('4 نتيجة', { exact: true })).toBeVisible();
   expect(api.calls).toContain(2);
-  const card = page.getByTestId('catalog-product-WS-104');
-  await card.getByRole('button', { name: 'إضافة سماعات لاسلكية للسلة' }).click();
-  await card.getByRole('button', { name: 'زيادة كمية سماعات لاسلكية' }).click();
-  await expect(card.getByRole('button', { name: 'زيادة كمية سماعات لاسلكية' })).toBeDisabled();
-  await card.getByRole('button', { name: 'تقليل كمية سماعات لاسلكية' }).click();
-  await page
-    .getByTestId('catalog-product-WS-208')
-    .getByRole('button', { name: 'إضافة غلاية كهربائية للسلة' })
-    .click();
-  await page
-    .getByTestId('catalog-product-WS-208')
-    .getByRole('button', { name: 'زيادة كمية غلاية كهربائية' })
-    .click();
-  await expect(page.getByRole('button', { name: 'إضافة ساعة ذكية للسلة' })).toBeDisabled();
-  await page.getByRole('heading', { name: 'اكتشف منتجاتك' }).scrollIntoViewIfNeeded();
+  await expect(page.getByRole('tab', { name: /السلة/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'إنشاء طلب ساعة ذكية' })).toBeDisabled();
   await page.screenshot({ path: 'test-results/catalog-grid.png', fullPage: true });
-  await page.getByRole('button', { name: 'عرض السلة، 3 قطعة', exact: true }).click();
-  await expect(page).toHaveURL(/\/merchant\/cart/);
+  await page.getByRole('button', { name: 'إنشاء طلب سماعات لاسلكية', exact: true }).click();
+  await expect(page).toHaveURL(/\/merchant\/create-order/);
+  await expect(
+    page.getByRole('textbox', { name: 'لون سماعات لاسلكية *', exact: true }),
+  ).toBeVisible();
   expect(errors).toEqual([]);
 });
 test('merchant catalog uses Product/all prices even when the account has a price list', async ({
@@ -193,17 +181,13 @@ test('partial page errors remain honest, stop automatic retries and recover on r
   expect(api.calls.filter((n) => n === 1)).toHaveLength(1);
   expect(api.calls.filter((n) => n === 2)).toHaveLength(2);
 });
-test('sales catalog works at 320px without merchant prices; availability and zero quantity work', async ({
+test('sales catalog works at 320px without merchant prices; availability filter works', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 700 });
   await setup(page, 'SalesEmployee');
   await expect(page.getByText('4 نتيجة', { exact: true })).toBeVisible();
   await expect(page.getByText('سعر التاجر', { exact: true })).toHaveCount(0);
-  const card = page.getByTestId('catalog-product-WS-104');
-  await card.getByRole('button', { name: 'إضافة سماعات لاسلكية للسلة' }).click();
-  await card.getByRole('button', { name: 'تقليل كمية سماعات لاسلكية' }).click();
-  await expect(page.getByRole('button', { name: /^عرض السلة،/ })).toHaveCount(0);
   await page.getByRole('button', { name: /تصفية وترتيب/ }).click();
   await page.getByRole('switch', { name: 'المتوفر فقط' }).click();
   await page.getByRole('button', { name: 'تطبيق الفلاتر' }).click();
