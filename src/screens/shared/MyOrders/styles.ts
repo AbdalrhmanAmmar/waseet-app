@@ -37,7 +37,7 @@ export const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
   },
   tabItemActive: {
-    backgroundColor: COLORS.mainOrange,
+    backgroundColor: COLORS.primary,
   },
   tabText: {
     fontSize: hp(1.4),
@@ -149,7 +149,7 @@ export const styles = StyleSheet.create({
   totalValue: {
     fontSize: hp(1.9),
     fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
   },
   merchantProfitText: {
     fontSize: hp(1.2),
@@ -174,14 +174,14 @@ export const styles = StyleSheet.create({
     paddingHorizontal: wp(3),
     paddingVertical: hp(0.7),
     borderRadius: hp(1.2),
-    backgroundColor: '#FFF7ED',
+    backgroundColor: '#EDF6F1',
     borderWidth: 1,
     borderColor: '#FFEDD5',
   },
   historyBtnText: {
     fontSize: hp(1.3),
     fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
   },
   detailsBtn: {
     flexDirection: 'row',
@@ -240,7 +240,7 @@ export const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   modalTabActive: {
-    borderBottomColor: COLORS.mainOrange,
+    borderBottomColor: COLORS.primary,
   },
   modalTabText: {
     fontSize: hp(1.5),
@@ -248,7 +248,7 @@ export const styles = StyleSheet.create({
     color: '#64748B',
   },
   modalTabTextActive: {
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
     fontFamily: FONTS.fontFamilyBold,
   },
   modalBody: {
@@ -327,7 +327,7 @@ export const styles = StyleSheet.create({
   itemPrice: {
     fontSize: hp(1.5),
     fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
   },
   emptyProductsContainer: {
     paddingVertical: hp(2),
@@ -367,7 +367,7 @@ export const styles = StyleSheet.create({
   summaryTotalValue: {
     fontSize: hp(1.8),
     fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
   },
   summaryStatusValue: {
     fontSize: hp(1.5),
@@ -400,7 +400,7 @@ export const styles = StyleSheet.create({
     borderWidth: 2,
   },
   dotActive: {
-    backgroundColor: COLORS.mainOrange,
+    backgroundColor: COLORS.primary,
     borderWidth: 2,
     borderColor: '#FFEDD5',
   },
@@ -501,8 +501,8 @@ export const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
   },
   statusOptionItemSelected: {
-    borderColor: COLORS.mainOrange,
-    backgroundColor: '#FFF7ED',
+    borderColor: COLORS.primary,
+    backgroundColor: '#EDF6F1',
   },
   statusOptionLeft: {
     flexDirection: 'row',
@@ -521,7 +521,7 @@ export const styles = StyleSheet.create({
   },
   statusOptionLabelSelected: {
     fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
   },
   notesInput: {
     backgroundColor: '#F8FAFC',
@@ -538,12 +538,12 @@ export const styles = StyleSheet.create({
     marginBottom: hp(2),
   },
   confirmStatusButton: {
-    backgroundColor: COLORS.mainOrange,
+    backgroundColor: COLORS.primary,
     borderRadius: hp(1.4),
     paddingVertical: hp(1.6),
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: COLORS.mainOrange,
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

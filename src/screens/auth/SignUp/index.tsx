@@ -1,712 +1,597 @@
-import { useDeliveryAreasQuery } from '@/api/shared/catalog';
-import { AsyncState } from '@/components/shared/AsyncState';
-import type { Role } from '@/auth/roles';
-import CountryPicker, { Country, CountryCode } from '@/components/shared/CountryPicker';
-import { CustomText, CustomTextInput } from '@/components/shared/index';
-import { ScreenNames } from '@/navigation/ScreenNames';
-import { signUpSchema } from '@/schemas/auth';
-import { styles } from '@/screens/auth/SignUp/styles';
-import { SignUp } from '@/store/slices/auth';
-import { COLORS, hp, Images } from '@/theme/index';
+import { useEffect, useRef, useState } from 'react';
+import { BackHandler, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
-import { yupResolver } from '@hookform/resolvers/yup';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useReducedMotion } from '@/hooks/shared/use-reduced-motion';
 import { Picker } from '@react-native-picker/picker';
-import React, { useEffect, useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
-import {
-  ActivityIndicator,
-  FlatList,
-  ImageBackground,
-  Keyboard,
-  Modal,
-  ScrollView,
-  StatusBar,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import * as Animatable from 'react-native-animatable';
-import Toast from 'react-native-toast-message';
-import { useDispatch, useSelector } from 'react-redux';
-
-type RoleType = Role;
-
-const SignUpScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const { isLoading } = useSelector((state: any) => state.AuthSlice);
-  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [userRole, setUserRole] = useState<RoleType>('Merchant');
-  const areas = useDeliveryAreasQuery(undefined, { skip: userRole !== 'DeliveryAgent' });
-  const cities = areas.data ?? [];
-
-  // City Picker state for DeliveryAgent
-  const [cityModalVisible, setCityModalVisible] = useState(false);
-
-  // Custom Date Picker state
-  const [dateModalVisible, setDateModalVisible] = useState(false);
-  const [tempDate, setTempDate] = useState({
-    day: new Date().getDate().toString(),
-    month: (new Date().getMonth() + 1).toString(),
-    year: new Date().getFullYear().toString(),
-  });
-
-  // Country Picker state for Phone
-  const [countryCode, setCountryCode] = useState<CountryCode>('SY');
+import { useForm, useWatch, type FieldPath } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import type { InferType } from 'yup';
+import AuthLayout from '@/components/shared/AuthLayout';
+import { CustomText as Text, CustomTextInput } from '@/components/shared';
+import CountryPicker from '@/components/shared/CountryPicker';
+import { Brand, Button, Card, ui } from '@/components/shared/ui';
+import { AsyncState } from '@/components/shared/AsyncState';
+import { palette as p, typography as t } from '@/theme/tokens';
+import { ROLES, roleLabels, type Role } from '@/auth/roles';
+import { signUpSchema } from '@/schemas/auth';
+import { birthDateFromParts } from '@/schemas/birth-date';
+import { useAppDispatch } from '@/hooks/shared/use-store';
+import { useDeliveryAreasQuery } from '@/api/shared/catalog';
+import { errorMessage } from '@/api/normalizers';
+import { SignUp } from '@/store/slices/auth';
+import type { ScreenProps } from '@/navigation/use-screen-props';
+type Values = InferType<typeof signUpSchema>;
+const steps = ['الحساب', 'التواصل', 'التأكيد'];
+const roleInfo: Record<
+  Role,
+  { icon: React.ComponentProps<typeof Icon>['name']; description: string }
+> = {
+  Merchant: { icon: 'storefront-outline', description: 'منتجاتك ومبيعاتك وأرباحك' },
+  SalesEmployee: { icon: 'account-tie-outline', description: 'إنشاء الطلبات ومتابعة البيع' },
+  ManagementEmployee: {
+    icon: 'clipboard-check-outline',
+    description: 'تنظيم الطلبات ومتابعة حالتها',
+  },
+  DeliveryAgent: { icon: 'truck-delivery-outline', description: 'استلام مهام التوصيل وتنفيذها' },
+};
+const stepFields: FieldPath<Values>[][] = [
+  ['firstName', 'secondName', 'lastName', 'birthDate'],
+  ['email', 'phoneNumber', 'country', 'address'],
+  ['password', 'confirmPassword'],
+];
+export default function SignUpScreen({ navigation }: ScreenProps) {
+  const dispatch = useAppDispatch();
+  const insets = useSafeAreaInsets();
+  const reducedMotion = useReducedMotion();
+  const [step, setStep] = useState(0);
+  const [role, setRole] = useState<Role>('Merchant');
+  const [countryCode, setCountryCode] = useState('SY');
   const [callingCode, setCallingCode] = useState('963');
-  const [countryModalVisible, setCountryModalVisible] = useState(false);
-
-  const dispatch: any = useDispatch();
-
-  const { control, handleSubmit, setValue } = useForm({
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [dateOpen, setDateOpen] = useState(false);
+  const [dateParts, setDateParts] = useState({
+    day: 1,
+    month: 1,
+    year: new Date().getFullYear() - 20,
+  });
+  const [dateError, setDateError] = useState('');
+  const [serverError, setServerError] = useState('');
+  const [complete, setComplete] = useState(false);
+  const scroll = useRef<ScrollView>(null);
+  const submitting = useRef(false);
+  const areas = useDeliveryAreasQuery(undefined, { skip: role !== 'DeliveryAgent' });
+  const {
+    control,
+    trigger,
+    handleSubmit,
+    setValue,
+    setError,
+    clearErrors,
+    formState: { errors, isSubmitting },
+  } = useForm<Values>({
     resolver: yupResolver(signUpSchema),
+    mode: 'onTouched',
+    shouldUnregister: false,
     defaultValues: {
       firstName: '',
       secondName: '',
       lastName: '',
       email: '',
       phoneNumber: '',
-      country: 'syria',
+      country: 'سوريا',
       city: '',
-      oliveryContactMobile: '',
       address: '',
       password: '',
       confirmPassword: '',
-      birthDate: new Date().toISOString(),
+      birthDate: '',
     },
   });
   const values = useWatch({ control });
-
-  const onSignUp = (data: any) => {
-    if (userRole === 'DeliveryAgent' && !data.city?.trim()) {
-      Toast.show({ type: 'error', text1: 'يرجى اختيار المدينة لمندوب التوصيل' });
+  const go = (next: number) => {
+    setStep(next);
+    setServerError('');
+    scroll.current?.scrollTo({ y: 0, animated: false });
+  };
+  useEffect(() => {
+    if (!step || complete) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setStep((value) => value - 1);
+      return true;
+    });
+    return () => sub.remove();
+  }, [step, complete]);
+  const next = async () => {
+    const valid = await trigger(stepFields[step], { shouldFocus: true });
+    if (step === 1 && role === 'DeliveryAgent' && !values.city?.trim()) {
+      setError('city', { message: 'اختر مدينة التوصيل أو أدخل اسمها' });
       return;
     }
-
-    if (userRole === 'Merchant') {
-      const mobile = data.oliveryContactMobile?.trim();
-      if (!mobile) {
-        Toast.show({ type: 'error', text1: 'رقم هاتف أوليفر (Olivery) مطلوب للتاجر' });
-        return;
-      }
-      if (!/^\d{10}$/.test(mobile)) {
-        Toast.show({ type: 'error', text1: 'يجب أن يتكون رقم هاتف أوليفر من 10 أرقام' });
-        return;
-      }
-    }
-
-    const { confirmPassword, ...rest } = data;
-    const payload: any = {
-      ...rest,
-      phoneNumber: `+${callingCode}${data.phoneNumber}`,
-      role: userRole,
-    };
-
-    if (userRole !== 'DeliveryAgent') {
-      delete payload.city;
-    }
-
-    if (userRole !== 'Merchant') {
-      delete payload.oliveryContactMobile;
-      delete payload.OliveryContactMobile;
-    } else {
-      payload.OliveryContactMobile = data.oliveryContactMobile;
-      payload.oliveryContactMobile = data.oliveryContactMobile;
-    }
-
-    dispatch(SignUp(payload))
-      .unwrap()
-      .then((res: any) => {
-        if (res?.isSuccess) {
-          Toast.show({ type: 'success', text1: 'تم إنشاء الحساب بنجاح، يرجى تسجيل الدخول' });
-          navigation.navigate(ScreenNames.Login);
-        } else {
-          const msg = res?.message || res?.title || 'فشل في إنشاء الحساب';
-          Toast.show({ type: 'error', text1: msg });
+    if (valid) go(step + 1);
+    else if (step === 0 && !values.birthDate) scroll.current?.scrollToEnd({ animated: false });
+  };
+  const submit = () =>
+    handleSubmit(
+      async (data) => {
+        if (submitting.current) return;
+        if (role === 'DeliveryAgent' && !data.city?.trim()) {
+          go(1);
+          setError('city', { message: 'مدينة التوصيل مطلوبة' });
+          return;
         }
-      })
-      .catch((err: any) => {
-        const errorMsg =
-          typeof err === 'string'
-            ? err
-            : err?.message || err?.title || err?.data?.message || 'فشل في إنشاء الحساب';
-        Toast.show({ type: 'error', text1: errorMsg });
-      });
+        submitting.current = true;
+        setServerError('');
+        try {
+          const { confirmPassword: _confirmation, city, ...fields } = data;
+          await dispatch(
+            SignUp({
+              ...fields,
+              phoneNumber: `+${callingCode}${data.phoneNumber}`,
+              role,
+              ...(role === 'DeliveryAgent' ? { city: city?.trim() } : {}),
+            }),
+          ).unwrap();
+          setComplete(true);
+        } catch (error) {
+          setServerError(errorMessage(error));
+        } finally {
+          submitting.current = false;
+        }
+      },
+      (invalid) => {
+        const first = stepFields.findIndex((fields) => fields.some((field) => invalid[field]));
+        if (first >= 0) go(first);
+      },
+    )();
+  const confirmDate = () => {
+    const value = birthDateFromParts(dateParts.day, dateParts.month, dateParts.year);
+    if (!value) {
+      setDateError('التاريخ غير صحيح أو يقع في المستقبل. راجع اليوم والشهر والسنة.');
+      return;
+    }
+    setValue('birthDate', value, { shouldValidate: true, shouldDirty: true });
+    setDateOpen(false);
+    setDateError('');
   };
-
-  useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () =>
-      setIsKeyboardOpen(true),
-    );
-    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () =>
-      setIsKeyboardOpen(false),
-    );
-    return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
-    };
-  }, []);
-
-  const handleConfirmDate = () => {
-    const date = new Date(
-      parseInt(tempDate.year),
-      parseInt(tempDate.month) - 1,
-      parseInt(tempDate.day),
-    );
-    setValue('birthDate', date.toISOString());
-    setDateModalVisible(false);
-  };
-
-  const ROLES: { id: RoleType; title: string; icon: React.ComponentProps<typeof Icon>['name'] }[] =
-    [
-      { id: 'Merchant', title: 'تاجر', icon: 'storefront-outline' },
-      { id: 'SalesEmployee', title: 'موظف مبيعات', icon: 'account-tie-outline' },
-      { id: 'ManagementEmployee', title: 'موظف إدارة', icon: 'briefcase-outline' },
-      { id: 'DeliveryAgent', title: 'مندوب توصيل', icon: 'truck-delivery-outline' },
-    ];
-
-  const renderUserTypeCard = (role: {
-    id: RoleType;
-    title: string;
-    icon: React.ComponentProps<typeof Icon>['name'];
-  }) => {
-    const isActive = userRole === role.id;
+  const eye = (visible: boolean, toggle: () => void, label: string) => (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${visible ? 'إخفاء' : 'إظهار'} ${label}`}
+      onPress={toggle}
+      style={s.eye}
+    >
+      <Icon name={visible ? 'eye-off-outline' : 'eye-outline'} size={22} color={p.muted} />
+    </Pressable>
+  );
+  if (complete)
     return (
-      <TouchableOpacity
-        key={role.id}
-        style={[styles.userTypeCard, isActive && styles.userTypeCardActive]}
-        onPress={() => setUserRole(role.id)}
-        activeOpacity={0.8}
-      >
-        <Icon
-          name={role.icon}
-          size={hp(2.2)}
-          color={isActive ? COLORS.mainOrange : '#64748B'}
-          style={styles.userTypeIcon}
-        />
-        <CustomText
-          style={[styles.userTypeTitle, isActive && styles.userTypeTitleActive]}
-          numberOfLines={1}
-        >
-          {role.title}
-        </CustomText>
-        {isActive && (
-          <Icon
-            name="check-circle"
-            size={hp(1.8)}
-            color={COLORS.mainOrange}
-            style={styles.userTypeCheck}
-          />
-        )}
-      </TouchableOpacity>
-    );
-  };
-
-  const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
-  const months = Array.from({ length: 12 }, (_, i) => (i + 1).toString());
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 100 }, (_, i) => (currentYear - i).toString());
-
-  return (
-    <ImageBackground source={Images.auth_bg} style={styles.bg} resizeMode="cover">
-      <View style={styles.overlay}>
-        <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backBtn}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.8}
-          >
-            <Icon name="chevron-right" size={hp(2.8)} color={COLORS.charcoal} />
-          </TouchableOpacity>
+      <AuthLayout header={<Brand compact />}>
+        <View style={s.successIcon}>
+          <Icon name="check-decagram-outline" size={58} color={p.primary} />
         </View>
-
-        <ScrollView
-          contentContainerStyle={[styles.scroll, isKeyboardOpen && styles.scrollKeyboard]}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Brand Logo Header */}
-          <Animatable.View animation="fadeInDown" duration={800} style={styles.brand}>
-            <View style={styles.logoCircle}>
-              <Icon name="account-plus" size={hp(3.8)} color={COLORS.mainOrange} />
-            </View>
-          </Animatable.View>
-
-          <Animatable.View animation="fadeInUp" duration={1000} style={styles.content}>
-            <CustomText style={styles.title}>إنشاء حساب جديد</CustomText>
-            <CustomText style={styles.subtitle}>انضم إلينا وابدأ رحلتك بسهولة</CustomText>
-
-            {/* Section 1: Role / User Type */}
-            <View style={styles.sectionGroup}>
-              <View style={styles.sectionHeader}>
-                <View style={styles.sectionIconBox}>
-                  <Icon name="account-cog-outline" size={hp(2)} color={COLORS.mainOrange} />
-                </View>
-                <CustomText style={styles.sectionTitleText}>نوع الحساب</CustomText>
-              </View>
-              <View style={styles.userTypeRow}>
-                {ROLES.map((role) => renderUserTypeCard(role))}
-              </View>
-            </View>
-
-            {/* Section 2: Personal Information */}
-            <View style={styles.sectionGroup}>
-              <View style={styles.sectionHeader}>
-                <View style={styles.sectionIconBox}>
-                  <Icon
-                    name="card-account-details-outline"
-                    size={hp(2)}
-                    color={COLORS.mainOrange}
-                  />
-                </View>
-                <CustomText style={styles.sectionTitleText}>البيانات الشخصية</CustomText>
-              </View>
-
-              <View style={styles.inputsRow}>
-                <View style={styles.inputFlex}>
-                  <CustomTextInput
-                    control={control}
-                    name="firstName"
-                    label="الاسم الأول"
-                    placeholder="الاسم الأول"
-                  />
-                </View>
-                <View style={styles.inputFlex}>
-                  <CustomTextInput
-                    control={control}
-                    name="secondName"
-                    label="الاسم الثاني"
-                    placeholder="الاسم الثاني"
-                  />
-                </View>
-              </View>
-
-              <CustomTextInput
-                control={control}
-                name="lastName"
-                label="اسم العائلة"
-                placeholder="اسم العائلة"
-                leftComponent={
-                  <Icon
-                    name="account-outline"
-                    size={hp(2.4)}
-                    color="#757D85"
-                    style={styles.inputIcon}
-                  />
-                }
+        <Text style={s.title}>أهلًا بك في وسيط</Text>
+        <Text style={s.description}>
+          تم إنشاء حسابك بنجاح. سجّل الدخول للاطلاع على حالة الحساب وبدء استخدام التطبيق.
+        </Text>
+        <Button
+          title="تسجيل الدخول"
+          onPress={() => navigation.replace('Login')}
+          icon="arrow-left"
+        />
+      </AuthLayout>
+    );
+  return (
+    <AuthLayout
+      scrollRef={scroll}
+      header={
+        <View style={s.header}>
+          <Brand compact />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="رجوع"
+            onPress={() => (step ? go(step - 1) : navigation.goBack())}
+            style={s.back}
+          >
+            <Icon name="arrow-right" size={22} color={p.ink} />
+          </Pressable>
+        </View>
+      }
+      footer={
+        <>
+          <View style={s.footerRow}>
+            <Button
+              style={{ flex: 1 }}
+              title={step === 2 ? 'إنشاء الحساب' : 'متابعة'}
+              onPress={step === 2 ? submit : next}
+              loading={isSubmitting}
+              icon="arrow-left"
+            />
+            {step > 0 && (
+              <Button
+                title="السابق"
+                secondary
+                disabled={isSubmitting}
+                onPress={() => go(step - 1)}
               />
-
-              <TouchableOpacity onPress={() => setDateModalVisible(true)} activeOpacity={0.8}>
-                <View pointerEvents="none">
-                  <CustomTextInput
-                    control={control}
-                    name="birthDate"
-                    label="تاريخ الميلاد"
-                    placeholder="اختر تاريخ ميلادك"
-                    editable={false}
-                    value={
-                      values.birthDate
-                        ? new Date(values.birthDate ?? '').toLocaleDateString('ar-EG')
-                        : ''
-                    }
-                    leftComponent={
-                      <Icon
-                        name="calendar-outline"
-                        size={hp(2.4)}
-                        color="#757D85"
-                        style={styles.inputIcon}
-                      />
-                    }
-                    rightComponent={
-                      <Icon
-                        name="calendar-month-outline"
-                        size={hp(2.2)}
-                        color={COLORS.mainOrange}
-                      />
-                    }
-                  />
-                </View>
-              </TouchableOpacity>
-            </View>
-
-            {/* Section 3: Contact & Location Information */}
-            <View style={styles.sectionGroup}>
-              <View style={styles.sectionHeader}>
-                <View style={styles.sectionIconBox}>
-                  <Icon name="map-marker-radius-outline" size={hp(2)} color={COLORS.mainOrange} />
-                </View>
-                <CustomText style={styles.sectionTitleText}>بيانات التواصل والموقع</CustomText>
-              </View>
-
-              <CustomTextInput
-                control={control}
-                name="email"
-                label="البريد الإلكتروني"
-                placeholder="example@mail.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                leftComponent={
-                  <Icon
-                    name="email-outline"
-                    size={hp(2.4)}
-                    color="#757D85"
-                    style={styles.inputIcon}
-                  />
-                }
-              />
-
-              <CustomTextInput
-                control={control}
-                name="phoneNumber"
-                label="رقم الهاتف"
-                placeholder="أدخل رقم الهاتف"
-                keyboardType="phone-pad"
-                leftComponent={
-                  <View style={styles.countryPickerBox}>
-                    <CountryPicker
-                      theme={{ fontFamily: 'Montserrat-Regular', fontSize: hp(1.8) }}
-                      countryCode={countryCode}
-                      withFilter
-                      withFlag
-                      withCallingCode
-                      onSelect={(country: Country) => {
-                        setCountryCode(country.cca2);
-                        setCallingCode(country.callingCode[0]);
-                      }}
+            )}
+          </View>
+          <Text style={[ui.caption, { textAlign: 'center' }]}>
+            الخطوة {step + 1} من 3 · {steps[step]}
+          </Text>
+        </>
+      }
+    >
+      <View>
+        <Text style={s.eyebrow}>بداية جديدة لأعمالك</Text>
+        <Text style={s.title}>إنشاء حساب جديد</Text>
+        <Text style={s.description}>
+          {
+            [
+              'اختر نوع حسابك وأخبرنا قليلًا عنك.',
+              'كيف يمكننا التواصل معك؟',
+              'راجع بياناتك واختر كلمة مرور لحسابك.',
+            ][step]
+          }
+        </Text>
+      </View>
+      <View style={s.steps}>
+        {steps.map((label, index) => (
+          <View key={label} style={s.step}>
+            <View style={[s.stepLine, index <= step && { backgroundColor: p.primary }]} />
+            <Text style={[s.stepLabel, index === step && { color: p.primary, fontFamily: t.bold }]}>
+              {index + 1}. {label}
+            </Text>
+          </View>
+        ))}
+      </View>
+      {step === 0 && (
+        <>
+          <View style={{ gap: 12 }}>
+            <Text style={s.sectionTitle}>نوع الحساب</Text>
+            <View style={s.roles}>
+              {ROLES.map((item) => (
+                <Pressable
+                  key={item}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: role === item }}
+                  accessibilityLabel={roleLabels[item]}
+                  onPress={() => {
+                    setRole(item);
+                    clearErrors('city');
+                  }}
+                  style={[s.role, role === item && s.roleSelected]}
+                >
+                  <View style={s.roleTop}>
+                    <Icon
+                      name={roleInfo[item].icon}
+                      size={25}
+                      color={role === item ? p.primary : p.muted}
                     />
-                    <CustomText style={styles.countryCode}>+{callingCode}</CustomText>
+                    {role === item && <Icon name="check-circle" size={18} color={p.primary} />}
                   </View>
-                }
-              />
-
-              <TouchableOpacity onPress={() => setCountryModalVisible(true)} activeOpacity={0.8}>
-                <View pointerEvents="none">
-                  <CustomTextInput
-                    control={control}
-                    name="country"
-                    label="الدولة"
-                    placeholder="اختر دولتك"
-                    editable={false}
-                    leftComponent={
-                      <Icon name="earth" size={hp(2.4)} color="#757D85" style={styles.inputIcon} />
-                    }
-                    rightComponent={
-                      <Icon name="chevron-down" size={hp(2.2)} color={COLORS.mainOrange} />
-                    }
-                  />
-                </View>
-              </TouchableOpacity>
-
-              <View style={styles.hiddenCountryPicker}>
+                  <Text style={s.roleTitle}>{roleLabels[item]}</Text>
+                  <Text style={s.roleDescription}>{roleInfo[item].description}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+          <Card>
+            <Text style={s.sectionTitle}>البيانات الشخصية</Text>
+            <CustomTextInput
+              control={control}
+              name="firstName"
+              label="الاسم الأول"
+              placeholder="الاسم الأول"
+              autoComplete="given-name"
+            />
+            <CustomTextInput
+              control={control}
+              name="secondName"
+              label="الاسم الثاني"
+              placeholder="الاسم الثاني"
+            />
+            <CustomTextInput
+              control={control}
+              name="lastName"
+              label="اسم العائلة"
+              placeholder="اسم العائلة"
+              autoComplete="family-name"
+            />
+            <Text style={s.fieldLabel}>تاريخ الميلاد</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="اختيار تاريخ الميلاد"
+              onPress={() => setDateOpen(true)}
+              style={[s.dateField, !!errors.birthDate && { borderColor: p.danger }]}
+            >
+              <Text style={{ color: values.birthDate ? p.ink : p.muted }}>
+                {values.birthDate
+                  ? new Date(values.birthDate).toLocaleDateString('ar-EG', { timeZone: 'UTC' })
+                  : 'اختر تاريخ ميلادك'}
+              </Text>
+              <Icon name="calendar-outline" size={22} color={p.primary} />
+            </Pressable>
+            {errors.birthDate && (
+              <Text accessibilityRole="alert" style={s.error}>
+                {errors.birthDate.message}
+              </Text>
+            )}
+          </Card>
+        </>
+      )}
+      {step === 1 && (
+        <Card>
+          <Text style={s.sectionTitle}>بيانات التواصل والموقع</Text>
+          <CustomTextInput
+            control={control}
+            name="email"
+            label="البريد الإلكتروني"
+            placeholder="example@mail.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="email"
+          />
+          <CustomTextInput
+            control={control}
+            name="phoneNumber"
+            label="رقم الهاتف"
+            placeholder="أدخل رقم الهاتف"
+            keyboardType="phone-pad"
+            autoComplete="tel-national"
+            leftComponent={
+              <View style={s.dial}>
                 <CountryPicker
                   countryCode={countryCode}
-                  withFilter
-                  withFlag
-                  withCountryNameButton={false}
-                  visible={countryModalVisible}
-                  onClose={() => setCountryModalVisible(false)}
-                  onSelect={(country: Country) => {
-                    setValue('country', country.name as string);
-                    setCountryModalVisible(false);
+                  onSelect={(country) => {
+                    setCountryCode(country.cca2);
+                    setCallingCode(country.callingCode[0]);
                   }}
                 />
+                <Text style={ui.caption}>+{callingCode}</Text>
               </View>
-
-              {userRole === 'DeliveryAgent' && (
-                <View>
-                  <View>
-                    <CustomTextInput
-                      control={control}
-                      name="city"
-                      label="المدينة (منطقة التوصيل)"
-                      placeholder="أدخل المدينة"
-                      value={values.city ?? ''}
-                      leftComponent={
-                        <Icon
-                          name="city-variant-outline"
-                          size={hp(2.4)}
-                          color="#757D85"
-                          style={styles.inputIcon}
-                        />
-                      }
-                      rightComponent={
-                        <Icon name="chevron-down" size={hp(2.2)} color={COLORS.mainOrange} />
-                      }
-                    />
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => setCityModalVisible(true)}
-                    style={{ padding: 10 }}
-                  >
-                    <CustomText>اختيار مدينة من مناطق التوصيل</CustomText>
-                  </TouchableOpacity>
-                </View>
-              )}
-
-              {userRole === 'Merchant' && (
-                <CustomTextInput
-                  control={control}
-                  name="oliveryContactMobile"
-                  label="رقم هاتف أوليفر للاستلام"
-                  placeholder="09xxxxxxxx (10 أرقام)"
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                  leftComponent={
-                    <Icon
-                      name="phone-outgoing-outline"
-                      size={hp(2.4)}
-                      color="#757D85"
-                      style={styles.inputIcon}
-                    />
-                  }
-                />
-              )}
-
+            }
+          />
+          <CustomTextInput
+            control={control}
+            name="country"
+            label="الدولة"
+            placeholder="الدولة"
+            rightComponent={
+              <CountryPicker
+                countryCode={countryCode}
+                onSelect={(country) => setValue('country', country.name, { shouldValidate: true })}
+              />
+            }
+          />
+          {role === 'DeliveryAgent' && (
+            <>
               <CustomTextInput
                 control={control}
-                name="address"
-                label="العنوان بالتفصيل"
-                placeholder="أدخل عنوانك بالتفصيل"
-                leftComponent={
-                  <Icon
-                    name="map-marker-outline"
-                    size={hp(2.4)}
-                    color="#757D85"
-                    style={styles.inputIcon}
-                  />
-                }
+                name="city"
+                label="مدينة التوصيل"
+                placeholder="أدخل المدينة"
               />
-            </View>
-
-            {/* Section 4: Security & Password */}
-            <View style={styles.sectionGroup}>
-              <View style={styles.sectionHeader}>
-                <View style={styles.sectionIconBox}>
-                  <Icon name="shield-lock-outline" size={hp(2)} color={COLORS.mainOrange} />
-                </View>
-                <CustomText style={styles.sectionTitleText}>الأمان وكلمة المرور</CustomText>
-              </View>
-
-              <CustomTextInput
-                control={control}
-                name="password"
-                label="كلمة المرور"
-                placeholder="أدخل كلمة المرور"
-                secureTextEntry={!showPassword}
-                leftComponent={
-                  <Icon
-                    name="lock-outline"
-                    size={hp(2.4)}
-                    color="#757D85"
-                    style={styles.inputIcon}
-                  />
-                }
-                rightComponent={
-                  <TouchableOpacity onPress={() => setShowPassword((v) => !v)}>
-                    <Icon
-                      name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                      size={hp(2.4)}
-                      color="#757D85"
-                    />
-                  </TouchableOpacity>
-                }
-              />
-
-              <CustomTextInput
-                control={control}
-                name="confirmPassword"
-                label="تأكيد كلمة المرور"
-                placeholder="تأكيد كلمة المرور"
-                secureTextEntry={!showConfirmPassword}
-                leftComponent={
-                  <Icon
-                    name="lock-check-outline"
-                    size={hp(2.4)}
-                    color="#757D85"
-                    style={styles.inputIcon}
-                  />
-                }
-                rightComponent={
-                  <TouchableOpacity onPress={() => setShowConfirmPassword((v) => !v)}>
-                    <Icon
-                      name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
-                      size={hp(2.4)}
-                      color="#757D85"
-                    />
-                  </TouchableOpacity>
-                }
-              />
-            </View>
-
-            {/* Submit Button */}
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={handleSubmit(onSignUp)}
-              disabled={isLoading}
-              style={[styles.submitBtn, isLoading && styles.submitBtnDisabled]}
-            >
-              {isLoading ? (
-                <ActivityIndicator size="small" color={COLORS.white} />
-              ) : (
-                <>
-                  <Icon name="arrow-right" size={hp(2.2)} color={COLORS.white} />
-                  <CustomText style={styles.submitText}>إنشاء الحساب</CustomText>
-                </>
-              )}
-            </TouchableOpacity>
-
-            {/* Login Navigation Link */}
-            <View style={styles.loginRow}>
-              <CustomText style={styles.loginHint}>لديك حساب بالفعل؟ </CustomText>
-              <TouchableOpacity
-                onPress={() => navigation.navigate(ScreenNames.Login)}
-                activeOpacity={0.7}
-              >
-                <CustomText style={styles.loginLink}>تسجيل الدخول</CustomText>
-              </TouchableOpacity>
-            </View>
-          </Animatable.View>
-        </ScrollView>
-
-        {/* City Selection Modal for DeliveryAgent */}
-        <Modal
-          visible={cityModalVisible}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setCityModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <TouchableOpacity onPress={() => setCityModalVisible(false)}>
-                  <Icon name="close" size={hp(2.6)} color={COLORS.charcoal} />
-                </TouchableOpacity>
-                <CustomText style={styles.modalTitle}>اختر المدينة (منطقة التوصيل)</CustomText>
-                <View style={styles.modalHeaderSpacer} />
-              </View>
-
-              <FlatList
-                ListHeaderComponent={
-                  <AsyncState
-                    loading={areas.isLoading}
-                    error={areas.error}
-                    onRetry={areas.refetch}
-                  />
-                }
-                data={cities}
-                keyExtractor={(item) => String(item.deliveryAreaId || item.city)}
-                contentContainerStyle={styles.cityListContainer}
-                showsVerticalScrollIndicator={false}
-                renderItem={({ item }) => {
-                  const cityName = item.city;
-                  const isSelected = values.city === cityName;
-                  return (
-                    <TouchableOpacity
-                      style={[styles.cityItem, isSelected && styles.cityItemSelected]}
-                      onPress={() => {
-                        setValue('city', cityName);
-                        setCityModalVisible(false);
-                      }}
-                      activeOpacity={0.7}
+              <AsyncState loading={areas.isLoading} />
+              {!!areas.data?.length && (
+                <View style={s.cities}>
+                  {areas.data.map((area) => (
+                    <Pressable
+                      key={area.deliveryAreaId}
+                      accessibilityRole="button"
+                      onPress={() => setValue('city', area.city, { shouldValidate: true })}
+                      style={[s.city, values.city === area.city && { backgroundColor: p.soft }]}
                     >
-                      <View style={styles.cityItemLeft}>
-                        <View
-                          style={[styles.cityIconBox, isSelected && styles.cityIconBoxSelected]}
-                        >
-                          <Icon
-                            name="map-marker-outline"
-                            size={hp(2.2)}
-                            color={isSelected ? COLORS.mainOrange : COLORS.gray}
-                          />
-                        </View>
-                        <CustomText
-                          style={[styles.cityName, isSelected && styles.cityNameSelected]}
-                        >
-                          {cityName}
-                        </CustomText>
-                      </View>
-
-                      {isSelected && (
-                        <Icon name="check-circle" size={hp(2.4)} color={COLORS.mainOrange} />
-                      )}
-                    </TouchableOpacity>
-                  );
-                }}
-              />
+                      <Text style={ui.link}>{area.city}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+              {areas.isError && <Text style={ui.caption}>يمكنك كتابة اسم المدينة يدويًا.</Text>}
+            </>
+          )}
+          <CustomTextInput
+            control={control}
+            name="address"
+            label="العنوان بالتفصيل"
+            placeholder="المنطقة، الشارع، البناء"
+            multiline
+            autoComplete="street-address"
+          />
+        </Card>
+      )}
+      {step === 2 && (
+        <>
+          <Card style={{ backgroundColor: p.soft }}>
+            <View style={ui.section}>
+              <Text style={s.sectionTitle}>ملخص حسابك</Text>
+              <Pressable accessibilityRole="button" onPress={() => go(0)}>
+                <Text style={ui.link}>تعديل</Text>
+              </Pressable>
             </View>
-          </View>
-        </Modal>
-
-        {/* Custom Date Modal */}
-        <Modal visible={dateModalVisible} transparent animationType="slide">
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <TouchableOpacity onPress={() => setDateModalVisible(false)}>
-                  <CustomText style={styles.cancelText}>إلغاء</CustomText>
-                </TouchableOpacity>
-                <CustomText style={styles.modalTitle}>اختر تاريخ الميلاد</CustomText>
-                <TouchableOpacity onPress={handleConfirmDate}>
-                  <CustomText style={styles.confirmText}>تأكيد</CustomText>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.pickerRow}>
-                <View style={styles.pickerContainer}>
-                  <CustomText style={styles.pickerLabel}>اليوم</CustomText>
-                  <Picker
-                    selectedValue={tempDate.day}
-                    onValueChange={(itemValue) =>
-                      setTempDate((prev) => ({ ...prev, day: itemValue }))
-                    }
-                    style={styles.picker}
-                    dropdownIconColor={COLORS.mainOrange}
-                  >
-                    {days.map((d) => (
-                      <Picker.Item key={d} label={d} value={d} />
-                    ))}
-                  </Picker>
-                </View>
-
-                <View style={styles.pickerContainer}>
-                  <CustomText style={styles.pickerLabel}>الشهر</CustomText>
-                  <Picker
-                    selectedValue={tempDate.month}
-                    onValueChange={(itemValue) =>
-                      setTempDate((prev) => ({ ...prev, month: itemValue }))
-                    }
-                    style={styles.picker}
-                    dropdownIconColor={COLORS.mainOrange}
-                  >
-                    {months.map((m) => (
-                      <Picker.Item key={m} label={m} value={m} />
-                    ))}
-                  </Picker>
-                </View>
-
-                <View style={styles.pickerContainer}>
-                  <CustomText style={styles.pickerLabel}>السنة</CustomText>
-                  <Picker
-                    selectedValue={tempDate.year}
-                    onValueChange={(itemValue) =>
-                      setTempDate((prev) => ({ ...prev, year: itemValue }))
-                    }
-                    style={styles.picker}
-                    dropdownIconColor={COLORS.mainOrange}
-                  >
-                    {years.map((y) => (
-                      <Picker.Item key={y} label={y} value={y} />
-                    ))}
-                  </Picker>
-                </View>
-              </View>
-            </View>
-          </View>
-        </Modal>
+            <Text>
+              {values.firstName} {values.lastName} · {roleLabels[role]}
+            </Text>
+            <Text style={{ writingDirection: 'ltr', textAlign: 'right' }}>{values.email}</Text>
+            <Text>
+              {values.country}
+              {values.city ? `، ${values.city}` : ''}
+            </Text>
+          </Card>
+          <Card>
+            <Text style={s.sectionTitle}>أمان الحساب</Text>
+            <CustomTextInput
+              control={control}
+              name="password"
+              label="كلمة المرور"
+              placeholder="8 أحرف على الأقل"
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+              autoComplete="new-password"
+              textContentType="newPassword"
+              footerText="استخدم كلمة مرور طويلة يصعب تخمينها."
+              rightComponent={eye(
+                showPassword,
+                () => setShowPassword(!showPassword),
+                'كلمة المرور',
+              )}
+            />
+            <CustomTextInput
+              control={control}
+              name="confirmPassword"
+              label="تأكيد كلمة المرور"
+              placeholder="أعد كتابة كلمة المرور"
+              secureTextEntry={!showConfirmation}
+              autoCapitalize="none"
+              autoComplete="new-password"
+              rightComponent={eye(
+                showConfirmation,
+                () => setShowConfirmation(!showConfirmation),
+                'تأكيد كلمة المرور',
+              )}
+            />
+          </Card>
+        </>
+      )}
+      {!!serverError && (
+        <Text accessibilityRole="alert" style={s.serverError}>
+          {serverError}
+        </Text>
+      )}
+      <View style={s.login}>
+        <Text style={ui.caption}>لديك حساب بالفعل؟</Text>
+        <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Login')}>
+          <Text style={ui.link}>تسجيل الدخول</Text>
+        </Pressable>
       </View>
-    </ImageBackground>
+      <Modal
+        visible={dateOpen}
+        animationType={reducedMotion ? 'none' : 'fade'}
+        transparent
+        onRequestClose={() => setDateOpen(false)}
+      >
+        <View style={s.modal}>
+          <View style={[s.sheet, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+            <ScrollView contentContainerStyle={{ gap: 16 }}>
+              <Text style={s.sectionTitle}>تاريخ الميلاد</Text>
+              <Text style={ui.caption}>اختر اليوم والشهر والسنة</Text>
+              <View style={s.pickers}>
+                {(['day', 'month', 'year'] as const).map((part, index) => (
+                  <View key={part} style={{ flex: 1 }}>
+                    <Text style={{ textAlign: 'center' }}>
+                      {['اليوم', 'الشهر', 'السنة'][index]}
+                    </Text>
+                    <Picker
+                      accessibilityLabel={['اليوم', 'الشهر', 'السنة'][index]}
+                      selectedValue={dateParts[part]}
+                      onValueChange={(value) =>
+                        setDateParts((previous) => ({ ...previous, [part]: Number(value) }))
+                      }
+                    >
+                      {Array.from(
+                        {
+                          length:
+                            part === 'year'
+                              ? new Date().getFullYear() - 1899
+                              : part === 'month'
+                                ? 12
+                                : 31,
+                        },
+                        (_, i) => (part === 'year' ? new Date().getFullYear() - i : i + 1),
+                      ).map((value) => (
+                        <Picker.Item key={value} label={String(value)} value={value} />
+                      ))}
+                    </Picker>
+                  </View>
+                ))}
+              </View>
+              {!!dateError && (
+                <Text accessibilityRole="alert" style={s.error}>
+                  {dateError}
+                </Text>
+              )}
+              <Button title="تأكيد التاريخ" onPress={confirmDate} />
+              <Button title="إلغاء" secondary onPress={() => setDateOpen(false)} />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    </AuthLayout>
   );
-};
-
-export default SignUpScreen;
+}
+const s = StyleSheet.create({
+  header: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
+  back: {
+    width: 44,
+    height: 44,
+    backgroundColor: p.surface,
+    borderWidth: 1,
+    borderColor: p.border,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  eyebrow: { color: p.primary, fontFamily: t.medium, fontSize: 13, marginBottom: 8 },
+  title: { fontFamily: t.bold, fontSize: 29, lineHeight: 40 },
+  description: { color: p.muted, fontSize: 15, marginTop: 8 },
+  steps: { flexDirection: 'row-reverse', gap: 8 },
+  step: { flex: 1, gap: 8 },
+  stepLine: { height: 4, borderRadius: 4, backgroundColor: p.border },
+  stepLabel: { color: p.muted, fontSize: 13 },
+  sectionTitle: { fontSize: 18, fontFamily: t.bold },
+  roles: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 10 },
+  role: {
+    width: '48%',
+    flexGrow: 1,
+    padding: 14,
+    borderRadius: 18,
+    backgroundColor: p.surface,
+    borderWidth: 1,
+    borderColor: p.border,
+    gap: 5,
+  },
+  roleSelected: { backgroundColor: p.soft, borderColor: p.primary },
+  roleTop: { flexDirection: 'row-reverse', justifyContent: 'space-between', marginBottom: 6 },
+  roleTitle: { fontSize: 16, fontFamily: t.bold },
+  roleDescription: { fontSize: 12, lineHeight: 20, color: p.muted },
+  footerRow: { flexDirection: 'row-reverse', gap: 10 },
+  fieldLabel: { fontSize: 14, fontFamily: t.medium },
+  dateField: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 14,
+    borderWidth: 1,
+    borderColor: p.border,
+    borderRadius: 14,
+    minHeight: 54,
+  },
+  error: { color: p.danger, fontSize: 13 },
+  serverError: { color: p.danger, backgroundColor: '#FFF1EF', padding: 16, borderRadius: 14 },
+  eye: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  dial: { flexDirection: 'row', alignItems: 'center' },
+  cities: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8 },
+  city: { padding: 10, borderWidth: 1, borderColor: p.border, borderRadius: 10 },
+  login: { flexDirection: 'row-reverse', justifyContent: 'center', flexWrap: 'wrap', gap: 8 },
+  modal: { flex: 1, backgroundColor: '#10291F88', justifyContent: 'flex-end' },
+  sheet: {
+    maxHeight: '90%',
+    backgroundColor: p.surface,
+    padding: 24,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    gap: 16,
+    width: '100%',
+    maxWidth: 600,
+    alignSelf: 'center',
+  },
+  pickers: { flexDirection: 'row-reverse', gap: 4 },
+  successIcon: {
+    alignSelf: 'center',
+    padding: 32,
+    borderRadius: 100,
+    backgroundColor: p.soft,
+    marginTop: 48,
+  },
+});

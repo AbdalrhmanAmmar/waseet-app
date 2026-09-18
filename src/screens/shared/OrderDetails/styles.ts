@@ -53,7 +53,7 @@ export const styles = StyleSheet.create({
   itemPrice: {
     fontSize: hp(1.6),
     fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
     marginTop: 4,
   },
   addressCard: {
@@ -85,7 +85,7 @@ export const styles = StyleSheet.create({
   summaryLabel: { fontSize: hp(1.6), color: COLORS.darkgray2 },
   summaryValue: { fontSize: hp(1.6), fontFamily: FONTS.fontFamilyBold, color: COLORS.charcoal },
   totalLabel: { fontSize: hp(1.9), fontFamily: FONTS.fontFamilyBold, color: COLORS.charcoal },
-  totalValue: { fontSize: hp(2.1), fontFamily: FONTS.fontFamilyBold, color: COLORS.mainOrange },
+  totalValue: { fontSize: hp(2.1), fontFamily: FONTS.fontFamilyBold, color: COLORS.primary },
   reorderBtn: {
     backgroundColor: COLORS.charcoal,
     height: hp(6),

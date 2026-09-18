@@ -13,7 +13,7 @@ export const CONTACT_ITEMS = [
     label: 'اتصل بنا',
     subtitle: '+201024676225',
     icon: 'phone-outline',
-    iconBg: '#FFF3EE',
+    iconBg: '#EDF6F1',
     iconColor: '#E8703A',
     url: 'tel:+201024676225',
   },

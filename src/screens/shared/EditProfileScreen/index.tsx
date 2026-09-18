@@ -13,7 +13,7 @@ import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { useEffect, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { Keyboard, ScrollView, TouchableOpacity, View } from 'react-native';
-import * as Animatable from 'react-native-animatable';
+import * as Animatable from '@/components/shared/Motion';
 import Toast from 'react-native-toast-message';
 import { useDispatch, useSelector } from 'react-redux';
 

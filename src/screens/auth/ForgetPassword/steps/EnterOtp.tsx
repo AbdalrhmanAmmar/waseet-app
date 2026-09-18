@@ -5,7 +5,7 @@ import { COLORS, FONTS, hp } from '@/theme/index';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import * as Animatable from 'react-native-animatable';
+import * as Animatable from '@/components/shared/Motion';
 
 import Toast from 'react-native-toast-message';
 
@@ -62,7 +62,7 @@ const EnterOtp: React.FC<{ onNext: (otp: string) => void; email: string }> = ({
     >
       <Animatable.View animation="slideInRight" duration={700} style={styles.card}>
         <View style={styles.cardIconBox}>
-          <Icon name="shield-check-outline" size={hp(4)} color={COLORS.mainOrange} />
+          <Icon name="shield-check-outline" size={hp(4)} color={COLORS.primary} />
         </View>
         <CustomText style={styles.title}>التحقق من الرمز</CustomText>
         <CustomText style={styles.subtitle}>
@@ -128,14 +128,14 @@ const styles = StyleSheet.create({
   },
 
   actionBtn: {
-    backgroundColor: COLORS.mainOrange,
+    backgroundColor: COLORS.primary,
     borderRadius: hp(1.5),
     height: hp(7.5),
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: hp(4),
     marginBottom: hp(3),
-    shadowColor: COLORS.mainOrange,
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
     shadowRadius: 15,
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     marginTop: hp(1),
   },
   resendHint: { fontSize: hp(1.6), fontFamily: FONTS.fontFamilyRegular, color: '#757D85' },
-  resendLink: { fontSize: hp(1.6), fontFamily: FONTS.fontFamilyBold, color: COLORS.mainOrange },
+  resendLink: { fontSize: hp(1.6), fontFamily: FONTS.fontFamilyBold, color: COLORS.primary },
 });
 
 export default EnterOtp;

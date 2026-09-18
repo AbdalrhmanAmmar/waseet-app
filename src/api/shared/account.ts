@@ -4,6 +4,8 @@ import { baseApi } from '../base-api';
 // Preserve the screen adapters without calling legacy PHP endpoints on the new server.
 const unavailable = (message: string) => ({ error: { status: 'UNAVAILABLE', message } });
 export const accountApi = baseApi.injectEndpoints({
+  // Fast Refresh re-evaluates this module while retaining the base API instance.
+  overrideExisting: process.env.NODE_ENV === 'development',
   endpoints: (build) => ({
     favorites: build.query<Product[], Id>({
       queryFn: () => unavailable(unavailableMessages.favorites),

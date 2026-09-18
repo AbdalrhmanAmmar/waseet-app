@@ -1,21 +1,28 @@
+import { isValidBirthDate } from './birth-date';
 import * as yup from 'yup';
 
 export const loginSchema = yup.object().shape({
-  email: yup.string().required('Email address is required').email('Invalid email address'),
-  password: yup.string().required('Password is required'),
+  email: yup.string().trim().required('البريد الإلكتروني مطلوب').email('بريد إلكتروني غير صالح'),
+  password: yup.string().required('كلمة المرور مطلوبة'),
 });
 
 export const signUpSchema = yup.object().shape({
-  firstName: yup.string().required('الاسم الأول مطلوب'),
-  secondName: yup.string().required('الاسم الثاني مطلوب'),
-  lastName: yup.string().required('اسم العائلة مطلوب'),
-  email: yup.string().required('البريد الإلكتروني مطلوب').email('بريد إلكتروني غير صالح'),
-  phoneNumber: yup.string().required('رقم الهاتف مطلوب'),
-  country: yup.string().required('الدولة مطلوبة'),
+  firstName: yup.string().trim().required('الاسم الأول مطلوب'),
+  secondName: yup.string().trim().required('الاسم الثاني مطلوب'),
+  lastName: yup.string().trim().required('اسم العائلة مطلوب'),
+  email: yup.string().trim().required('البريد الإلكتروني مطلوب').email('بريد إلكتروني غير صالح'),
+  phoneNumber: yup
+    .string()
+    .trim()
+    .required('رقم الهاتف مطلوب')
+    .matches(/^\d{7,15}$/, 'أدخل رقم هاتف صحيحًا من 7 إلى 15 رقمًا'),
+  country: yup.string().trim().required('الدولة مطلوبة'),
   city: yup.string().notRequired(),
-  oliveryContactMobile: yup.string().notRequired(),
-  address: yup.string().required('العنوان مطلوب'),
-  birthDate: yup.string().required('تاريخ الميلاد مطلوب'),
+  address: yup.string().trim().required('العنوان مطلوب'),
+  birthDate: yup
+    .string()
+    .required('تاريخ الميلاد مطلوب')
+    .test('valid-birth-date', 'اختر تاريخ ميلاد صحيحًا غير مستقبلي', isValidBirthDate),
   password: yup
     .string()
     .required('كلمة المرور مطلوبة')
@@ -34,7 +41,7 @@ export const phoneOnlySchema = yup.object().shape({
 });
 
 export const emailOnlySchema = yup.object().shape({
-  email: yup.string().required('Email address is required').email('Invalid email address'),
+  email: yup.string().trim().required('البريد الإلكتروني مطلوب').email('بريد إلكتروني غير صالح'),
 });
 
 export const otpOnlySchema = yup.object().shape({

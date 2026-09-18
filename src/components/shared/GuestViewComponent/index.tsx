@@ -1,5 +1,6 @@
 import { styles } from '@/components/shared/GuestViewComponent/styles';
-import { CustomText, GradientBtn } from '@/components/shared/index';
+import CustomText from '../CustomText';
+import GradientBtn from '../GradientBtn';
 import { ScreenNames } from '@/navigation/ScreenNames';
 import { useScreenProps } from '@/navigation/use-screen-props';
 import { COLORS, hp } from '@/theme/index';
@@ -15,7 +16,7 @@ export default function GuestViewComponent() {
       <GradientBtn
         text={'Login'}
         onPress={() => navigation.navigate(ScreenNames.AuthStack, { screen: ScreenNames.Login })}
-        colors={[COLORS.primary, '#f08b5e']}
+        colors={[COLORS.primary, '#126B57']}
         leftIcon={<Icon name="check-circle-outline" size={hp(2.1)} color={COLORS.white} />}
       />
     </View>

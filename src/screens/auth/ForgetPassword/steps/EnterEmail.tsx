@@ -7,7 +7,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import * as Animatable from 'react-native-animatable';
+import * as Animatable from '@/components/shared/Motion';
 import Toast from 'react-native-toast-message';
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -39,7 +39,7 @@ const EnterEmail: React.FC<{ onNext: (email: string) => void; navigation: any }>
     >
       <Animatable.View animation="slideInUp" duration={700} style={styles.card}>
         <View style={styles.cardIconBox}>
-          <Icon name="lock-reset" size={hp(4)} color={COLORS.mainOrange} />
+          <Icon name="lock-reset" size={hp(4)} color={COLORS.primary} />
         </View>
         <CustomText style={styles.title}>نسيت كلمة المرور؟</CustomText>
         <CustomText style={styles.subtitle}>
@@ -110,14 +110,14 @@ const styles = StyleSheet.create({
   },
 
   actionBtn: {
-    backgroundColor: COLORS.mainOrange,
+    backgroundColor: COLORS.primary,
     borderRadius: hp(1.5),
     height: hp(7.5),
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: hp(2),
     marginBottom: hp(3),
-    shadowColor: COLORS.mainOrange,
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
     shadowRadius: 15,
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   bottomLinkHighlight: {
     fontSize: hp(1.6),
     fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
   },
 });
 

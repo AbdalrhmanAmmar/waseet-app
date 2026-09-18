@@ -5,7 +5,7 @@ import { COLORS, FONTS, hp } from '@/theme/index';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import * as Animatable from 'react-native-animatable';
+import * as Animatable from '@/components/shared/Motion';
 
 import { newPasswordSchema } from '@/schemas/auth';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -51,7 +51,7 @@ const NewPassword: React.FC<{ onNext: () => void; email: string; otp: string }> 
     >
       <Animatable.View animation="slideInRight" duration={700} style={styles.card}>
         <View style={styles.cardIconBox}>
-          <Icon name="lock-reset" size={hp(4)} color={COLORS.mainOrange} />
+          <Icon name="lock-reset" size={hp(4)} color={COLORS.primary} />
         </View>
         <CustomText style={styles.title}>كلمة مرور جديدة</CustomText>
         <CustomText style={styles.subtitle}>
@@ -169,14 +169,14 @@ const styles = StyleSheet.create({
   matchText: { fontSize: hp(1.6), fontFamily: FONTS.fontFamilySemiBold },
 
   actionBtn: {
-    backgroundColor: COLORS.mainOrange,
+    backgroundColor: COLORS.primary,
     borderRadius: hp(1.5),
     height: hp(7.5),
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: hp(2),
     marginBottom: hp(3),
-    shadowColor: COLORS.mainOrange,
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
     shadowRadius: 15,

@@ -1,6 +1,9 @@
 import { errorMessage } from '@/api/normalizers';
-import { COLORS } from '@/theme';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import Icon from '@expo/vector-icons/MaterialCommunityIcons';
+import Text from './CustomText';
+import { Button } from './ui';
+import { palette as p } from '@/theme/tokens';
 export function AsyncState({
   loading,
   error,
@@ -14,22 +17,32 @@ export function AsyncState({
 }) {
   if (!loading && !error && !empty) return null;
   return (
-    <View style={styles.box}>
+    <View style={s.box}>
       {loading ? (
-        <ActivityIndicator color={COLORS.primary} />
+        <ActivityIndicator color={p.primary} />
       ) : (
-        <Text style={styles.text}>{error ? errorMessage(error) : empty}</Text>
+        <>
+          <View style={s.icon}>
+            <Icon name={error ? 'wifi-alert' : 'tray-arrow-down'} size={28} color={p.muted} />
+          </View>
+          <Text accessibilityRole={error ? 'alert' : undefined} style={s.text}>
+            {error ? errorMessage(error) : empty}
+          </Text>
+        </>
       )}
-      {!!error && onRetry && (
-        <Pressable accessibilityRole="button" onPress={onRetry}>
-          <Text style={styles.retry}>إعادة المحاولة</Text>
-        </Pressable>
-      )}
+      {!!error && onRetry && <Button title="إعادة المحاولة" onPress={onRetry} secondary />}
     </View>
   );
 }
-const styles = StyleSheet.create({
-  box: { padding: 24, alignItems: 'center', gap: 12 },
-  text: { textAlign: 'center', color: '#525C67' },
-  retry: { color: COLORS.primary, padding: 10 },
+const s = StyleSheet.create({
+  box: { padding: 24, alignItems: 'center', gap: 14 },
+  icon: {
+    width: 58,
+    height: 58,
+    borderRadius: 20,
+    backgroundColor: p.soft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  text: { textAlign: 'center', color: p.muted },
 });

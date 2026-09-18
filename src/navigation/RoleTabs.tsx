@@ -1,13 +1,36 @@
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { Tabs } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export function RoleTabs({ commerce }: { commerce: boolean }) {
+  const insets = useSafeAreaInsets();
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#E65317',
-        tabBarStyle: { backgroundColor: '#fff' },
-        tabBarLabelStyle: { fontFamily: 'Montserrat-Regular' },
+        tabBarActiveTintColor: '#147D64',
+        tabBarInactiveTintColor: '#75867E',
+        tabBarHideOnKeyboard: true,
+        tabBarActiveBackgroundColor: '#EDF6F1',
+        tabBarStyle: {
+          backgroundColor: '#fff',
+          borderTopColor: '#DFE8E1',
+          elevation: 0,
+          height: 68 + insets.bottom,
+          paddingBottom: insets.bottom,
+          paddingTop: 4,
+        },
+        tabBarItemStyle: {
+          borderRadius: 14,
+          marginHorizontal: 3,
+          marginVertical: 2,
+          paddingVertical: 4,
+        },
+        tabBarLabelStyle: {
+          fontFamily: 'Tajawal-Medium',
+          fontSize: 11,
+          lineHeight: 18,
+          marginTop: 2,
+        },
       }}
     >
       <Tabs.Screen

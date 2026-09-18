@@ -13,20 +13,26 @@
     },
     "android": {
       "predictiveBackGestureEnabled": false,
-      "package": "com.selling"
+      "package": "com.selling",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png",
+        "backgroundColor": "#F8FAF7"
+      }
     },
     "web": {
       "output": "single",
-      "favicon": "./assets/images/app-icon.png"
+      "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FFF3EE",
-          "image": "./assets/images/LogoSelling.png",
-          "imageWidth": 160
+          "backgroundColor": "#F8FAF7",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain"
         }
       ],
       "expo-secure-store",

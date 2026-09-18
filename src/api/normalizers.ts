@@ -1,4 +1,5 @@
 import type { Order, Page, PageParams, Product } from '@/types/models';
+import { mediaUrl, optionalPrice } from '@/domain/product-details';
 type Raw = Record<string, any>;
 export function unwrap(value: unknown): any {
   const body = value as Raw | null;
@@ -43,17 +44,27 @@ export function product(item: Raw): Product {
       item.product_title ??
       item.product_name ??
       'منتج',
-    price: Number(
-      item.effectiveExpectedSellPrice ??
-        item.expectedSellPrice ??
-        item.merchantSellPrice ??
-        item.price ??
-        item.product_price ??
-        0,
-    ),
+    price:
+      optionalPrice(item.effectiveExpectedSellPrice) ??
+      optionalPrice(item.expectedSellPrice) ??
+      optionalPrice(item.merchantSellPrice) ??
+      optionalPrice(item.price) ??
+      optionalPrice(item.product_price) ??
+      Number.NaN,
+    merchantSellPrice: optionalPrice(item.merchantSellPrice) ?? undefined,
+    effectiveExpectedSellPrice: optionalPrice(item.effectiveExpectedSellPrice) ?? undefined,
     category: item.categoryName ?? item.category ?? 'عام',
-    stock: Number(item.quantity ?? item.stock ?? 0),
-    image: item.imageUrl ?? item.imagePath ?? item.image ?? item.product_image,
+    categoryProvided: item.categoryProvided ?? !!(item.categoryName ?? item.category),
+    stockKnown: item.stockKnown ?? (item.quantity != null || item.stock != null),
+    expectedSellPrice: optionalPrice(item.expectedSellPrice),
+    videoUrl: mediaUrl(item.videoUrl),
+    description:
+      typeof (item.description ?? item.productDescription) === 'string'
+        ? (item.description ?? item.productDescription)
+        : undefined,
+    updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : undefined,
+    stock: Number(item.stock ?? item.quantity ?? 0),
+    image: mediaUrl(item.imageUrl ?? item.imagePath ?? item.image ?? item.product_image),
   };
 }
 export function order(item: Raw): Order {

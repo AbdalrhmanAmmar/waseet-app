@@ -1,11 +1,11 @@
-import { CustomText, ScreenContainer } from '@/components/shared/index';
+import { CustomText, HeaderComponent, ScreenContainer } from '@/components/shared/index';
 import { styles } from '@/screens/shared/ContactUs/styles';
 import { COLORS, CONTACT_ITEMS, hp, Images } from '@/theme/index';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import React from 'react';
 import { Image, Linking, ScrollView, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
-export default function ContactUs({ navigation }: { navigation: any }) {
+export default function ContactUs() {
   const handleOpen = async (url: string) => {
     try {
       const supported = await Linking.canOpenURL(url);
@@ -34,21 +34,13 @@ export default function ContactUs({ navigation }: { navigation: any }) {
 
   return (
     <ScreenContainer>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Icon name="arrow-left" size={hp(2.6)} color={COLORS.charcoal} />
-        </TouchableOpacity>
-        <CustomText style={styles.headerTitle}>تواصل معنا</CustomText>
-        <View style={{ width: hp(4.2) }} />
-      </View>
-
+      <HeaderComponent title="تواصل معنا" />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Hero */}
         <View style={styles.hero}>
           <View style={styles.heroIcon}>
             <Image
-              source={Images.logoSelling}
+              source={Images.brandLogo}
               style={{ width: hp(8.2), height: hp(8.2) }}
               resizeMode="contain"
             />
@@ -78,7 +70,7 @@ export default function ContactUs({ navigation }: { navigation: any }) {
               <CustomText style={styles.contactLabel}>{item.label}</CustomText>
               <CustomText style={styles.contactSubtitle}>{item.subtitle}</CustomText>
             </View>
-            <Icon name="chevron-right" size={hp(2.4)} color="#CCC" />
+            <Icon name="chevron-left" size={hp(2.4)} color="#CCC" />
           </TouchableOpacity>
         ))}
 

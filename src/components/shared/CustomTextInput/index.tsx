@@ -1,6 +1,6 @@
 import { styles } from '@/components/shared/CustomTextInput/styles';
 import { COLORS, hp } from '@/theme/index';
-import React from 'react';
+import React, { useState } from 'react';
 import { Control, Controller, FieldValues, Path } from 'react-hook-form';
 import {
   Text,
@@ -60,8 +60,15 @@ const CustomTextInput = <
   error: manualError,
   ...rest
 }: CustomTextInputProps<T, C, V>) => {
+  const [focused, setFocused] = useState(false);
   const Wrapper = onPress ? TouchableOpacity : View;
-  const renderInput = (inputValue: any, onInputChange: any, onInputBlur: any, error: any) => (
+  const renderInput = (
+    inputValue: any,
+    onInputChange: any,
+    onInputBlur: any,
+    error: any,
+    inputRef?: React.Ref<TextInput>,
+  ) => (
     <View style={[styles.container, containerStyle]}>
       {label && (
         <View
@@ -79,12 +86,25 @@ const CustomTextInput = <
       )}
       <Wrapper {...(onPress ? { onPress, activeOpacity: 0.7 } : {})}>
         <View
-          style={[styles.inputWrapper, style, error && styles.inputError]}
+          style={[
+            styles.inputWrapper,
+            focused && styles.focused,
+            style,
+            error && styles.inputError,
+          ]}
           pointerEvents={onPress ? 'none' : 'auto'}
         >
           {leftComponent}
           <TextInput
-            style={[styles.input, multiline && styles.textArea, inputStyle]}
+            ref={inputRef}
+            style={[
+              styles.input,
+              (keyboardType === 'email-address' ||
+                keyboardType === 'phone-pad' ||
+                secureTextEntry) && { textAlign: 'left', writingDirection: 'ltr' },
+              multiline && styles.textArea,
+              inputStyle,
+            ]}
             placeholder={placeholder}
             placeholderTextColor={COLORS.gray6 || '#999'}
             keyboardType={keyboardType}
@@ -93,8 +113,16 @@ const CustomTextInput = <
             numberOfLines={numberOfLines}
             value={inputValue}
             onChangeText={onInputChange}
-            onBlur={onInputBlur}
             {...rest}
+            accessibilityLabel={rest.accessibilityLabel ?? label ?? placeholder}
+            onFocus={(event) => {
+              setFocused(true);
+              rest.onFocus?.(event);
+            }}
+            onBlur={(event) => {
+              setFocused(false);
+              onInputBlur?.(event);
+            }}
           />
           {rightComponent}
         </View>
@@ -105,13 +133,17 @@ const CustomTextInput = <
             fontSize: hp(1.4),
             color: '#757D85',
             marginTop: hp(0.8),
-            fontFamily: 'Montserrat-Regular',
+            fontFamily: 'Tajawal-Regular',
           }}
         >
           {footerText}
         </Text>
       )}
-      {error && <Text style={[styles.errorText, errorStyle]}>{error.message || error}</Text>}
+      {error && (
+        <Text accessibilityRole="alert" style={[styles.errorText, errorStyle]}>
+          {error.message || error}
+        </Text>
+      )}
     </View>
   );
 
@@ -121,8 +153,8 @@ const CustomTextInput = <
         control={control}
         name={name}
         rules={rules}
-        render={({ field: { onChange, onBlur, value }, fieldState: { error } }) =>
-          renderInput(value, onChange, onBlur, error)
+        render={({ field: { onChange, onBlur, value, ref }, fieldState: { error } }) =>
+          renderInput(value, onChange, onBlur, error, ref)
         }
       />
     );

@@ -58,16 +58,16 @@ export const styles = StyleSheet.create({
   forgotText: {
     fontSize: hp(1.6),
     fontFamily: FONTS.fontFamilyMedium,
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
   },
   loginBtn: {
-    backgroundColor: COLORS.mainOrange,
+    backgroundColor: COLORS.primary,
     borderRadius: hp(1.5),
     height: hp(7),
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: hp(2),
-    shadowColor: COLORS.mainOrange,
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -94,6 +94,6 @@ export const styles = StyleSheet.create({
   signupLink: {
     fontSize: hp(1.6),
     fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
   },
 });

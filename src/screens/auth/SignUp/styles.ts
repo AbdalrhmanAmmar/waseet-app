@@ -54,11 +54,11 @@ export const styles = StyleSheet.create({
     width: hp(8.5),
     height: hp(8.5),
     borderRadius: hp(2.2),
-    backgroundColor: '#FFF5F2',
+    backgroundColor: '#EDF6F1',
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,
-    shadowColor: COLORS.mainOrange,
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 10,
@@ -110,7 +110,7 @@ export const styles = StyleSheet.create({
     width: hp(3.4),
     height: hp(3.4),
     borderRadius: hp(1),
-    backgroundColor: '#FFF7ED',
+    backgroundColor: '#EDF6F1',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -139,8 +139,8 @@ export const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   userTypeCardActive: {
-    borderColor: COLORS.mainOrange,
-    backgroundColor: '#FFF7ED',
+    borderColor: COLORS.primary,
+    backgroundColor: '#EDF6F1',
   },
   userTypeIcon: {
     marginRight: 6,
@@ -152,7 +152,7 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   userTypeTitleActive: {
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
   },
   userTypeCheck: {
     marginLeft: 4,
@@ -185,7 +185,7 @@ export const styles = StyleSheet.create({
 
   // Submit Button
   submitBtn: {
-    backgroundColor: COLORS.mainOrange,
+    backgroundColor: COLORS.primary,
     borderRadius: hp(1.6),
     height: hp(6.5),
     justifyContent: 'center',
@@ -194,7 +194,7 @@ export const styles = StyleSheet.create({
     gap: 8,
     marginTop: hp(1),
     marginBottom: hp(2.5),
-    shadowColor: COLORS.mainOrange,
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
@@ -226,7 +226,7 @@ export const styles = StyleSheet.create({
   loginLink: {
     fontSize: hp(1.5),
     fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
   },
 
   // Modals
@@ -261,7 +261,7 @@ export const styles = StyleSheet.create({
   },
   confirmText: {
     fontSize: hp(1.6),
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
     fontFamily: FONTS.fontFamilyBold,
   },
 
@@ -284,8 +284,8 @@ export const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   cityItemSelected: {
-    backgroundColor: '#FFF7ED',
-    borderColor: COLORS.mainOrange,
+    backgroundColor: '#EDF6F1',
+    borderColor: COLORS.primary,
   },
   cityIconBox: {
     width: hp(4.2),
@@ -298,8 +298,8 @@ export const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   cityIconBoxSelected: {
-    backgroundColor: '#FFF0EB',
-    borderColor: '#FFD4C5',
+    backgroundColor: '#EDF6F1',
+    borderColor: '#C9E3D5',
   },
   cityName: {
     fontSize: hp(1.6),
@@ -307,7 +307,7 @@ export const styles = StyleSheet.create({
     color: COLORS.charcoal,
   },
   cityNameSelected: {
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
   },
 
   inputIcon: {

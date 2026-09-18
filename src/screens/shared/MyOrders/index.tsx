@@ -1,6 +1,6 @@
-import { CustomText, HeaderComponent, ScreenContainer } from '@/components/shared';
+import { CustomText, HeaderComponent, ScreenContainer, OrderCard } from '@/components/shared';
 import { AsyncState } from '@/components/shared/AsyncState';
-import { orderStatuses, statusLabel } from '@/components/shared/orders/statuses';
+import { orderStatuses } from '@/components/shared/orders/statuses';
 import type { useOrderList } from '@/hooks/shared/use-order-list';
 import type { ScreenProps } from '@/navigation/use-screen-props';
 import { useMemo, useState } from 'react';
@@ -82,18 +82,10 @@ export default function OrdersScreen({ navigation, title, controller, summary }:
           ) : null
         }
         renderItem={({ item }) => (
-          <Pressable
-            style={styles.card}
+          <OrderCard
+            order={item}
             onPress={() => navigation.navigate('OrderDetails', { orderId: item.orderId })}
-          >
-            <CustomText style={styles.title}>طلب #{item.orderId}</CustomText>
-            <CustomText>{item.customerName}</CustomText>
-            <CustomText>{statusLabel(item.status)}</CustomText>
-            <CustomText>{item.orderTotalUSD} USD</CustomText>
-            {!!item.createdAt && (
-              <CustomText>{new Date(item.createdAt).toLocaleDateString('ar-EG')}</CustomText>
-            )}
-          </Pressable>
+          />
         )}
       />
     </ScreenContainer>
@@ -106,11 +98,15 @@ const styles = StyleSheet.create({
     padding: 14,
     backgroundColor: '#fff',
     textAlign: 'right',
+    fontFamily: 'Tajawal-Regular',
+    fontSize: 15,
+    borderWidth: 1,
+    borderColor: '#DFE8E1',
   },
   filters: { padding: 16, gap: 8 },
   pill: { padding: 10, borderRadius: 16, backgroundColor: '#fff' },
-  selected: { backgroundColor: '#FADCCC' },
-  list: { padding: 16 },
+  selected: { backgroundColor: '#DAEDE2' },
+  list: { padding: 16, paddingBottom: 32 },
   card: { padding: 20, borderRadius: 16, backgroundColor: '#fff', marginBottom: 12, gap: 8 },
-  title: { fontWeight: 'bold', color: '#E65317' },
+  title: { fontWeight: 'bold', color: '#147D64' },
 });

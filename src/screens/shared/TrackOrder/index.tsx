@@ -3,7 +3,10 @@ import { CustomText, HeaderComponent, ScreenContainer } from '@/components/share
 import { AsyncState } from '@/components/shared/AsyncState';
 import { statusLabel } from '@/components/shared/orders/statuses';
 import type { ScreenProps } from '@/navigation/use-screen-props';
-import { Alert, Linking, Pressable, ScrollView, View } from 'react-native';
+import Icon from '@expo/vector-icons/MaterialCommunityIcons';
+import { Card, Button, ui } from '@/components/shared/ui';
+import { palette } from '@/theme/tokens';
+import { Alert, Linking, ScrollView, View } from 'react-native';
 export default function TrackOrder({ route }: ScreenProps) {
   const id = route.params.orderId ?? route.params.id;
   const order = useOrderQuery(String(id ?? ''), { skip: !id });
@@ -22,34 +25,39 @@ export default function TrackOrder({ route }: ScreenProps) {
             order.refetch();
           }}
         />
-        {order.data && <CustomText>الحالة الحالية: {statusLabel(order.data.status)}</CustomText>}
+        {order.data && (
+          <CustomText style={ui.title}>الحالة الحالية: {statusLabel(order.data.status)}</CustomText>
+        )}
         {history.currentData?.map((item, index) => (
-          <View
-            key={String(item.id ?? index)}
-            style={{ padding: 20, borderRadius: 14, backgroundColor: '#fff', gap: 8 }}
-          >
-            <CustomText>{statusLabel(item.toStatus ?? item.status ?? item.state ?? '')}</CustomText>
+          <Card key={String(item.id ?? index)} style={{ gap: 8 }}>
+            <View style={ui.section}>
+              <CustomText style={ui.link}>
+                {statusLabel(item.toStatus ?? item.status ?? item.state ?? '')}
+              </CustomText>
+              <Icon name="circle-outline" size={20} color={palette.primary} />
+            </View>
             {!!(item.note ?? item.notes) && <CustomText>{item.note ?? item.notes}</CustomText>}
             {!!(item.changedAt ?? item.createdAt) && (
               <CustomText>
                 {new Date(item.changedAt ?? item.createdAt).toLocaleString('ar-EG')}
               </CustomText>
             )}
-          </View>
+          </Card>
         ))}
         {!history.isLoading && !history.error && !history.data?.length && (
           <AsyncState empty="لا يوجد سجل لحالة الطلب حتى الآن" />
         )}
         {!!phone && (
-          <Pressable
+          <Button
+            title="الاتصال بمندوب التوصيل"
+            icon="phone-outline"
+            secondary
             onPress={() =>
               Linking.openURL(`tel:${String(phone).replace(/[^+\d]/g, '')}`).catch(() =>
                 Alert.alert('تعذر فتح الاتصال'),
               )
             }
-          >
-            <CustomText>الاتصال بمندوب التوصيل</CustomText>
-          </Pressable>
+          />
         )}
       </ScrollView>
     </ScreenContainer>

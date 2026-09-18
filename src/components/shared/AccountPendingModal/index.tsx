@@ -28,7 +28,7 @@ const AccountPendingModal: React.FC = () => {
         <StatusBar backgroundColor="rgba(0,0,0,0.65)" barStyle="light-content" />
         <View style={styles.card}>
           <View style={styles.iconContainer}>
-            <Icon name="account-clock-outline" size={hp(5.5)} color={COLORS.mainOrange} />
+            <Icon name="account-clock-outline" size={hp(5.5)} color={COLORS.primary} />
           </View>
 
           <View style={styles.badge}>

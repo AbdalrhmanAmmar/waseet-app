@@ -22,13 +22,9 @@ export { ErrorBoundary } from 'expo-router';
 function Navigation() {
   const { ready, userData, restricted } = useSession();
   const [fontsLoaded, fontError] = useFonts({
-    'Montserrat-Regular': require('../../assets/fonts/Montserrat-Regular.ttf'),
-    'Montserrat-Medium': require('../../assets/fonts/Montserrat-Medium.ttf'),
-    'Montserrat-Bold': require('../../assets/fonts/Montserrat-Bold.ttf'),
-    'Montserrat-SemiBold': require('../../assets/fonts/Montserrat-SemiBold.ttf'),
-    'Montserrat-Light': require('../../assets/fonts/Montserrat-Light.ttf'),
-    'Montserrat-Black': require('../../assets/fonts/Montserrat-Black.ttf'),
-    'Montserrat-Thin': require('../../assets/fonts/Montserrat-Thin.ttf'),
+    'Tajawal-Regular': require('../../assets/fonts/tajawal/Tajawal-Regular.ttf'),
+    'Tajawal-Medium': require('../../assets/fonts/tajawal/Tajawal-Medium.ttf'),
+    'Tajawal-Bold': require('../../assets/fonts/tajawal/Tajawal-Bold.ttf'),
   });
   useEffect(() => {
     void store.dispatch(bootstrapSession());

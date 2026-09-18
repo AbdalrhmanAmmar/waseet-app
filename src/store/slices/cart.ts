@@ -1,5 +1,5 @@
 import { product } from '@/api/normalizers';
-import type { CartItem } from '@/types/models';
+import type { CartItem, Product } from '@/types/models';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 const initialState = { userCart: { data: [] as CartItem[], totalPrice: 0 } };
 function total(items: CartItem[]) {
@@ -11,6 +11,32 @@ const slice = createSlice({
   name: 'cart',
   initialState,
   reducers: {
+    setCartProductLocal(
+      state,
+      { payload }: PayloadAction<{ product: Product; quantity: number; sellingPrice: number }>,
+    ) {
+      const { quantity, sellingPrice } = payload;
+      const item = payload.product;
+      if (item.productCode == null || !Number.isInteger(quantity) || quantity < 0) return;
+      const index = state.userCart.data.findIndex(
+        (row) => String(row.productCode) === String(item.productCode),
+      );
+      if (quantity === 0) {
+        if (index >= 0) state.userCart.data.splice(index, 1);
+      } else {
+        if (
+          !Number.isFinite(item.stock) ||
+          quantity > item.stock ||
+          !Number.isFinite(sellingPrice) ||
+          sellingPrice < 0
+        )
+          return;
+        const row = { ...item, cart_id: String(item.productCode), quantity, sellingPrice };
+        if (index >= 0) state.userCart.data[index] = row;
+        else state.userCart.data.push(row);
+      }
+      state.userCart.totalPrice = total(state.userCart.data);
+    },
     addToCartLocal(state, { payload }: PayloadAction<Record<string, any>>) {
       const item = product(payload);
       if (item.id == null || !Number.isFinite(item.stock) || item.stock <= 0) return;
@@ -55,6 +81,7 @@ const slice = createSlice({
   },
 });
 export const {
+  setCartProductLocal,
   addToCartLocal,
   updateCartQuantityLocal,
   updateCartItemPriceLocal,

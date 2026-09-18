@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     marginBottom: hp(2),
     textAlign: 'center',
-    fontFamily: 'Montserrat-Bold',
+    fontFamily: 'Tajawal-Bold',
   },
   description: {
     fontSize: hp(1.8),
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: hp(2.5),
     marginBottom: hp(5),
-    fontFamily: 'Montserrat-Regular',
+    fontFamily: 'Tajawal-Regular',
   },
   retryButton: {
     backgroundColor: COLORS.primary,
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: hp(2),
     fontWeight: 'bold',
-    fontFamily: 'Montserrat-Bold',
+    fontFamily: 'Tajawal-Bold',
   },
 });
 

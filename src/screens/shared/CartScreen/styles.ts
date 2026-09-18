@@ -8,7 +8,7 @@ export const styles = StyleSheet.create({
   clearAll: {
     fontSize: hp(1.2),
     fontFamily: FONTS.fontFamilySemiBold,
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
   },
   scroll: {
     paddingHorizontal: hp(1.9),
@@ -94,7 +94,7 @@ export const styles = StyleSheet.create({
     paddingVertical: 0,
     fontSize: hp(1.5),
     fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
   },
   currencyLabel: {
     fontSize: hp(1.2),
@@ -170,6 +170,6 @@ export const styles = StyleSheet.create({
   grandTotalValue: {
     fontSize: hp(2.4),
     fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
   },
 });

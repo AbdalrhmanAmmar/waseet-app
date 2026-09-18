@@ -1,123 +1,138 @@
-import { styles } from '@/components/shared/ProductCard/styles';
-import { ScreenNames } from '@/navigation/ScreenNames';
-import { useScreenProps } from '@/navigation/use-screen-props';
-import { COLORS, hp, Images } from '@/theme/index';
+import { useState } from 'react';
+import { Image, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
-import { Image, Text, TouchableOpacity, View } from 'react-native';
-import * as Animatable from 'react-native-animatable';
-import { useSelector } from 'react-redux';
-
-const ProductCard = ({ item, index, onPress, onAddToCart, style }: any) => {
-  const { navigation } = useScreenProps();
-  const isFree = !item.price || parseFloat(item.price) === 0;
-  const { userData } = useSelector((state: any) => state.AuthSlice);
-  const { userCart } = useSelector((state: any) => state.cart);
-
-  const itemCode = String(item.productCode || item.id || item.cart_id);
-  const isAdded = (userCart?.data || []).some(
-    (c: any) => String(c.productCode || c.id || c.cart_id) === itemCode,
+import Text from '../CustomText';
+import { useAppSelector } from '@/hooks/shared/use-store';
+import { palette as p, typography as t } from '@/theme/tokens';
+import Images from '@/theme/images';
+import type { Product } from '@/types/models';
+import { suggestedPrice } from '@/domain/product-details';
+export default function ProductCard({
+  item,
+  onPress,
+  onAddToCart,
+  style,
+}: {
+  item: Product;
+  index?: number;
+  onPress: () => void;
+  onAddToCart?: () => void;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const [brokenImage, setBrokenImage] = useState(false);
+  const added = useAppSelector((state) =>
+    state.cart.userCart.data.some((row) => String(row.productCode) === String(item.productCode)),
   );
-
-  const isOutOfStock = item.quantity === 0 || item.stock === 0;
-
-  const handleAddToCart = () => {
-    if (userData?.isGuest) {
-      navigation.navigate(ScreenNames.AuthStack, { screen: ScreenNames.Login });
-      return;
-    }
-    if (onAddToCart) {
-      onAddToCart();
-    }
-  };
-
-  const displayPrice =
-    item.effectiveExpectedSellPrice !== undefined ? item.effectiveExpectedSellPrice : item.price;
-
+  const out = item.stock <= 0;
+  const price = item.effectiveExpectedSellPrice ?? item.price;
   return (
-    <Animatable.View
-      animation="fadeInUp"
-      delay={index * 100}
-      duration={600}
-      style={[styles.card, style]}
-    >
-      <TouchableOpacity activeOpacity={0.9} onPress={onPress}>
-        <View style={styles.imageContainer}>
+    <View style={[s.card, style]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`تفاصيل ${item.title}`}
+        onPress={onPress}
+      >
+        <View style={s.imageBox}>
           <Image
-            source={item.image ? { uri: item.image } : Images.logoSelling}
-            style={styles.image}
-            resizeMode="cover"
+            source={item.image && !brokenImage ? { uri: item.image } : Images.brandLogo}
+            onError={() => setBrokenImage(true)}
+            style={[s.image, (!item.image || brokenImage) && s.placeholder]}
+            resizeMode="contain"
           />
-
-          {/* Out of Stock Badge */}
-          {isOutOfStock && (
-            <View
-              style={[
-                styles.accessBadge,
-                { right: hp(0.9), left: undefined, backgroundColor: '#EF4444' },
-              ]}
-            >
-              <Icon name="alert-circle-outline" size={hp(1.2)} color="#FFF" />
-              <Text style={styles.accessBadgeText}>نفدت الكمية</Text>
-            </View>
-          )}
-
-          {/* Price Tag */}
-          {!isFree && (
-            <View style={styles.priceTag}>
-              <Text style={styles.priceText}>{displayPrice} $</Text>
+          {out && (
+            <View style={s.stockBadge}>
+              <Text style={s.stockText}>نفدت الكمية</Text>
             </View>
           )}
         </View>
-
-        <View style={styles.info}>
-          <Text style={styles.title} numberOfLines={1}>
+        <View style={s.info}>
+          <Text style={s.category} numberOfLines={1}>
+            {item.category}
+          </Text>
+          <Text style={s.title} numberOfLines={2}>
             {item.title}
           </Text>
-          <Text style={styles.author} numberOfLines={1}>
-            {item.author}
+          <Text style={s.label}>
+            {suggestedPrice(item) != null ? 'سعر البيع المقترح' : 'سعر البيع'}
           </Text>
-          <Text style={styles.desc} numberOfLines={2}>
-            {item.description || 'لا يوجد وصف لهذا المنتج.'}
+          <Text style={s.price}>
+            {Number.isFinite(price) ? price.toLocaleString('en-US') : 'غير محدد'}{' '}
+            <Text style={s.currency}>USD</Text>
           </Text>
-
-          {/* Price Area */}
-          <View style={styles.pricesContainer}>
-            <View style={styles.suggestedPriceRow}>
-              <Text style={styles.suggestedPriceLabel}>سعر البيع المقترح:</Text>
-              <Text style={styles.suggestedPriceValue}>
-                {item.effectiveExpectedSellPrice !== undefined &&
-                item.effectiveExpectedSellPrice !== null
-                  ? item.effectiveExpectedSellPrice
-                  : item.price}{' '}
-                $
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={[
-                styles.addBtn,
-                {
-                  backgroundColor: isAdded
-                    ? COLORS.mainOrange
-                    : isOutOfStock
-                      ? '#94A3B8'
-                      : COLORS.primary,
-                },
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel={`إضافة ${item.title} للسلة`}
-              disabled={isOutOfStock}
-              onPress={handleAddToCart}
-            >
-              <Icon name={isAdded ? 'cart-check' : 'plus'} size={hp(1.9)} color="#FFF" />
-            </TouchableOpacity>
-          </View>
         </View>
-      </TouchableOpacity>
-    </Animatable.View>
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`إضافة ${item.title} للسلة`}
+        accessibilityState={{ disabled: out }}
+        disabled={out}
+        onPress={onAddToCart}
+        style={({ pressed }) => [
+          s.add,
+          added && { backgroundColor: p.primary },
+          out && { opacity: 0.45 },
+          pressed && { opacity: 0.8 },
+        ]}
+      >
+        <Icon name={added ? 'cart-check' : 'plus'} color={added ? '#fff' : p.primary} size={18} />
+        <Text style={[s.addText, added && { color: '#fff' }]}>
+          {added ? 'أضف المزيد' : 'إضافة للسلة'}
+        </Text>
+      </Pressable>
+    </View>
   );
-};
-
-export default ProductCard;
+}
+const s = StyleSheet.create({
+  card: {
+    width: '48%',
+    backgroundColor: p.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: p.border,
+    overflow: 'hidden',
+    padding: 10,
+    gap: 12,
+  },
+  imageBox: {
+    borderRadius: 13,
+    backgroundColor: '#F2F5EF',
+    aspectRatio: 1.18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  image: { width: '100%', height: '100%' },
+  placeholder: { width: '52%', height: '65%', opacity: 0.9 },
+  stockBadge: {
+    position: 'absolute',
+    bottom: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    backgroundColor: '#FFF4EF',
+  },
+  stockText: { color: p.danger, fontSize: 11 },
+  info: { paddingTop: 10, gap: 3 },
+  category: { fontSize: 11, color: p.muted },
+  title: { fontFamily: t.bold, fontSize: 16, minHeight: 46, lineHeight: 23 },
+  label: { color: p.muted, fontSize: 11 },
+  price: {
+    fontSize: 22,
+    lineHeight: 30,
+    fontFamily: t.bold,
+    color: p.deep,
+    writingDirection: 'ltr',
+  },
+  currency: { fontSize: 11, color: p.muted },
+  add: {
+    marginTop: 'auto',
+    minHeight: 44,
+    borderRadius: 12,
+    backgroundColor: p.soft,
+    flexDirection: 'row-reverse',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+  },
+  addText: { color: p.primary, fontFamily: t.bold, fontSize: 13 },
+});

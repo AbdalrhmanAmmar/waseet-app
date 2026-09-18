@@ -33,8 +33,8 @@ export const styles = StyleSheet.create({
     borderColor: '#FFE0CC',
   },
   badge: {
-    backgroundColor: '#FFF5F2',
-    borderColor: COLORS.mainOrange,
+    backgroundColor: '#EDF6F1',
+    borderColor: COLORS.primary,
     borderWidth: 1,
     paddingHorizontal: wp(3),
     paddingVertical: hp(0.5),
@@ -42,7 +42,7 @@ export const styles = StyleSheet.create({
     marginBottom: hp(1.5),
   },
   badgeText: {
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
     fontSize: hp(1.5),
     fontFamily: FONTS.fontFamilyBold,
   },

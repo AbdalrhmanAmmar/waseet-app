@@ -1,9 +1,9 @@
 import styles from '@/components/shared/GradientBtn/styles';
 import LinearGradient from '@/components/shared/LinearGradient';
-import Loading from '@/components/shared/Loading/index';
-import { COLORS, PRIMARY_GRADIENT_END, PRIMARY_GRADIENT_START, wp } from '@/theme/index';
+
+import { COLORS, PRIMARY_GRADIENT_END, PRIMARY_GRADIENT_START } from '@/theme/index';
 import React from 'react';
-import { Text, TouchableOpacity } from 'react-native';
+import { ActivityIndicator, Text, TouchableOpacity } from 'react-native';
 
 type Props = {
   onPress: () => void;
@@ -21,7 +21,7 @@ type Props = {
 const GradientBtn = ({
   onPress,
   text,
-  colors = [COLORS.primary, '#f472b6'],
+  colors = [COLORS.primary, '#126B57'],
   containerStyle,
   textStyle,
   start = PRIMARY_GRADIENT_START,
@@ -39,13 +39,16 @@ const GradientBtn = ({
       style={[styles.container, containerStyle]}
     >
       <TouchableOpacity
-        style={styles.button}
+        accessibilityRole="button"
+        accessibilityLabel={text}
+        accessibilityState={{ disabled: disabled || isLoading, busy: isLoading }}
+        style={[styles.button, (disabled || isLoading) && { opacity: 0.6 }]}
         onPress={onPress}
         disabled={disabled || isLoading}
         activeOpacity={0.8}
       >
         {isLoading ? (
-          <Loading style={{ width: wp(2), height: wp(2), transform: [{ scale: 0.5 }] }} />
+          <ActivityIndicator color={COLORS.white} />
         ) : (
           <>
             {!!rightIcon && rightIcon}

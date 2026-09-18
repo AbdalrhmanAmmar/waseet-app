@@ -33,7 +33,7 @@ export const styles = StyleSheet.create({
     borderColor: '#FFEDD5',
   },
   avatarPlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  avatarText: { fontSize: hp(4), fontFamily: FONTS.fontFamilyBold, color: COLORS.mainOrange },
+  avatarText: { fontSize: hp(4), fontFamily: FONTS.fontFamilyBold, color: COLORS.primary },
 
   userName: {
     fontSize: hp(2.2),
@@ -59,13 +59,13 @@ export const styles = StyleSheet.create({
     paddingHorizontal: wp(3),
     paddingVertical: hp(0.4),
     borderRadius: hp(1),
-    backgroundColor: '#FFF7ED',
+    backgroundColor: '#EDF6F1',
     borderWidth: 1,
     borderColor: '#FFEDD5',
   },
   roleBadgeText: {
     fontSize: hp(1.3),
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
     fontFamily: FONTS.fontFamilyBold,
   },
   statusBadge: {
@@ -90,14 +90,14 @@ export const styles = StyleSheet.create({
     paddingHorizontal: wp(4),
     paddingVertical: hp(0.9),
     borderRadius: hp(2),
-    backgroundColor: '#FFF7ED',
+    backgroundColor: '#EDF6F1',
     borderWidth: 1,
     borderColor: '#FFEDD5',
   },
   editProfileCtaText: {
     fontSize: hp(1.4),
     fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
   },
 
   form: { padding: wp(4) },
@@ -114,7 +114,7 @@ export const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: hp(1.7),
     fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
     marginBottom: hp(1.5),
     textAlign: 'left',
   },

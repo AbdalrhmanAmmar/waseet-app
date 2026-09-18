@@ -1,240 +1,161 @@
-import { roleLabels } from '@/auth/roles';
-import { CustomText, HeaderComponent, ScreenContainer } from '@/components/shared/index';
-import { ScreenNames } from '@/navigation/ScreenNames';
-import { styles } from '@/screens/shared/ProfileScreen/styles';
-import { GetUserProfile, logout } from '@/store/slices/auth';
-import { COLORS, hp } from '@/theme/index';
+import { useCallback, useState } from 'react';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { RefreshControl, ScrollView, TouchableOpacity, View } from 'react-native';
-import * as Animatable from 'react-native-animatable';
-import { useDispatch, useSelector } from 'react-redux';
-
-export default function ProfileScreen({ navigation }: { navigation: any }) {
-  const dispatch: any = useDispatch();
-  const { userData } = useSelector((state: any) => state.AuthSlice);
+import { CustomText as Text, HeaderComponent, ScreenContainer } from '@/components/shared';
+import { Button, Card, ui } from '@/components/shared/ui';
+import { useSession } from '@/hooks/shared/use-session';
+import { useAppDispatch } from '@/hooks/shared/use-store';
+import { GetUserProfile, logout } from '@/store/slices/auth';
+import { roleLabels } from '@/auth/roles';
+import type { ScreenProps } from '@/navigation/use-screen-props';
+import { palette as p, typography as t } from '@/theme/tokens';
+export default function ProfileScreen({ navigation }: ScreenProps) {
+  const { userData, role } = useSession();
+  const dispatch = useAppDispatch();
   const [refreshing, setRefreshing] = useState(false);
-
-  const fetchProfile = useCallback(async () => {
-    const userId = userData?.userId || userData?.id;
-    if (userId) {
-      await dispatch(GetUserProfile(userId));
-    }
-  }, [dispatch, userData?.userId, userData?.id]);
-
+  const userId = userData?.userId;
+  const fetch = useCallback(async () => {
+    if (userId) await dispatch(GetUserProfile(userId));
+  }, [dispatch, userId]);
   useFocusEffect(
     useCallback(() => {
-      fetchProfile();
-    }, [fetchProfile]),
+      void fetch();
+    }, [fetch]),
   );
-
-  const onRefresh = async () => {
+  const refresh = async () => {
     setRefreshing(true);
-    await fetchProfile();
-    setRefreshing(false);
+    try {
+      await fetch();
+    } finally {
+      setRefreshing(false);
+    }
   };
-
-  const initials = userData?.firstName ? userData.firstName.charAt(0).toUpperCase() : 'U';
   const fullName =
     [userData?.firstName, userData?.secondName, userData?.lastName].filter(Boolean).join(' ') ||
-    'المستخدم';
-  const roleLabel = roleLabels[userData?.role as keyof typeof roleLabels] ?? 'مستخدم';
-  const statusLabel =
-    userData?.accountStatus === 'Approved' ? 'حساب مفعّل' : userData?.accountStatus || 'معتمد';
-
+    'حسابي';
+  const details = [
+    ['البريد الإلكتروني', userData?.email],
+    ['رقم الهاتف', userData?.phoneNumber],
+    ['الدولة', userData?.country],
+    ['العنوان', userData?.address],
+    ...(userData?.birthDate
+      ? [['تاريخ الميلاد', new Date(String(userData.birthDate)).toLocaleDateString('ar-EG')]]
+      : []),
+    ...(userData?.oliveryContactMobile
+      ? [['رقم تواصل التوصيل', userData.oliveryContactMobile]]
+      : []),
+    ...(userData?.cliqNumber ? [['رقم CliQ', userData.cliqNumber]] : []),
+  ];
   return (
-    <ScreenContainer backgroundColor="#F8FAFC">
+    <ScreenContainer>
       <HeaderComponent
-        title="الملف الشخصي"
+        title="حسابي"
+        showBack={false}
         rightComponent={
-          <TouchableOpacity
-            onPress={() => navigation.navigate(ScreenNames.EditProfileScreen)}
-            style={{ padding: 5 }}
-            activeOpacity={0.7}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="فتح القائمة"
+            onPress={() => navigation.navigate('MenuScreen')}
+            style={{ padding: 8 }}
           >
-            <Icon name="account-edit-outline" size={hp(3)} color={COLORS.mainOrange} />
-          </TouchableOpacity>
+            <Icon name="menu" size={24} color={p.ink} />
+          </Pressable>
         }
       />
-
       <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
+        contentContainerStyle={ui.page}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[COLORS.mainOrange]}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={p.primary} />
         }
       >
-        <TouchableOpacity
-          onPress={() => navigation.navigate(ScreenNames.MenuStack)}
-          style={{ padding: 18, backgroundColor: '#fff', borderRadius: 14, marginBottom: 16 }}
-        >
-          <CustomText>القائمة • الإشعارات والمساعدة</CustomText>
-        </TouchableOpacity>
-        {/* Avatar Section */}
-        <Animatable.View animation="fadeIn" duration={800} style={styles.avatarSection}>
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatarPlaceholder}>
-              <CustomText style={styles.avatarText}>{initials}</CustomText>
-            </View>
+        <View style={s.hero}>
+          <View style={s.avatar}>
+            <Text style={s.initial}>{userData?.firstName?.[0] || 'و'}</Text>
           </View>
-          <CustomText style={styles.userName}>{fullName}</CustomText>
-          <CustomText style={styles.userRole}>{userData?.email || 'لا يوجد بريد مسجل'}</CustomText>
-
-          {/* Role & Status Badges */}
-          <View style={styles.badgesRow}>
-            <View style={styles.roleBadge}>
-              <CustomText style={styles.roleBadgeText}>{roleLabel}</CustomText>
-            </View>
-            <View style={styles.statusBadge}>
-              <CustomText style={styles.statusBadgeText}>✓ {statusLabel}</CustomText>
-            </View>
-            {userData?.userId ? (
-              <View
-                style={[styles.roleBadge, { backgroundColor: '#F1F5F9', borderColor: '#E2E8F0' }]}
-              >
-                <CustomText style={[styles.roleBadgeText, { color: '#64748B' }]}>
-                  #{userData.userId}
-                </CustomText>
-              </View>
-            ) : null}
+          <Text style={s.name}>{fullName}</Text>
+          <View style={s.badge}>
+            <Text style={ui.link}>{role ? roleLabels[role] : 'مستخدم'}</Text>
           </View>
-
-          {/* Edit Profile CTA Button */}
-          <TouchableOpacity
-            style={styles.editProfileCta}
-            activeOpacity={0.8}
-            onPress={() => navigation.navigate(ScreenNames.EditProfileScreen)}
-          >
-            <Icon name="pencil" size={hp(1.8)} color={COLORS.mainOrange} />
-            <CustomText style={styles.editProfileCtaText}>تعديل الملف الشخصي</CustomText>
-          </TouchableOpacity>
-        </Animatable.View>
-
-        <View style={styles.form}>
-          {/* Basic Info */}
-          <View style={styles.infoBox}>
-            <CustomText style={styles.sectionTitle}>المعلومات الأساسية</CustomText>
-
-            <View style={styles.infoRow}>
-              <Icon name="account" size={hp(2.2)} color={COLORS.gray} />
-              <View style={styles.infoCol}>
-                <CustomText style={styles.infoLabel}>الاسم الكامل</CustomText>
-                <CustomText style={styles.infoValue}>{fullName}</CustomText>
-              </View>
-            </View>
-
-            {userData?.birthDate ? (
-              <View style={styles.infoRow}>
-                <Icon name="calendar" size={hp(2.2)} color={COLORS.gray} />
-                <View style={styles.infoCol}>
-                  <CustomText style={styles.infoLabel}>تاريخ الميلاد</CustomText>
-                  <CustomText style={styles.infoValue}>
-                    {new Date(userData.birthDate).toLocaleDateString('ar-EG')}
-                  </CustomText>
-                </View>
-              </View>
-            ) : null}
-          </View>
-
-          {/* Contact Info */}
-          <View style={[styles.infoBox, { marginTop: hp(2) }]}>
-            <CustomText style={styles.sectionTitle}>معلومات الاتصال</CustomText>
-
-            <View style={styles.infoRow}>
-              <Icon name="email" size={hp(2.2)} color={COLORS.gray} />
-              <View style={styles.infoCol}>
-                <CustomText style={styles.infoLabel}>البريد الإلكتروني</CustomText>
-                <CustomText style={styles.infoValue}>{userData?.email || '—'}</CustomText>
-              </View>
-            </View>
-
-            <View style={styles.infoRow}>
-              <Icon name="phone" size={hp(2.2)} color={COLORS.gray} />
-              <View style={styles.infoCol}>
-                <CustomText style={styles.infoLabel}>رقم الهاتف</CustomText>
-                <CustomText style={styles.infoValue}>{userData?.phoneNumber || '—'}</CustomText>
-              </View>
-            </View>
-
-            {userData?.oliveryContactMobile ? (
-              <View style={styles.infoRow}>
-                <Icon name="cellphone-check" size={hp(2.2)} color={COLORS.gray} />
-                <View style={styles.infoCol}>
-                  <CustomText style={styles.infoLabel}>رقم هاتف التواصل (Olivery)</CustomText>
-                  <CustomText style={styles.infoValue}>{userData.oliveryContactMobile}</CustomText>
-                </View>
-              </View>
-            ) : null}
-
-            {userData?.cliqNumber ? (
-              <View style={styles.infoRow}>
-                <Icon name="bank" size={hp(2.2)} color={COLORS.gray} />
-                <View style={styles.infoCol}>
-                  <CustomText style={styles.infoLabel}>رقم كليك (Cliq Number)</CustomText>
-                  <CustomText style={styles.infoValue}>{userData.cliqNumber}</CustomText>
-                </View>
-              </View>
-            ) : null}
-
-            <View style={styles.infoRow}>
-              <Icon name="currency-usd" size={hp(2.2)} color={COLORS.mainOrange} />
-              <View style={styles.infoCol}>
-                <CustomText style={styles.infoLabel}>رصيد المحفظة (دولار)</CustomText>
-                <CustomText
-                  style={[
-                    styles.infoValue,
-                    { color: COLORS.mainOrange, fontFamily: 'Montserrat-Bold' },
-                  ]}
-                >
-                  {userData?.dollarBalance !== null && userData?.dollarBalance !== undefined
-                    ? `${Number(userData.dollarBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} $`
-                    : '0.00 $'}
-                </CustomText>
-              </View>
-            </View>
-          </View>
-
-          {/* Location & Address */}
-          <View style={[styles.infoBox, { marginTop: hp(2) }]}>
-            <CustomText style={styles.sectionTitle}>الموقع والعنوان</CustomText>
-
-            <View style={styles.infoRow}>
-              <Icon name="earth" size={hp(2.2)} color={COLORS.gray} />
-              <View style={styles.infoCol}>
-                <CustomText style={styles.infoLabel}>الدولة</CustomText>
-                <CustomText style={styles.infoValue}>{userData?.country || '—'}</CustomText>
-              </View>
-            </View>
-
-            <View style={styles.infoRow}>
-              <Icon name="map-marker" size={hp(2.2)} color={COLORS.gray} />
-              <View style={styles.infoCol}>
-                <CustomText style={styles.infoLabel}>العنوان بالتفصيل</CustomText>
-                <CustomText style={styles.infoValue}>{userData?.address || '—'}</CustomText>
-              </View>
-            </View>
-          </View>
+          <Text style={ui.caption}>رقم الحساب #{userData?.userId}</Text>
         </View>
-
-        {/* Logout */}
-        <View style={styles.saveSection}>
-          <TouchableOpacity
-            style={styles.logoutBtn}
-            activeOpacity={0.8}
-            onPress={() => {
-              dispatch(logout());
-            }}
+        <Button
+          title="تعديل الملف الشخصي"
+          secondary
+          icon="account-edit-outline"
+          onPress={() => navigation.navigate('EditProfileScreen')}
+        />
+        {role === 'Merchant' && userData?.dollarBalance != null && (
+          <Card style={{ backgroundColor: p.deep }}>
+            <Text style={{ color: '#C6E2D3' }}>رصيد الحساب</Text>
+            <Text style={s.balance}>
+              {Number(userData.dollarBalance).toLocaleString('en-US', { minimumFractionDigits: 2 })}{' '}
+              USD
+            </Text>
+          </Card>
+        )}
+        <Card>
+          <Text style={ui.title}>بيانات الحساب</Text>
+          {details.map(([label, value]) => (
+            <View key={String(label)} style={s.detail}>
+              <Text style={ui.caption}>{String(label)}</Text>
+              <Text selectable style={s.value}>
+                {String(value ?? 'غير متوفر')}
+              </Text>
+            </View>
+          ))}
+        </Card>
+        <Card>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => navigation.navigate('ContactUs')}
+            style={ui.section}
           >
-            <Icon name="logout" size={hp(2.2)} color="#e74c3c" />
-            <CustomText style={styles.logoutText}>تسجيل الخروج</CustomText>
-          </TouchableOpacity>
-        </View>
+            <Text style={s.value}>المساعدة والتواصل</Text>
+            <Icon name="headset" size={24} color={p.primary} />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => navigation.navigate('AboutUs')}
+            style={ui.section}
+          >
+            <Text style={s.value}>عن وسيط</Text>
+            <Icon name="information-outline" size={24} color={p.primary} />
+          </Pressable>
+        </Card>
+        <Pressable accessibilityRole="button" onPress={() => dispatch(logout())} style={s.logout}>
+          <Icon name="logout" size={21} color={p.danger} />
+          <Text style={{ color: p.danger, fontFamily: t.bold }}>تسجيل الخروج</Text>
+        </Pressable>
       </ScrollView>
     </ScreenContainer>
   );
 }
+const s = StyleSheet.create({
+  hero: { alignItems: 'center', gap: 10, paddingVertical: 16 },
+  avatar: {
+    width: 86,
+    height: 86,
+    borderRadius: 28,
+    backgroundColor: p.soft,
+    borderWidth: 1,
+    borderColor: p.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  initial: { color: p.primary, fontSize: 38, lineHeight: 54, fontFamily: t.bold },
+  name: { fontSize: 24, lineHeight: 34, fontFamily: t.bold, textAlign: 'center' },
+  badge: { backgroundColor: p.soft, paddingHorizontal: 16, paddingVertical: 4, borderRadius: 10 },
+  balance: { color: '#fff', fontFamily: t.bold, fontSize: 28, lineHeight: 40 },
+  detail: { borderTopWidth: 1, borderColor: p.border, paddingTop: 12, gap: 3 },
+  value: { fontSize: 16, fontFamily: t.medium },
+  logout: {
+    minHeight: 52,
+    flexDirection: 'row-reverse',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FCF0ED',
+    borderRadius: 14,
+  },
+});

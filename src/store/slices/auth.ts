@@ -3,7 +3,7 @@ import { errorMessage, unwrap } from '@/api/normalizers';
 import { authApi } from '@/api/shared/auth';
 import { normalizeUser } from '@/auth/session';
 import { storage } from '@/services/storage';
-import type { Id, User } from '@/types/models';
+import type { ApiError, Id, User } from '@/types/models';
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 interface AuthState {
   userData: User | null;
@@ -42,7 +42,10 @@ export const Login = createAsyncThunk(
       await storage.saveSession(user);
       return { ...res, isSuccess: true, user };
     } catch (error) {
-      return rejectWithValue(errorMessage(error));
+      return rejectWithValue({
+        message: errorMessage(error),
+        accountReview: (error as ApiError | null)?.accountReview,
+      });
     }
   },
 );
@@ -129,7 +132,7 @@ const slice = createSlice({
       })
       .addCase(Login.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = String(action.payload);
+        state.error = errorMessage(action.payload ?? action.error);
       })
       .addCase(GetUserProfile.fulfilled, (state, { payload, meta }) => {
         // Ignore responses belonging to a session that has since been signed out/switched.

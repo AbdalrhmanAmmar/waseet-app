@@ -1,21 +1,15 @@
-import { styles } from '@/components/shared/CustomText/styles';
-import React from 'react';
-import { Text } from 'react-native';
-
-type CustomTextProps = {
-  text?: any;
-  style?: any;
-  numberOfLines?: number;
-  children?: React.ReactNode;
-};
-
-const CustomText: React.FC<CustomTextProps> = ({ text, style, numberOfLines, children }) => {
+import { styles } from './styles';
+import { Text, type TextProps } from 'react-native';
+export default function CustomText({
+  text,
+  style,
+  children,
+  ...props
+}: TextProps & { text?: React.ReactNode }) {
   return (
-    <Text style={[styles.text, style]} numberOfLines={numberOfLines}>
+    <Text {...props} style={[styles.text, style]}>
       {text}
       {children}
     </Text>
   );
-};
-
-export default CustomText;
+}

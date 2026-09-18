@@ -1,5 +1,5 @@
 const images = {
-  logoSelling: require('@/assets/images/LogoSelling.png'),
+  brandLogo: require('@/assets/images/brand-logo.png'),
   auth_bg: require('@/assets/images/Background.jpeg'),
 };
 

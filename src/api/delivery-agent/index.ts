@@ -3,6 +3,8 @@ import { baseApi } from '../base-api';
 import { order, page } from '../normalizers';
 import { statusRequest } from '../shared/orders';
 export const deliveryApi = baseApi.injectEndpoints({
+  // Fast Refresh re-evaluates this module while retaining the base API instance.
+  overrideExisting: process.env.NODE_ENV === 'development',
   endpoints: (build) => ({
     deliveries: build.infiniteQuery<Page<Order>, string, number>({
       infiniteQueryOptions: {

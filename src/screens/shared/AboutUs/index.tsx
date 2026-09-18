@@ -1,7 +1,8 @@
 import { CustomText, HeaderComponent, ScreenContainer } from '@/components/shared/index';
 import { COLORS, FONTS, hp, wp } from '@/theme/index';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import Images from '@/theme/images';
+import { Image, ScrollView, StyleSheet, View } from 'react-native';
 
 export default function AboutUs() {
   return (
@@ -10,7 +11,11 @@ export default function AboutUs() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.logoContainer}>
           <View style={styles.logoCircle}>
-            <Icon name="shopping-outline" size={hp(6)} color={COLORS.mainOrange} />
+            <Image
+              source={Images.brandLogo}
+              style={{ width: 80, height: 80 }}
+              accessibilityLabel="شعار وسيط"
+            />
           </View>
           <CustomText style={styles.appName}>وسيط</CustomText>
           <CustomText style={styles.version}>الإصدار 1.0.0</CustomText>
@@ -19,8 +24,8 @@ export default function AboutUs() {
         <View style={styles.contentCard}>
           <CustomText style={styles.sectionTitle}>من نحن؟</CustomText>
           <CustomText style={styles.description}>
-            نحن منصة رائدة تهدف إلى تسهيل عمليات البيع والشراء وربط التجار بالعملاء بكل سهولة وأمان.
-            يسعى تطبيقنا لتوفير أفضل تجربة تسوق ممكنة مع ضمان الجودة والسرعة في التوصيل.
+            وسيط يجمع التجار وفرق المبيعات والإدارة ومندوبي التوصيل في تطبيق واحد. تصفح المنتجات،
+            جهّز طلبات العملاء، وتابع حالتها حسب صلاحيات حسابك.
           </CustomText>
         </View>
 
@@ -34,15 +39,15 @@ export default function AboutUs() {
 
         <View style={styles.featuresRow}>
           <View style={styles.featureItem}>
-            <Icon name="shield-check-outline" size={hp(3)} color={COLORS.mainOrange} />
-            <CustomText style={styles.featureLabel}>أمان تام</CustomText>
+            <Icon name="shield-check-outline" size={hp(3)} color={COLORS.primary} />
+            <CustomText style={styles.featureLabel}>حسابات وصلاحيات</CustomText>
           </View>
           <View style={styles.featureItem}>
-            <Icon name="truck-delivery-outline" size={hp(3)} color={COLORS.mainOrange} />
-            <CustomText style={styles.featureLabel}>توصيل سريع</CustomText>
+            <Icon name="truck-delivery-outline" size={hp(3)} color={COLORS.primary} />
+            <CustomText style={styles.featureLabel}>متابعة التوصيل</CustomText>
           </View>
           <View style={styles.featureItem}>
-            <Icon name="headphones" size={hp(3)} color={COLORS.mainOrange} />
+            <Icon name="headphones" size={hp(3)} color={COLORS.primary} />
             <CustomText style={styles.featureLabel}>دعم فني</CustomText>
           </View>
         </View>
@@ -64,7 +69,7 @@ const styles = StyleSheet.create({
     width: hp(12),
     height: hp(12),
     borderRadius: hp(6),
-    backgroundColor: '#FFF5F2',
+    backgroundColor: '#EDF6F1',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: hp(2),

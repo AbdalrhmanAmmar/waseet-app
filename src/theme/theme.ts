@@ -7,18 +7,18 @@ const { width, height } = Dimensions.get('window');
 export const IS_IOS = Platform.OS === 'ios';
 export const IS_IPHONE_X = false;
 export const COLORS = {
-  pageColor: '#F5F6FA',
-  // Primary colors (Orange)
-  primary: '#E65317',
-  primary300: '#F0956A',
-  primary400: '#D95F28',
-  primary800: '#A03A10',
-  primary100: '#FFF3EE',
+  pageColor: '#F8FAF7',
+  // Brand colors
+  primary: '#147D64',
+  primary300: '#72B69F',
+  primary400: '#21896F',
+  primary800: '#0C5141',
+  primary100: '#EDF6F1',
   pinkybg: '#FFF8F5',
-  mainOrange: '#FF5C28',
+  accent: '#F29A4A',
 
   // Dark (Charcoal)
-  charcoal: '#3D3D4E',
+  charcoal: '#203B32',
   charcoal80: 'rgba(61, 61, 78, 0.8)',
 
   // Secondary colors (Teal)
@@ -35,7 +35,7 @@ export const COLORS = {
   bg: '#3d434c',
   bg2: '#373b43',
   bg3: '#464c59',
-  gray: '#BDBDBD',
+  gray: '#75867E',
   gray4: '#D9D9D9',
   gray5: '#E0E0E0',
   gray2: '#D9D9D9',
@@ -59,7 +59,7 @@ export const COLORS = {
   transparentBlack7: 'rgba(0, 0, 0, 0.7)',
   transparentGreen: 'rgba(0, 225, 0, 0.2)',
   transparentRed: 'rgba(255, 0, 0, 0.2)',
-  primaryAlpha: 'rgba(230, 83, 23, 0.85)',
+  primaryAlpha: 'rgba(20, 125, 100, 0.85)',
   greenAlpha: 'rgba(96, 197, 168, 0.15)',
   redAlpha: 'rgba(255, 84, 84, 0.15)',
   purpleAlpha: 'rgba(146, 6, 228, 0.15)',
@@ -75,7 +75,7 @@ export const COLORS = {
   bag9Bg: '#eb849c',
   bag10Bg: '#979dc1',
   bag11Bg: '#c7d3c0',
-  bordercolor: '#E5E7EB',
+  bordercolor: '#DFE8E1',
 
   shadow: {
     shadowColor: '#000',
@@ -148,7 +148,7 @@ export const COLORS = {
 };
 
 // Primary Gradient Colors (from home screen buttons)
-export const PRIMARY_GRADIENT = [COLORS.primary, '#f472b6'];
+export const PRIMARY_GRADIENT = [COLORS.primary, '#126B57'];
 export const PRIMARY_GRADIENT_START = { x: 0, y: 0 };
 export const PRIMARY_GRADIENT_END = { x: 1, y: 0 };
 
@@ -179,35 +179,35 @@ export const SIZES = {
 };
 export const FONTS = {
   largeTitle: {
-    fontFamily: 'Montserrat-Bold',
+    fontFamily: 'Tajawal-Bold',
     fontSize: SIZES.largeTitle,
   },
-  h1: { fontFamily: 'Montserrat-Bold', fontSize: SIZES.h1 },
-  h2: { fontFamily: 'Montserrat-SemiBold', fontSize: SIZES.h2 },
-  h3: { fontFamily: 'Montserrat-Medium', fontSize: SIZES.h3 },
-  h4: { fontFamily: 'Montserrat-Regular', fontSize: SIZES.h4 },
-  h5: { fontFamily: 'Montserrat-Regular', fontSize: SIZES.h5 },
-  body1: { fontFamily: 'Montserrat-Bold', fontSize: SIZES.body1 },
-  body2: { fontFamily: 'Montserrat-SemiBold', fontSize: SIZES.body2 },
-  body3: { fontFamily: 'Montserrat-Medium', fontSize: SIZES.body3 },
-  body4: { fontFamily: 'Montserrat-Regular', fontSize: SIZES.body4 },
-  body5: { fontFamily: 'Montserrat-Regular', fontSize: SIZES.body5 },
+  h1: { fontFamily: 'Tajawal-Bold', fontSize: SIZES.h1 },
+  h2: { fontFamily: 'Tajawal-Bold', fontSize: SIZES.h2 },
+  h3: { fontFamily: 'Tajawal-Medium', fontSize: SIZES.h3 },
+  h4: { fontFamily: 'Tajawal-Regular', fontSize: SIZES.h4 },
+  h5: { fontFamily: 'Tajawal-Regular', fontSize: SIZES.h5 },
+  body1: { fontFamily: 'Tajawal-Bold', fontSize: SIZES.body1 },
+  body2: { fontFamily: 'Tajawal-Bold', fontSize: SIZES.body2 },
+  body3: { fontFamily: 'Tajawal-Medium', fontSize: SIZES.body3 },
+  body4: { fontFamily: 'Tajawal-Regular', fontSize: SIZES.body4 },
+  body5: { fontFamily: 'Tajawal-Regular', fontSize: SIZES.body5 },
 
   // Font families
-  fontFamilyRegular: 'Montserrat-Regular',
-  fontFamilyLight: 'Montserrat-Light',
-  fontFamilyBold: 'Montserrat-Bold',
-  fontFamilyMedium: 'Montserrat-Medium',
-  fontFamilySemiBold: 'Montserrat-SemiBold',
+  fontFamilyRegular: 'Tajawal-Regular',
+  fontFamilyLight: 'Tajawal-Regular',
+  fontFamilyBold: 'Tajawal-Bold',
+  fontFamilyMedium: 'Tajawal-Medium',
+  fontFamilySemiBold: 'Tajawal-Bold',
 
-  // Montserrat specific variations
-  regular: 'Montserrat-Regular',
-  light: 'Montserrat-Light',
-  bold: 'Montserrat-Bold',
-  medium: 'Montserrat-Medium',
-  semiBold: 'Montserrat-SemiBold',
-  black: 'Montserrat-Black',
-  thin: 'Montserrat-Thin',
+  // Font aliases for migrated screens
+  regular: 'Tajawal-Regular',
+  light: 'Tajawal-Regular',
+  bold: 'Tajawal-Bold',
+  medium: 'Tajawal-Medium',
+  semiBold: 'Tajawal-Bold',
+  black: 'Tajawal-Bold',
+  thin: 'Tajawal-Regular',
 };
 const appTheme = { COLORS, SIZES, FONTS, IS_IOS, IS_IPHONE_X };
 

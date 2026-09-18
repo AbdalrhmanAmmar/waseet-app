@@ -6,6 +6,7 @@ import { styles } from '@/screens/shared/OrderSuccessScreen/styles';
 import { COLORS, hp } from '@/theme/index';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { useEffect, useState } from 'react';
+import { useReducedMotion } from '@/hooks/shared/use-reduced-motion';
 import { Animated, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // from '@/navigation/ScreenNames';
@@ -13,11 +14,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function OrderSuccessScreen({ navigation, route }: ScreenProps) {
   const { orderId } = route.params;
   const insets = useSafeAreaInsets();
+  const reduced = useReducedMotion();
   const [bounceAnim] = useState(() => new Animated.Value(0));
   const [fadeAnim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
-    Animated.parallel([
+    if (reduced) {
+      bounceAnim.setValue(1);
+      fadeAnim.setValue(1);
+      return;
+    }
+    const animation = Animated.parallel([
       Animated.spring(bounceAnim, {
         toValue: 1,
         tension: 50,
@@ -29,8 +36,10 @@ export default function OrderSuccessScreen({ navigation, route }: ScreenProps) {
         duration: 800,
         useNativeDriver: true,
       }),
-    ]).start();
-  }, [bounceAnim, fadeAnim]);
+    ]);
+    animation.start();
+    return () => animation.stop();
+  }, [bounceAnim, fadeAnim, reduced]);
 
   return (
     <ScreenContainer>

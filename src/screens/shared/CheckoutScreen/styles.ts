@@ -4,11 +4,11 @@ import { StyleSheet } from 'react-native';
 export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.lightGrey },
   header: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     paddingHorizontal: hp(1.9),
     paddingVertical: hp(1.4),
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.pageColor,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.gray4,
   },
@@ -28,39 +28,40 @@ export const styles = StyleSheet.create({
     fontFamily: FONTS.fontFamilyBold,
     color: COLORS.charcoal,
   },
-  scroll: { padding: hp(1.9), paddingBottom: hp(24.1) },
+  scroll: { padding: 20, paddingBottom: 150, width: '100%', maxWidth: 680, alignSelf: 'center' },
   sectionLabel: {
-    fontSize: hp(1.4),
+    fontSize: 18,
     fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.darkgray2,
-    letterSpacing: 0.8,
+    color: COLORS.charcoal,
     marginBottom: hp(1.4),
     marginTop: hp(1.9),
   },
 
   customerCard: {
     backgroundColor: COLORS.white,
-    borderRadius: hp(1.6),
+    borderRadius: 20,
     padding: hp(1.9),
     shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 0,
+    borderWidth: 1,
+    borderColor: COLORS.bordercolor,
   },
 
   optionCard: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     gap: hp(1.4),
     backgroundColor: COLORS.white,
-    borderRadius: hp(1.6),
+    borderRadius: 20,
     padding: hp(1.6),
     marginBottom: hp(1.2),
     borderWidth: 1.5,
     borderColor: COLORS.bordercolor,
   },
-  optionCardActive: { borderColor: COLORS.mainOrange },
+  optionCardActive: { borderColor: COLORS.primary },
   radio: {
     width: hp(2.1),
     height: hp(2.1),
@@ -74,7 +75,7 @@ export const styles = StyleSheet.create({
     height: hp(2.1),
     borderRadius: hp(1.1),
     borderWidth: 5,
-    borderColor: COLORS.mainOrange,
+    borderColor: COLORS.primary,
     backgroundColor: COLORS.white,
   },
   optionIcon: {
@@ -93,13 +94,15 @@ export const styles = StyleSheet.create({
 
   summaryBox: {
     backgroundColor: COLORS.white,
-    borderRadius: hp(1.6),
+    borderRadius: 20,
     padding: hp(1.9),
     shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 0,
+    borderWidth: 1,
+    borderColor: COLORS.bordercolor,
   },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: hp(1.2) },
   summaryLabel: { fontSize: hp(1.5), fontFamily: FONTS.fontFamilyRegular, color: COLORS.darkgray },
@@ -112,7 +115,7 @@ export const styles = StyleSheet.create({
     marginBottom: 0,
   },
   totalLabel: { fontSize: hp(1.8), fontFamily: FONTS.fontFamilyBold, color: COLORS.charcoal },
-  totalValue: { fontSize: hp(2.1), fontFamily: FONTS.fontFamilyBold, color: COLORS.mainOrange },
+  totalValue: { fontSize: hp(2.1), fontFamily: FONTS.fontFamilyBold, color: COLORS.primary },
 
   footer: {
     position: 'absolute',
@@ -124,7 +127,7 @@ export const styles = StyleSheet.create({
     paddingTop: hp(1.4),
     borderTopWidth: 1,
     borderTopColor: COLORS.gray4,
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     gap: hp(1.4),
   },
@@ -133,10 +136,10 @@ export const styles = StyleSheet.create({
   footerTotalValue: {
     fontSize: hp(2.1),
     fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
   },
   placeOrderBtn: {
-    borderRadius: hp(3.5),
+    borderRadius: 16,
     overflow: 'hidden',
     width: '55%',
   },
@@ -144,7 +147,7 @@ export const styles = StyleSheet.create({
 
   // Area Modal
   areaPickerInput: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
@@ -201,7 +204,7 @@ export const styles = StyleSheet.create({
     borderBottomColor: '#F8FAFC',
   },
   areaItemActive: {
-    backgroundColor: '#FFF5F2',
+    backgroundColor: '#EDF6F1',
     borderRadius: hp(1),
   },
   areaItemText: {
@@ -210,7 +213,7 @@ export const styles = StyleSheet.create({
     color: COLORS.charcoal,
   },
   areaItemTextActive: {
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
     fontFamily: FONTS.fontFamilyBold,
   },
 });

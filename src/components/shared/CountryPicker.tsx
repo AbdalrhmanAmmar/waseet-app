@@ -1,5 +1,9 @@
+import { useReducedMotion } from '@/hooks/shared/use-reduced-motion';
 import { useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Modal, Pressable, StyleSheet, TextInput } from 'react-native';
+import Text from './CustomText';
+import ScreenContainer from './ScreenContainer';
+import { palette, typography } from '@/theme/tokens';
 import countries from 'world-countries';
 export type CountryCode = string;
 export interface Country {
@@ -38,6 +42,7 @@ export default function CountryPicker({
   onSelect,
   renderFlagButton,
 }: Props) {
+  const reducedMotion = useReducedMotion();
   const [opened, setOpened] = useState(false);
   const [search, setSearch] = useState('');
   const close = () => {
@@ -49,13 +54,21 @@ export default function CountryPicker({
       {renderFlagButton ? (
         renderFlagButton()
       ) : (
-        <Pressable accessibilityLabel="اختيار الدولة" onPress={() => setOpened(true)}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="اختيار الدولة"
+          onPress={() => setOpened(true)}
+        >
           <Text style={styles.code}>{countryCode} ▾</Text>
         </Pressable>
       )}
-      <Modal visible={visible ?? opened} animationType="slide" onRequestClose={close}>
-        <View style={styles.container}>
-          <Pressable onPress={close}>
+      <Modal
+        visible={visible ?? opened}
+        animationType={reducedMotion ? 'none' : 'slide'}
+        onRequestClose={close}
+      >
+        <ScreenContainer edges={['top', 'bottom']} style={styles.container}>
+          <Pressable accessibilityRole="button" onPress={close}>
             <Text style={styles.code}>إغلاق</Text>
           </Pressable>
           <TextInput
@@ -72,6 +85,7 @@ export default function CountryPicker({
             keyExtractor={(item) => item.cca2}
             renderItem={({ item }) => (
               <Pressable
+                accessibilityRole="button"
                 style={styles.row}
                 onPress={() => {
                   onSelect(item);
@@ -84,20 +98,24 @@ export default function CountryPicker({
               </Pressable>
             )}
           />
-        </View>
+        </ScreenContainer>
       </Modal>
     </>
   );
 }
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, paddingTop: 64 },
+  container: { flex: 1, paddingHorizontal: 24 },
   search: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: palette.border,
+    fontFamily: typography.regular,
+    fontSize: 16,
+    backgroundColor: palette.surface,
+    color: palette.ink,
     borderRadius: 12,
     padding: 14,
     textAlign: 'right',
   },
   row: { padding: 18, borderBottomWidth: 1, borderColor: '#eee' },
-  code: { padding: 12, color: '#E65317' },
+  code: { padding: 12, color: '#147D64' },
 });

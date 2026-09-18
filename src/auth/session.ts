@@ -6,5 +6,6 @@ export function normalizeUser(raw: Record<string, any>, previous?: User | null):
   const token = raw.token ?? previous?.token;
   const userId = raw.userId ?? raw.id ?? raw.user_id ?? previous?.userId;
   if (!token || !userId) throw new Error('بيانات الجلسة غير مكتملة. سجل الدخول مجددًا.');
-  return { ...previous, ...raw, userId, role, token };
+  // A profile refresh can remove a previously supplied reason; do not keep stale review copy.
+  return { ...previous, ...raw, rejectionReason: raw.rejectionReason, userId, role, token };
 }

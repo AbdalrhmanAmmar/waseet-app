@@ -3,14 +3,14 @@ import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: hp(1.9),
     paddingVertical: hp(1.4),
-    backgroundColor: '#FFF',
+    backgroundColor: '#F8FAF7',
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#DFE8E1',
     zIndex: 10,
   },
   left: {

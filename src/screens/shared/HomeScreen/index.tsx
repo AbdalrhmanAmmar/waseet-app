@@ -1,263 +1,218 @@
-import { useOrdersQuery } from '@/api/shared/orders';
-import { AsyncState } from '@/components/shared/AsyncState';
-import { CustomText, OrderCard, ScreenContainer } from '@/components/shared/index';
-import LinearGradient from '@/components/shared/LinearGradient';
-import ProductCard from '@/components/shared/ProductCard/index';
-import type { CatalogController } from '@/hooks/shared/use-catalog';
-import { ScreenNames } from '@/navigation/ScreenNames';
-import { styles } from '@/screens/shared/HomeScreen/styles';
-import { addToCartLocal } from '@/store/slices/cart';
-import { COLORS, hp, wp } from '@/theme/index';
+import { useState } from 'react';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
-import { useMemo, useState } from 'react';
-import { FlatList, RefreshControl, ScrollView, TouchableOpacity, View } from 'react-native';
-import * as Animatable from 'react-native-animatable';
-import Toast from 'react-native-toast-message';
-import { useDispatch, useSelector } from 'react-redux';
-
+import { useOrdersQuery } from '@/api/shared/orders';
+import { CustomText as Text, ScreenContainer, OrderCard } from '@/components/shared';
+import ProductCard from '@/components/shared/ProductCard';
+import { AsyncState } from '@/components/shared/AsyncState';
+import { Brand, SectionTitle, ui } from '@/components/shared/ui';
+import { useSession } from '@/hooks/shared/use-session';
+import { useAppDispatch } from '@/hooks/shared/use-store';
+import type { CatalogController } from '@/hooks/shared/use-catalog';
+import { addToCartLocal } from '@/store/slices/cart';
+import { roleLabels } from '@/auth/roles';
+import { palette as p, typography as t } from '@/theme/tokens';
+import type { ScreenProps } from '@/navigation/use-screen-props';
 export default function HomeScreen({
   navigation,
   catalog,
 }: {
-  navigation: any;
+  navigation: ScreenProps['navigation'];
   catalog: CatalogController;
 }) {
-  const dispatch = useDispatch<any>();
-  const { userData } = useSelector((state: any) => state.AuthSlice);
-  const orderQuery = useOrdersQuery({ page: 1, pageSize: 3 });
-  const userOrders = { data: orderQuery.data?.items ?? [] };
-  const [activeCategoryId, setActiveCategoryId] = useState('All');
+  const { userData, role } = useSession();
+  const dispatch = useAppDispatch();
+  const orders = useOrdersQuery({ page: 1, pageSize: 3 });
   const [refreshing, setRefreshing] = useState(false);
-
-  // role 'Merchant' (has wallets), role 'Sales' / other
-  const isMerchant = userData?.role === 'Merchant';
-
-  const onRefresh = async () => {
+  const refresh = async () => {
     setRefreshing(true);
-    await Promise.all([catalog.refresh(), orderQuery.refetch()]);
-    setRefreshing(false);
-  };
-  const rawProducts = catalog.data;
-  const categories = ['All', ...new Set(rawProducts.map((item) => item.category))];
-
-  const handleCategorySelect = (id: string) => {
-    setActiveCategoryId(id);
-  };
-
-  const filteredProducts = useMemo(() => {
-    if (activeCategoryId === 'All') return rawProducts;
-    return rawProducts.filter((b: any) => b.category === activeCategoryId);
-  }, [activeCategoryId, rawProducts]);
-
-  const handleAddToCart = (item: any) => {
-    if (item.stock === 0 || item.quantity === 0) {
-      Toast.show({
-        type: 'error',
-        text1: 'تنبيه',
-        text2: 'هذا المنتج غير متوفر في المخزون حالياً',
-      });
-      return;
+    try {
+      await Promise.all([catalog.refresh(), orders.refetch()]);
+    } finally {
+      setRefreshing(false);
     }
-    dispatch(addToCartLocal(item));
-    Toast.show({ type: 'success', text1: 'تمت الإضافة للسلة' });
   };
-
   return (
     <ScreenContainer>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={s.content}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[COLORS.mainOrange]}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={p.primary} />
         }
       >
+        <View style={ui.section}>
+          <Brand compact />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="فتح القائمة"
+            onPress={() => navigation.navigate('MenuScreen')}
+            style={s.menu}
+          >
+            <Icon name="menu" size={24} color={p.ink} />
+          </Pressable>
+        </View>
+        <View>
+          <Text style={s.greeting}>أهلًا، {userData?.firstName || 'بك'}</Text>
+          <Text style={ui.caption}>{role ? roleLabels[role] : ''} · لننجز المزيد اليوم</Text>
+        </View>
+        <View style={s.hero}>
+          <View style={ui.section}>
+            <Text style={s.heroLabel}>{role === 'Merchant' ? 'رصيد حسابك' : 'مساحة المبيعات'}</Text>
+            <Icon
+              name={role === 'Merchant' ? 'wallet-outline' : 'chart-line'}
+              size={25}
+              color="#B5D8C6"
+            />
+          </View>
+          <Text style={s.balance}>
+            {role === 'Merchant'
+              ? userData?.dollarBalance != null
+                ? `${Number(userData.dollarBalance).toLocaleString('en-US', { minimumFractionDigits: 2 })} USD`
+                : 'الرصيد غير متوفر'
+              : 'من المنتج إلى الطلب'}
+          </Text>
+          <Text style={s.heroHint}>
+            {role === 'Merchant'
+              ? 'تابع رصيدك وتفاصيل طلباتك من مكان واحد.'
+              : 'اختر المنتجات وجهّز طلب العميل بخطوات بسيطة.'}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => navigation.navigate('ProductsScreen')}
+            style={s.heroAction}
+          >
+            <Text style={s.heroActionText}>ابدأ طلبًا جديدًا</Text>
+            <Icon name="arrow-left" size={19} color={p.deep} />
+          </Pressable>
+        </View>
+        <View style={s.stats}>
+          <Pressable
+            accessibilityRole="button"
+            style={s.stat}
+            onPress={() => navigation.navigate('ProductsScreen')}
+          >
+            <Icon name="package-variant-closed" size={23} color={p.primary} />
+            <Text style={s.statNumber}>
+              {catalog.loading || catalog.error ? '—' : catalog.totalCount}
+            </Text>
+            <Text style={ui.caption}>منتج في الكتالوج</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            style={s.stat}
+            onPress={() => navigation.navigate('MyOrders')}
+          >
+            <Icon name="clipboard-list-outline" size={23} color={p.primary} />
+            <Text style={s.statNumber}>{orders.data?.totalCount ?? '—'}</Text>
+            <Text style={ui.caption}>طلب في حسابك</Text>
+          </Pressable>
+        </View>
+        <SectionTitle
+          title="اكتشف المنتجات"
+          subtitle="اختر ما يناسب طلب عميلك"
+          action="عرض الكل"
+          onPress={() => navigation.navigate('ProductsScreen')}
+        />
         <AsyncState
           loading={catalog.loading}
-          error={catalog.error || orderQuery.error}
-          onRetry={onRefresh}
+          error={catalog.error}
+          onRetry={catalog.refresh}
+          empty={
+            !catalog.loading && !catalog.error && !catalog.data.length
+              ? 'لا توجد منتجات حاليًا'
+              : undefined
+          }
         />
-        {/* ── Header Row ── */}
-        <Animatable.View animation="fadeInDown" duration={500} style={styles.headerRow}>
-          <View style={styles.headerLeft}>
-            <CustomText style={styles.greetingSmall}>صباح الخير،</CustomText>
-            <CustomText style={styles.greetingName}>
-              {' '}
-              {userData?.firstName || 'المستخدم'} 👋
-            </CustomText>
-          </View>
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              style={styles.iconActionBtn}
-              onPress={() => navigation.navigate(ScreenNames.ProductsScreen)}
-            >
-              <Icon name="magnify" size={hp(2.6)} color={COLORS.charcoal} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.iconActionBtn, { position: 'relative' }]}
-              onPress={() =>
-                navigation.navigate(ScreenNames.MenuStack, { screen: ScreenNames.Notifications })
-              }
-            >
-              <Icon name="bell-outline" size={hp(2.6)} color={COLORS.charcoal} />
-              <View style={styles.notifDot} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.avatarCircle}
-              onPress={() => navigation.navigate(ScreenNames.ProfileScreen)}
-            >
-              <CustomText style={styles.avatarLetter}>
-                {userData?.firstName?.charAt(0) || 'U'}
-              </CustomText>
-            </TouchableOpacity>
-          </View>
-        </Animatable.View>
-
-        {/* ── Dollar Balance Card (From userData.dollarBalance) ── */}
-        {isMerchant && (
-          <Animatable.View animation="fadeInUp" delay={200} style={styles.walletsRow}>
-            <LinearGradient
-              colors={['#1E293B', '#334155']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.walletCardFull}
-            >
-              <View style={styles.walletHeader}>
-                <View style={styles.walletHeaderLeft}>
-                  <View style={styles.walletIconBox}>
-                    <Icon name="currency-usd" size={hp(2.4)} color={COLORS.mainOrange} />
-                  </View>
-                  <View>
-                    <CustomText style={styles.walletLabel}>رصيد المحفظة</CustomText>
-                    <CustomText style={styles.walletCurrency}>الرصيد المتاح (USD)</CustomText>
-                  </View>
-                </View>
-                <View
-                  style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    paddingHorizontal: 10,
-                    paddingVertical: 4,
-                    borderRadius: 12,
-                  }}
-                >
-                  <CustomText
-                    style={{
-                      color: COLORS.mainOrange,
-                      fontSize: hp(1.3),
-                      fontFamily: 'Montserrat-Bold',
-                    }}
-                  >
-                    {isMerchant ? 'حساب تاجر' : userData?.role || 'مستخدم'}
-                  </CustomText>
-                </View>
-              </View>
-              <View style={styles.balanceValueRow}>
-                <CustomText style={styles.walletBalanceAmount}>
-                  {userData?.dollarBalance !== null && userData?.dollarBalance !== undefined
-                    ? Number(userData.dollarBalance).toLocaleString('en-US', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })
-                    : '0.00'}
-                </CustomText>
-                <CustomText style={styles.walletCurrencySymbol}>$</CustomText>
-              </View>
-            </LinearGradient>
-          </Animatable.View>
-        )}
-
-        {/* ── Latest Orders ── */}
-        <View style={styles.sectionHeader}>
-          <CustomText style={styles.sectionTitle}>أحدث الطلبات</CustomText>
-          <TouchableOpacity onPress={() => navigation.navigate(ScreenNames.MyOrders)}>
-            <CustomText style={styles.seeAll}>عرض الكل</CustomText>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.latestOrdersContainer}>
-          {(Array.isArray(userOrders?.data) && userOrders.data.length > 0
-            ? userOrders.data.slice(0, 3).map((item: any, idx: number) => ({
-                id: item.orderId || item.id || idx,
-                customer:
-                  item.customerName || item.customer || `طلب #${item.orderId || item.id || idx}`,
-                total:
-                  item.totalPrice ??
-                  item.totalAmount ??
-                  item.total ??
-                  item.actualSellPriceUSD ??
-                  '0',
-                status: item.status || item.orderStatus || 'قيد الانتظار',
-                date: item.createdAt
-                  ? new Date(item.createdAt).toLocaleDateString('ar-EG')
-                  : item.date || '2026-09-08',
-                ...item,
-              }))
-            : []
-          ).map((order: any) => (
-            <OrderCard
-              key={String(order.orderId || order.id)}
-              order={order}
-              onPress={() =>
-                navigation.navigate(ScreenNames.MenuStack, {
-                  screen: ScreenNames.OrderDetails,
-                  params: {
-                    order_id: order.orderId || order.id,
-                    orderId: order.orderId || order.id,
-                  },
-                })
-              }
+        <View style={s.products}>
+          {catalog.data.slice(0, 4).map((item) => (
+            <ProductCard
+              key={item.id}
+              item={item}
+              onPress={() => navigation.navigate('ProductDetails', { product: item })}
+              onAddToCart={() => dispatch(addToCartLocal(item))}
             />
           ))}
         </View>
-
-        {/* ── Categories ── */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabsRow}
-        >
-          {categories.map((cat, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[styles.tabBtn, activeCategoryId === cat && styles.tabBtnActive]}
-              onPress={() => handleCategorySelect(cat)}
-            >
-              <CustomText
-                style={[styles.tabText, activeCategoryId === cat && styles.tabTextActive]}
-              >
-                {cat === 'All' ? 'الكل' : cat}
-              </CustomText>
-            </TouchableOpacity>
+        <SectionTitle
+          title="آخر الطلبات"
+          action="عرض الكل"
+          onPress={() => navigation.navigate('MyOrders')}
+        />
+        <AsyncState
+          loading={orders.isLoading}
+          error={orders.error}
+          onRetry={orders.refetch}
+          empty={
+            !orders.isLoading && !orders.error && !orders.data?.items.length
+              ? 'طلباتك الجديدة ستظهر هنا'
+              : undefined
+          }
+        />
+        <View>
+          {orders.data?.items.map((order) => (
+            <OrderCard
+              key={order.orderId}
+              order={order}
+              onPress={() => navigation.navigate('OrderDetails', { orderId: order.orderId })}
+            />
           ))}
-        </ScrollView>
-
-        {/* ── Products Grid ── */}
-        <View style={{ paddingHorizontal: wp(3), marginTop: hp(1.5) }}>
-          <FlatList
-            data={filteredProducts}
-            numColumns={2}
-            scrollEnabled={false}
-            nestedScrollEnabled={true}
-            keyExtractor={(item) => String(item.id)}
-            columnWrapperStyle={{ justifyContent: 'space-between', marginBottom: hp(2) }}
-            renderItem={({ item, index }) => (
-              <ProductCard
-                item={item}
-                index={index}
-                onPress={() => navigation.navigate(ScreenNames.ProductDetails, { product: item })}
-                onAddToCart={() => handleAddToCart(item)}
-              />
-            )}
-            ListEmptyComponent={
-              <CustomText style={{ textAlign: 'center', marginTop: 20, width: wp(90) }}>
-                لا توجد منتجات حالياً.
-              </CustomText>
-            }
-          />
         </View>
       </ScrollView>
     </ScreenContainer>
   );
 }
+const s = StyleSheet.create({
+  content: {
+    padding: 20,
+    paddingBottom: 32,
+    gap: 22,
+    maxWidth: 780,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  menu: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: p.border,
+    backgroundColor: p.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  greeting: { fontSize: 26, lineHeight: 38, fontFamily: t.bold },
+  hero: { backgroundColor: p.deep, borderRadius: 26, padding: 24, gap: 12 },
+  heroLabel: { color: '#C6E2D3', fontSize: 14 },
+  balance: { color: '#fff', fontFamily: t.bold, fontSize: 28, lineHeight: 40 },
+  heroHint: { color: '#C6E2D3', fontSize: 13 },
+  heroAction: {
+    backgroundColor: p.accent,
+    borderRadius: 12,
+    padding: 12,
+    flexDirection: 'row-reverse',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 6,
+  },
+  heroActionText: { color: p.deep, fontFamily: t.bold },
+  stats: { flexDirection: 'row-reverse', gap: 12 },
+  stat: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: p.border,
+    backgroundColor: p.surface,
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  statNumber: { fontSize: 25, lineHeight: 34, fontFamily: t.bold },
+  products: {
+    flexDirection: 'row-reverse',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 14,
+  },
+});

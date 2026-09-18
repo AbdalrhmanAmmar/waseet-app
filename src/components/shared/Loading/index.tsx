@@ -1,17 +1,17 @@
 import images from '@/theme/images';
 import { COLORS, wp } from '@/theme/index';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import * as Animatable from 'react-native-animatable';
+import * as Animatable from '@/components/shared/Motion';
 
 const Loading = ({ style }: { style?: any }) => {
   return (
     <View style={[styles.container, style]}>
-      <ActivityIndicator size={26} color={COLORS.mainOrange} style={styles.activityIndicator} />
+      <ActivityIndicator size={26} color={COLORS.primary} style={styles.activityIndicator} />
       <Animatable.Image
         animation="pulse"
         duration={1500}
         iterationCount="infinite"
-        source={images.logoSelling}
+        source={images.brandLogo}
         style={styles.logo}
         useNativeDriver
       />

@@ -1,268 +1,465 @@
-import { AsyncState } from '@/components/shared/AsyncState';
-import ProductCard from '@/components/shared/ProductCard/index';
-import {
-  CustomText,
-  CustomTextInput,
-  HeaderComponent,
-  ScreenContainer,
-} from '@/components/shared/index';
-import type { CatalogController } from '@/hooks/shared/use-catalog';
-import { ScreenNames } from '@/navigation/ScreenNames';
-import { styles } from '@/screens/shared/ProductsScreen/styles';
-import { addToCartLocal } from '@/store/slices/cart';
-import { COLORS, hp } from '@/theme/index';
-import Icon from '@expo/vector-icons/MaterialCommunityIcons';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   ActivityIndicator,
   FlatList,
-  Modal,
+  Image,
+  Pressable,
   RefreshControl,
   ScrollView,
-  TouchableOpacity,
+  TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
-import Toast from 'react-native-toast-message';
-import { useDispatch } from 'react-redux';
+import Icon from '@expo/vector-icons/MaterialCommunityIcons';
+import Text from '@/components/shared/CustomText';
+import ScreenContainer from '@/components/shared/ScreenContainer';
+import LinearGradient from '@/components/shared/LinearGradient';
+import { CatalogProductCard } from '@/components/shared/catalog/CatalogProductCard';
+import { CatalogFilters } from '@/components/shared/catalog/CatalogFilters';
+import {
+  defaultFilters,
+  filterProducts,
+  sortOptions,
+  type Filters,
+} from '@/components/shared/catalog/catalog-model';
+import type { CatalogController } from '@/hooks/shared/use-catalog';
+import { useCatalogView } from '@/hooks/shared/use-catalog-view';
+import { useSession } from '@/hooks/shared/use-session';
+import { useAppSelector } from '@/hooks/shared/use-store';
+import type { ScreenProps } from '@/navigation/use-screen-props';
+import type { Product } from '@/types/models';
+import { catalogErrorMessage } from '@/domain/catalog-error';
+import Images from '@/theme/images';
+import { palette as p } from '@/theme/tokens';
+import { styles as s } from './styles';
 
-const SORT_OPTIONS = [
-  { id: 'default', label: 'الافتراضي' },
-  { id: 'price_asc', label: 'الأقل سعراً' },
-  { id: 'price_desc', label: 'الأعلى سعراً' },
-  { id: 'title_az', label: 'الاسم: أ ← ي' },
-];
-
+type Row =
+  | { key: string; type: 'hero' | 'search' | 'toolbar' | 'state' }
+  | { key: string; type: 'products'; items: Product[] };
 export default function ProductsScreen({
   navigation,
   catalog,
 }: {
-  navigation: any;
+  navigation: ScreenProps['navigation'];
   catalog: CatalogController;
 }) {
-  const dispatch = useDispatch<any>();
-  const allProducts = catalog;
-
-  const [refreshing, setRefreshing] = useState(false);
-  const [selectedCategoryId, setSelectedCategoryId] = useState('All');
+  const { role } = useSession();
+  const { width, fontScale } = useWindowDimensions();
+  const [view, setView] = useCatalogView();
+  const listView = view === 'list' || width < 350 || fontScale > 1.25;
+  const columns = listView ? 1 : width >= 740 ? 3 : 2;
+  const [focused, setFocused] = useState(false);
   const [search, setSearch] = useState('');
-  const [sortId, setSortId] = useState('default');
-  const [sortOpen, setSortOpen] = useState(false);
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await catalog.refresh();
-    setRefreshing(false);
-  };
-  const handleEndReached = catalog.loadMore;
-  const rawProducts = catalog.data;
-  const categories = ['All', ...new Set(rawProducts.map((item) => item.category))];
-
-  const handleAddToCart = (item: any) => {
-    if (item.stock === 0 || item.quantity === 0) {
-      Toast.show({
-        type: 'error',
-        text1: 'تنبيه',
-        text2: 'هذا المنتج غير متوفر في المخزون حالياً',
-      });
-      return;
-    }
-    dispatch(addToCartLocal(item));
-    Toast.show({ type: 'success', text1: 'تمت الإضافة للسلة' });
-  };
-
-  const filtered = useMemo(() => {
-    let list = [...rawProducts];
-
-    if (selectedCategoryId !== 'All') {
-      list = list.filter((b: any) => b.category === selectedCategoryId);
-    }
-
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (b: any) =>
-          b.title.toLowerCase().includes(q) || (b.author && b.author.toLowerCase().includes(q)),
-      );
-    }
-
-    switch (sortId) {
-      case 'price_asc':
-        return [...list].sort((a: any, b: any) => a.price - b.price);
-      case 'price_desc':
-        return [...list].sort((a: any, b: any) => b.price - a.price);
-      case 'title_az':
-        return [...list].sort((a: any, b: any) => a.title.localeCompare(b.title));
-      default:
-        return list;
-    }
-  }, [selectedCategoryId, search, sortId, rawProducts]);
-
-  const totalCount = allProducts?.totalCount || filtered.length;
-
-  const ListHeader = (
-    <View style={styles.listHeader}>
-      <AsyncState loading={catalog.loading} error={catalog.error} onRetry={onRefresh} />
-      {/* Title + Sort */}
-      <View style={styles.titleRow}>
-        <CustomText style={styles.screenTitle}>المنتجات</CustomText>
-      </View>
-
-      {/* Search */}
-      <View style={styles.searchRow}>
-        <CustomTextInput
-          placeholder="ابحث عن منتج..."
-          value={search}
-          onChangeText={setSearch}
-          rightComponent={<Icon name="magnify" size={hp(2.1)} color="#AAA" />}
-          containerStyle={{ flex: 1, marginBottom: 0 }}
-        />
-        <TouchableOpacity style={styles.filterIconBtn} onPress={() => setSortOpen(true)}>
-          <Icon name="tune" size={hp(2.1)} color={COLORS.white} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Category pills */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.categoryRow}
-      >
-        {categories.map((cat, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[styles.pill, selectedCategoryId === cat && styles.pillActive]}
-            onPress={() => setSelectedCategoryId(cat)}
-          >
-            <CustomText
-              style={[styles.pillText, selectedCategoryId === cat && styles.pillTextActive]}
-            >
-              {cat === 'All' ? 'الكل' : cat}
-            </CustomText>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Results count */}
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: hp(1.4),
-        }}
-      >
-        <CustomText style={styles.resultsCount}>تم العثور على {filtered.length} منتج</CustomText>
-        {totalCount > 0 && (
-          <CustomText style={styles.resultsCount}>الإجمالي: {totalCount}</CustomText>
-        )}
-      </View>
-    </View>
+  const [filters, setFilters] = useState<Filters>({ ...defaultFilters });
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const cart = useAppSelector((state) => state.cart.userCart.data);
+  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true);
+      return () => setFocused(false);
+    }, []),
   );
-
-  const ListFooter = () => {
-    if (allProducts?.loadingMore) {
+  // The API documents pagination only. Load remaining pages sequentially while this screen is active.
+  // On failure, retain loaded products and wait for explicit retry rather than looping requests.
+  useEffect(() => {
+    if (focused && catalog.hasMore && !catalog.fetching && !catalog.error) catalog.loadMore();
+  }, [focused, catalog]);
+  const complete = !catalog.loading && !catalog.hasMore && !catalog.error;
+  const categories = [...new Set(catalog.data.map((item) => item.category).filter(Boolean))].sort(
+    (a, b) => a.localeCompare(b, 'ar'),
+  );
+  const products = useMemo(
+    () => filterProducts(catalog.data, search, filters),
+    [catalog.data, search, filters],
+  );
+  const activeCount =
+    Number(!!filters.category) +
+    Number(filters.available) +
+    Number(!!(filters.min || filters.max)) +
+    Number(filters.sort !== 'default');
+  const reset = () => {
+    setSearch('');
+    setFilters({ ...defaultFilters });
+  };
+  const refresh = async () => {
+    setRefreshing(true);
+    try {
+      await catalog.refresh();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+  const retry = () => {
+    void catalog.retry();
+  };
+  const rows: Row[] = [
+    { key: 'hero', type: 'hero' },
+    { key: 'search', type: 'search' },
+    { key: 'toolbar', type: 'toolbar' },
+  ];
+  if (!products.length) rows.push({ key: 'state', type: 'state' });
+  for (let i = 0; i < products.length; i += columns)
+    rows.push({
+      key: String(products[i].productCode),
+      type: 'products',
+      items: products.slice(i, i + columns),
+    });
+  const chips = [
+    ...(filters.category
+      ? [{ label: filters.category, clear: () => setFilters({ ...filters, category: '' }) }]
+      : []),
+    ...(filters.available
+      ? [{ label: 'المتوفر فقط', clear: () => setFilters({ ...filters, available: false }) }]
+      : []),
+    ...(filters.min || filters.max
+      ? [
+          {
+            label: `السعر: ${filters.min || '0'} – ${filters.max || '∞'} USD`,
+            clear: () => setFilters({ ...filters, min: '', max: '' }),
+          },
+        ]
+      : []),
+    ...(filters.sort !== 'default'
+      ? [
+          {
+            label: sortOptions.find((o) => o.id === filters.sort)!.label,
+            clear: () => setFilters({ ...filters, sort: 'default' }),
+          },
+        ]
+      : []),
+  ];
+  const render = ({ item }: { item: Row }) => {
+    if (item.type === 'hero')
       return (
-        <View style={styles.footerLoader}>
-          <ActivityIndicator size="small" color={COLORS.mainOrange} />
-          <CustomText style={{ fontSize: hp(1.4), color: COLORS.gray, marginTop: 4 }}>
-            جاري تحميل المزيد...
-          </CustomText>
+        <View style={s.hero}>
+          <View style={s.motif} pointerEvents="none">
+            <Icon name="cube-outline" size={110} color={p.primary} />
+          </View>
+          <View style={s.brandRow}>
+            <Image source={Images.brandLogo} style={s.logo} accessibilityLabel="وسيط" />
+            <View style={s.role}>
+              <Icon
+                name={role === 'Merchant' ? 'storefront-outline' : 'badge-account-outline'}
+                size={15}
+                color={p.primary}
+              />
+              <Text style={s.roleText}>
+                {role === 'Merchant' ? 'واجهة التاجر' : 'واجهة المبيعات'}
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`فتح السلة، ${cartCount} قطعة`}
+              onPress={() => navigation.navigate('CartScreen')}
+              style={s.cartIcon}
+            >
+              <Icon name="cart-outline" size={26} color={p.deep} />
+              {cartCount > 0 && (
+                <View style={s.badge}>
+                  <Text style={s.badgeText}>{cartCount}</Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
+          <Text accessibilityRole="header" style={s.title}>
+            اكتشف منتجاتك
+          </Text>
+          <Text style={s.subtitle}>اختَر منتجاتك وجهّز طلبك بسهولة</Text>
+        </View>
+      );
+    if (item.type === 'search')
+      return (
+        <View style={s.sticky}>
+          <View style={s.searchRow}>
+            <View style={s.searchBox}>
+              <Icon name="magnify" size={22} color={p.muted} />
+              <TextInput
+                accessibilityLabel="البحث عن المنتجات"
+                placeholder="ابحث باسم المنتج أو الكود…"
+                placeholderTextColor={p.muted}
+                value={search}
+                onChangeText={setSearch}
+                style={s.search}
+                returnKeyType="search"
+                autoCorrect={false}
+              />
+              {!!search && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="مسح البحث"
+                  onPress={() => setSearch('')}
+                  style={s.clear}
+                >
+                  <Icon name="close" size={18} color={p.muted} />
+                </Pressable>
+              )}
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`تصفية وترتيب، ${activeCount} فلاتر مفعلة`}
+              onPress={() => setFiltersOpen(true)}
+              style={s.filterButton}
+            >
+              <Icon name="tune-variant" size={25} color="#fff" />
+              {!!activeCount && (
+                <View style={s.badge}>
+                  <Text style={s.badgeText}>{activeCount}</Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={s.categories}
+            keyboardShouldPersistTaps="handled"
+          >
+            {['', ...categories].map((category) => (
+              <Pressable
+                key={category}
+                accessibilityRole="button"
+                accessibilityLabel={`تصنيف ${category || 'الكل'}`}
+                aria-selected={filters.category === category}
+                onPress={() => setFilters({ ...filters, category })}
+                style={[s.pill, filters.category === category && s.pillActive]}
+              >
+                <Text style={[s.pillText, filters.category === category && s.white]}>
+                  {category || 'الكل'}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+          {!!chips.length && (
+            <View style={s.chips}>
+              {chips.map((chip) => (
+                <Pressable
+                  key={chip.label}
+                  accessibilityRole="button"
+                  accessibilityLabel={`إزالة فلتر ${chip.label}`}
+                  onPress={chip.clear}
+                  style={s.chip}
+                >
+                  <Text style={s.chipText}>{chip.label}</Text>
+                  <Icon name="close" size={15} color={p.primary} />
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </View>
+      );
+    if (item.type === 'toolbar')
+      return (
+        <View style={{ paddingHorizontal: 20 }}>
+          <View style={s.toolbar}>
+            <View>
+              <Text style={s.sectionTitle}>المنتجات</Text>
+              <Text accessibilityLiveRegion="polite" style={s.count}>
+                {catalog.loading
+                  ? 'جارٍ التحميل…'
+                  : complete
+                    ? `${products.length} نتيجة`
+                    : `${products.length} نتيجة ضمن ${catalog.data.length} منتج محمّل`}
+              </Text>
+            </View>
+            <View style={s.toggle}>
+              {(['list', 'grid'] as const).map((mode) => (
+                <Pressable
+                  key={mode}
+                  accessibilityRole="radio"
+                  accessibilityLabel={mode === 'grid' ? 'عرض شبكي' : 'عرض قائمة'}
+                  aria-checked={view === mode}
+                  onPress={() => setView(mode)}
+                  style={[s.toggleButton, view === mode && s.activeToggle]}
+                >
+                  <Icon
+                    name={mode === 'grid' ? 'view-grid-outline' : 'format-list-bulleted'}
+                    size={22}
+                    color={view === mode ? '#fff' : p.muted}
+                  />
+                </Pressable>
+              ))}
+            </View>
+          </View>
+          {!!catalog.error && catalog.data.length > 0 && (
+            <View style={s.state}>
+              <Text accessibilityRole="alert" style={s.stateText}>
+                {catalog.nextPageError
+                  ? 'تعذر تحميل بقية المنتجات. المنتجات المحمّلة ما زالت معروضة.'
+                  : 'تعذر تحديث المنتجات. المعروض هو آخر بيانات تم تحميلها.'}
+                {'\n'}
+                {catalogErrorMessage(catalog.error)}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={retry}
+                disabled={catalog.fetching}
+                style={s.retry}
+              >
+                <Text style={s.retryText}>
+                  {catalog.fetching ? 'جارٍ إعادة المحاولة…' : 'إعادة المحاولة'}
+                </Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
+      );
+    if (item.type === 'state') {
+      if (catalog.loading)
+        return (
+          <View accessibilityLabel="جارٍ تحميل المنتجات" style={s.rows}>
+            {[0, 1].map((row) => (
+              <View key={row} style={s.row}>
+                {Array.from({ length: columns }, (_, i) => (
+                  <View key={i} style={s.skeleton}>
+                    <View style={s.skeletonImage} />
+                    <View style={s.skeletonLine} />
+                    <View style={[s.skeletonLine, { width: '55%' }]} />
+                  </View>
+                ))}
+              </View>
+            ))}
+          </View>
+        );
+      if (catalog.error && !catalog.data.length)
+        return (
+          <View style={s.state}>
+            <Icon name="cloud-off-outline" size={44} color={p.muted} />
+            <Text accessibilityRole="alert" style={s.stateTitle}>
+              تعذر تحميل المنتجات
+            </Text>
+            <Text style={s.stateText}>{catalogErrorMessage(catalog.error)}</Text>
+            <Pressable accessibilityRole="button" onPress={retry} style={s.retry}>
+              <Text style={s.retryText}>إعادة المحاولة</Text>
+            </Pressable>
+          </View>
+        );
+      if (!complete && !catalog.error)
+        return (
+          <View style={s.state}>
+            <ActivityIndicator color={p.primary} />
+            <Text style={s.stateText}>نبحث في بقية المنتجات…</Text>
+          </View>
+        );
+      return (
+        <View style={s.state}>
+          <Icon
+            name={search || activeCount ? 'magnify' : 'package-variant-closed'}
+            size={46}
+            color={p.muted}
+          />
+          <Text accessibilityRole="header" style={s.stateTitle}>
+            {!complete
+              ? 'لا توجد نتائج ضمن المنتجات المحمّلة'
+              : search || activeCount
+                ? 'لا توجد نتائج مطابقة'
+                : 'لا توجد منتجات حاليًا'}
+          </Text>
+          <Text style={s.stateText}>
+            {!complete
+              ? 'أعد محاولة التحميل لإكمال البحث في بقية الكتالوج.'
+              : search || activeCount
+                ? 'جرّب اسمًا أو كودًا آخر، أو غيّر الفلاتر.'
+                : 'ستظهر المنتجات هنا عند إضافتها إلى الكتالوج.'}
+          </Text>
+          {!!(search || activeCount) && (
+            <Pressable accessibilityRole="button" onPress={reset} style={s.retry}>
+              <Text style={s.retryText}>مسح البحث والفلاتر</Text>
+            </Pressable>
+          )}
         </View>
       );
     }
-    return null;
+    if (item.type !== 'products') return null;
+    return (
+      <View style={s.rows}>
+        <View style={s.row}>
+          {item.items.map((product) => (
+            <CatalogProductCard
+              key={String(product.productCode)}
+              item={product}
+              list={listView}
+              merchant={role === 'Merchant'}
+              onPress={() => navigation.navigate('ProductDetails', { product })}
+            />
+          ))}
+          {Array.from({ length: columns - item.items.length }, (_, i) => (
+            <View key={`blank-${i}`} style={s.spacer} />
+          ))}
+        </View>
+      </View>
+    );
   };
-
   return (
-    <ScreenContainer>
-      <HeaderComponent title="المنتجات" />
+    <ScreenContainer backgroundColor={p.background}>
       <FlatList
-        data={filtered}
-        keyExtractor={(i) => String(i.productCode || i.id)}
-        numColumns={2}
+        style={s.list}
+        contentContainerStyle={s.content}
+        data={rows}
+        keyExtractor={(item) => item.key}
+        renderItem={render}
+        stickyHeaderIndices={[1]}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={ListHeader}
-        ListFooterComponent={ListFooter}
-        onEndReached={handleEndReached}
-        onEndReachedThreshold={0.5}
-        contentContainerStyle={styles.flatContent}
-        columnWrapperStyle={styles.columnWrapper}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[COLORS.mainOrange]}
+            onRefresh={refresh}
+            tintColor={p.primary}
+            colors={[p.primary]}
           />
         }
-        renderItem={({ item, index }) => (
-          <ProductCard
-            item={item}
-            index={index}
-            onPress={() => navigation.navigate(ScreenNames.ProductDetails, { product: item })}
-            onAddToCart={() => handleAddToCart(item)}
-          />
-        )}
-        ListEmptyComponent={
-          allProducts?.loading ? (
-            <View style={{ paddingVertical: hp(10), alignItems: 'center' }}>
-              <ActivityIndicator size="large" color={COLORS.mainOrange} />
+        ListFooterComponent={
+          catalog.hasMore && !catalog.error ? (
+            <View style={s.progress}>
+              <ActivityIndicator size="small" color={p.primary} />
+              <Text style={s.progressText}>
+                تحميل بقية الكتالوج · {catalog.data.length}
+                {catalog.totalCount ? ` من ${catalog.totalCount}` : ''}
+              </Text>
             </View>
-          ) : (
-            <View style={styles.empty}>
-              <Icon name="package-variant" size={hp(7.1)} color="#DDD" />
-              <CustomText style={styles.emptyTitle}>لا توجد منتجات مطابقة</CustomText>
-              <TouchableOpacity
-                style={styles.resetBtn}
-                onPress={() => {
-                  setSearch('');
-                  setSelectedCategoryId('All');
-                  setSortId('default');
-                }}
-              >
-                <CustomText style={styles.resetBtnText}>إعادة ضبط الفلاتر</CustomText>
-              </TouchableOpacity>
-            </View>
-          )
+          ) : null
         }
       />
-
-      {/* Sort Modal */}
-      <Modal
-        visible={sortOpen}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setSortOpen(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setSortOpen(false)}
+      {cartCount > 0 && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`عرض السلة، ${cartCount} قطعة`}
+          onPress={() => navigation.navigate('CartScreen')}
+          style={s.cartBar}
         >
-          <View style={styles.sortSheet}>
-            <View style={styles.sheetHandle} />
-            <CustomText style={styles.sheetTitle}>ترتيب المنتجات</CustomText>
-            {SORT_OPTIONS.map((opt) => (
-              <TouchableOpacity
-                key={opt.id}
-                style={[styles.sortOption, sortId === opt.id && styles.sortOptionActive]}
-                onPress={() => {
-                  setSortId(opt.id);
-                  setSortOpen(false);
-                }}
-              >
-                <CustomText
-                  style={[styles.sortOptionText, sortId === opt.id && styles.sortOptionTextActive]}
-                >
-                  {opt.label}
-                </CustomText>
-                {sortId === opt.id && (
-                  <Icon name="check" size={hp(2.1)} color={COLORS.mainOrange} />
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
+          <LinearGradient
+            colors={['#148970', '#08725C']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={s.cartInner}
+          >
+            <View style={s.cartGroup}>
+              <Icon name="cart-outline" size={23} color="#fff" />
+              <Text style={s.cartText}>{cartCount} قطع في السلة</Text>
+            </View>
+            <View style={s.cartGroup}>
+              <Text style={s.cartText}>عرض السلة</Text>
+              <Icon name="chevron-left" size={23} color="#fff" />
+            </View>
+          </LinearGradient>
+        </Pressable>
+      )}
+      {filtersOpen && (
+        <CatalogFilters
+          initial={filters}
+          categories={categories}
+          complete={complete}
+          onClose={() => setFiltersOpen(false)}
+          onApply={(value) => {
+            setFilters(value);
+            setFiltersOpen(false);
+          }}
+        />
+      )}
     </ScreenContainer>
   );
 }

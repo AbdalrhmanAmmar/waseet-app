@@ -64,6 +64,7 @@ export function useScreenProps() {
       navigate: (name: string, params?: Params) => router.navigate(resolve(name, params)),
       push: (name: string, params?: Params) => router.push(resolve(name, params)),
       replace: (name: string, params?: Params) => router.replace(resolve(name, params)),
+      canGoBack: () => router.canGoBack(),
       goBack: () => (router.canGoBack() ? router.back() : router.replace('/')),
       reset: ({ routes }: { index?: number; routes: { name: string; params?: Params }[] }) =>
         router.replace(resolve(routes[0].name, routes[0].params)),

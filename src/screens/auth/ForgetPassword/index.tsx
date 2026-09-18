@@ -6,7 +6,7 @@ import { COLORS, FONTS, Images, hp } from '@/theme/index';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { useState } from 'react';
 import { ImageBackground, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
-import * as Animatable from 'react-native-animatable';
+import * as Animatable from '@/components/shared/Motion';
 
 // Import Steps
 import EnterEmail from '@/screens/auth/ForgetPassword/steps/EnterEmail';
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: COLORS.mainOrange,
+    backgroundColor: COLORS.primary,
     borderRadius: hp(1),
   },
   content: {

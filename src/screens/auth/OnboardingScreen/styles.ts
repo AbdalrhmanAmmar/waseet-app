@@ -13,7 +13,7 @@ export const styles = StyleSheet.create({
   skipText: {
     fontSize: hp(1.8),
     fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
   },
   content: {
     flex: 1,
@@ -58,7 +58,7 @@ export const styles = StyleSheet.create({
   cardBadgeText: {
     fontSize: hp(1.4),
     fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
   },
   textSection: {
     marginTop: hp(4),
@@ -78,7 +78,7 @@ export const styles = StyleSheet.create({
   },
   dotActive: {
     width: hp(3),
-    backgroundColor: COLORS.mainOrange,
+    backgroundColor: COLORS.primary,
   },
   textContainer: {
     alignItems: 'center',
@@ -101,14 +101,14 @@ export const styles = StyleSheet.create({
   continueBtn: {
     position: 'absolute',
     bottom: hp(5),
-    backgroundColor: COLORS.mainOrange,
+    backgroundColor: COLORS.primary,
     width: wp(85),
     height: hp(7.5),
     borderRadius: hp(1.5),
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: COLORS.mainOrange,
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
     shadowRadius: 15,

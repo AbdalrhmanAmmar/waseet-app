@@ -30,6 +30,10 @@ async function mockApi(page: Page, role: keyof typeof paths, status = 'Approved'
     let data: unknown = [];
     if (path === 'Auth/login') data = { user, token: 'test-session' };
     else if (path === 'User/7') data = user;
+    else if (path === 'Product/8')
+      data = { productCode: 8, name: 'منتج اختبار', price: 15, quantity: 4 };
+    else if (path === 'Product/8/merchant-price/7')
+      return route.fulfill({ status: 404, json: { message: 'No override' } });
     else if (path === 'Product/all')
       data = {
         items: [{ productCode: 8, name: 'منتج اختبار', price: 15, quantity: 4 }],
@@ -62,15 +66,24 @@ for (const role of Object.keys(paths) as (keyof typeof paths)[]) {
     await expect(page).toHaveURL(new RegExp(`/${paths[role]}$`));
     if (role === 'Merchant' || role === 'SalesEmployee') {
       await expect(page.getByText('منتج اختبار', { exact: true }).first()).toBeVisible();
+      await page.screenshot({
+        path: `test-results/${role}-home.png`,
+        fullPage: true,
+        animations: 'disabled',
+      });
       await page.getByRole('tab', { name: /الطلبات/ }).click();
     }
-    await page.getByText('طلب #21', { exact: true }).click();
+    await page.getByRole('button', { name: 'فتح طلب #21', exact: true }).click();
     await expect(page.getByText('العميل: عميل اختبار')).toBeVisible();
     if (role === 'DeliveryAgent') {
       expect(calls).toContain('orders/my-deliveries');
       expect(calls).not.toContain('Product/all');
     }
-    await page.screenshot({ path: `test-results/${role}.png`, fullPage: true });
+    await page.screenshot({
+      path: `test-results/${role}.png`,
+      fullPage: true,
+      animations: 'disabled',
+    });
     expect(errors).toEqual([]);
   });
 }
@@ -80,13 +93,13 @@ test('pending account sees status only; protected deep links return to status', 
   await mockApi(page, 'Merchant', 'Pending');
   await login(page);
   await expect(page).toHaveURL(/\/account-status$/);
-  await expect(page.getByText('تحديث الحالة', { exact: true })).toBeVisible();
+  await expect(page.getByText('تحديث حالة الحساب', { exact: true })).toBeVisible();
   // Client-side URL navigation retains the in-memory web session.
   await page.evaluate(() => {
     window.history.pushState({}, '', '/merchant');
     window.dispatchEvent(new PopStateEvent('popstate'));
   });
-  await expect(page.getByText('تحديث الحالة', { exact: true })).toBeVisible();
+  await expect(page.getByText('تحديث حالة الحساب', { exact: true })).toBeVisible();
 });
 test('unauthenticated role deep link cannot show protected content', async ({ page }) => {
   await page.goto('/delivery-agent/order?id=21');
@@ -136,6 +149,7 @@ test('merchant creates an order using the documented payload and clears the cart
   await expect(page).toHaveURL(/\/merchant$/);
   await page.getByRole('button', { name: 'إضافة منتج اختبار للسلة' }).first().click();
   await page.getByRole('tab', { name: /السلة/ }).click();
+  await page.screenshot({ path: 'test-results/cart.png', fullPage: true, animations: 'disabled' });
   await page.getByText('إتمام الطلب', { exact: true }).click();
   await page.getByPlaceholder('أدخل اسم العميل بالكامل').fill('عميل جديد');
   await page.getByPlaceholder('09xxxxxxxx').fill('0912345678');
@@ -158,4 +172,30 @@ test('merchant creates an order using the documented payload and clears the cart
   await expect(
     page.getByText('السلة فارغة حالياً', { exact: true }).filter({ visible: true }),
   ).toBeVisible();
+});
+
+test('merchant browses product details and profile without losing the session', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await mockApi(page, 'Merchant');
+  await login(page);
+  await expect(page).toHaveURL(/\/merchant$/);
+  await page.getByRole('button', { name: 'تفاصيل منتج اختبار', exact: true }).click();
+  await expect(page.getByText('عن المنتج', { exact: true })).toBeVisible();
+  await page.screenshot({
+    path: 'test-results/product-details.png',
+    fullPage: true,
+    animations: 'disabled',
+  });
+  await page.getByRole('button', { name: 'رجوع', exact: true }).click();
+  await page.getByRole('tab', { name: /حسابي/ }).click();
+  await expect(page.getByRole('button', { name: 'تعديل الملف الشخصي', exact: true })).toBeVisible();
+  await page.screenshot({
+    path: 'test-results/profile.png',
+    fullPage: true,
+    animations: 'disabled',
+  });
+  expect(errors).toEqual([]);
 });

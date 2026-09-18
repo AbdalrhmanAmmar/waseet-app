@@ -126,12 +126,12 @@ export const styles = StyleSheet.create({
   merchantPriceLabel: {
     fontSize: hp(1.15),
     fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
   },
   merchantPriceValue: {
     fontSize: hp(1.35),
     fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
   },
   suggestedPriceRow: {
     flexDirection: 'row',

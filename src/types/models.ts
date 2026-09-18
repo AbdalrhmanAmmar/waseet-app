@@ -1,4 +1,5 @@
 import type { Role } from '@/auth/roles';
+import type { AccountReview } from '@/auth/account-review';
 export type Id = string | number;
 export interface User {
   userId: Id;
@@ -30,6 +31,11 @@ export interface Product {
   stock: number;
   merchantSellPrice?: number;
   effectiveExpectedSellPrice?: number;
+  expectedSellPrice?: number | null;
+  videoUrl?: string;
+  updatedAt?: string;
+  categoryProvided?: boolean;
+  stockKnown?: boolean;
   description?: string;
   [key: string]: unknown;
 }
@@ -66,6 +72,7 @@ export interface PageParams {
 export interface ApiError {
   status: number | string;
   message: string;
+  accountReview?: AccountReview;
 }
 export interface DeliveryArea {
   deliveryAreaId: Id;

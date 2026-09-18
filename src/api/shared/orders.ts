@@ -7,6 +7,8 @@ export const statusRequest = ({ orderId, status, notes }: StatusInput) => ({
   data: { targetStatus: status, ...(notes?.trim() ? { note: notes.trim() } : {}) },
 });
 export const ordersApi = baseApi.injectEndpoints({
+  // Fast Refresh re-evaluates this module while retaining the base API instance.
+  overrideExisting: process.env.NODE_ENV === 'development',
   endpoints: (build) => ({
     orderStatuses: build.query<{ status: string; isTerminal: boolean }[], void>({
       query: () => ({ url: 'orders/statuses' }),

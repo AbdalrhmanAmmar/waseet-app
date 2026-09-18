@@ -1,4 +1,5 @@
 import { API_URL } from '@/config/env';
+import { accountReview } from '@/auth/account-review';
 import type { ApiError } from '@/types/models';
 import { create } from 'axios';
 export const client = create({ baseURL: API_URL, timeout: 20000 });
@@ -18,6 +19,9 @@ client.interceptors.response.use(
       return Promise.reject({
         status: response.status,
         message: response.data.message ?? 'رفض الخادم الطلب',
+        ...(response.config.url === 'Auth/login' && {
+          accountReview: accountReview(response.data),
+        }),
       } satisfies ApiError);
     }
     return response;
@@ -33,6 +37,7 @@ client.interceptors.response.use(
     const data = error.response?.data;
     return Promise.reject({
       status: error.response?.status ?? 'NETWORK_ERROR',
+      ...(error.config?.url === 'Auth/login' && { accountReview: accountReview(data) }),
       message:
         data?.message ??
         data?.title ??

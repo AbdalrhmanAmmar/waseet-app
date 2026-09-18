@@ -42,7 +42,7 @@ export const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: COLORS.mainOrange,
+    backgroundColor: COLORS.primary,
     borderWidth: 1.5,
     borderColor: COLORS.white,
   },
@@ -50,7 +50,7 @@ export const styles = StyleSheet.create({
     width: hp(4.5),
     height: hp(4.5),
     borderRadius: hp(2.2),
-    backgroundColor: COLORS.mainOrange,
+    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -112,7 +112,7 @@ export const styles = StyleSheet.create({
   },
   walletCurrencySymbol: {
     fontSize: hp(2.0),
-    color: COLORS.mainOrange,
+    color: COLORS.primary,
     fontFamily: FONTS.fontFamilyBold,
   },
 
@@ -161,7 +161,7 @@ export const styles = StyleSheet.create({
     marginBottom: hp(1.5),
   },
   sectionTitle: { fontSize: hp(2.0), fontFamily: FONTS.fontFamilyBold, color: COLORS.charcoal },
-  seeAll: { fontSize: hp(1.5), fontFamily: FONTS.fontFamilySemiBold, color: COLORS.mainOrange },
+  seeAll: { fontSize: hp(1.5), fontFamily: FONTS.fontFamilySemiBold, color: COLORS.primary },
 
   tabsRow: { paddingHorizontal: wp(5), gap: hp(0.9), marginBottom: hp(2), marginTop: hp(0.5) },
   tabBtn: {

@@ -1,170 +1,218 @@
+import { useState } from 'react';
 import {
-  CustomText,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
+import Icon from '@expo/vector-icons/MaterialCommunityIcons';
+import {
+  CustomText as Text,
   CustomTextInput,
-  GradientBtn,
   HeaderComponent,
   ScreenContainer,
-} from '@/components/shared/index';
-import { ScreenNames } from '@/navigation/ScreenNames';
-import { styles } from '@/screens/shared/CartScreen/styles';
+} from '@/components/shared';
+import { Button, Card, ui } from '@/components/shared/ui';
+import { useAppDispatch, useAppSelector } from '@/hooks/shared/use-store';
 import {
   clearCartLocal,
   removeFromCartLocal,
   updateCartItemPriceLocal,
   updateCartQuantityLocal,
 } from '@/store/slices/cart';
-import { COLORS, hp } from '@/theme/index';
-import Icon from '@expo/vector-icons/MaterialCommunityIcons';
-import { Image, ScrollView, TouchableOpacity, View } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
-
-export default function CartScreen({ navigation }: { navigation: any }) {
-  const dispatch = useDispatch<any>();
-  const { userData } = useSelector((state: any) => state.AuthSlice);
-  const { userCart } = useSelector((state: any) => state.cart);
-  const cartItems = userCart?.data || [];
-
-  const isMerchant = userData?.role === 'Merchant' || userData?.role?.toLowerCase() === 'merchant';
-
-  const updateQty = (cartId: string, newQty: number) => {
-    dispatch(updateCartQuantityLocal({ cart_id: cartId, quantity: newQty }));
-  };
-
-  const updatePrice = (cartId: string, newPrice: string) => {
-    dispatch(updateCartItemPriceLocal({ cart_id: cartId, sellingPrice: newPrice }));
-  };
-
-  const removeItem = (cartId: string) => {
-    dispatch(removeFromCartLocal(cartId));
-  };
-
-  const clearAll = () => {
-    dispatch(clearCartLocal());
-  };
-
-  const subtotal = cartItems.reduce(
-    (acc: number, curr: any) =>
-      acc + Number(curr.sellingPrice ?? curr.price ?? 0) * Number(curr.quantity || 1),
-    0,
+import type { ScreenProps } from '@/navigation/use-screen-props';
+import type { CartItem } from '@/types/models';
+import Images from '@/theme/images';
+import { palette as p, typography as t } from '@/theme/tokens';
+function Item({ item, merchant }: { item: CartItem; merchant: boolean }) {
+  const dispatch = useAppDispatch();
+  const [failed, setFailed] = useState(false);
+  const [price, setPrice] = useState(String(item.sellingPrice));
+  const valid = price.trim() !== '' && Number.isFinite(Number(price)) && Number(price) >= 0;
+  return (
+    <Card>
+      <View style={s.row}>
+        <Image
+          source={!failed && item.image ? { uri: item.image } : Images.brandLogo}
+          onError={() => setFailed(true)}
+          style={s.image}
+        />
+        <View style={{ flex: 1, gap: 4 }}>
+          <Text style={s.name}>{item.title}</Text>
+          <Text style={ui.caption}>{item.category}</Text>
+          {merchant && item.merchantSellPrice != null && (
+            <Text style={ui.caption}>التكلفة: {item.merchantSellPrice.toFixed(2)} USD</Text>
+          )}
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`حذف ${item.title}`}
+          onPress={() => dispatch(removeFromCartLocal(item.cart_id))}
+          style={s.icon}
+        >
+          <Icon name="trash-can-outline" size={23} color={p.danger} />
+        </Pressable>
+      </View>
+      <View style={s.row}>
+        <View style={{ flex: 1 }}>
+          <CustomTextInput
+            label="سعر البيع (USD)"
+            accessibilityLabel={`سعر بيع ${item.title}`}
+            value={price}
+            keyboardType="decimal-pad"
+            onChangeText={(value) => {
+              setPrice(value);
+              if (value.trim() && Number.isFinite(Number(value)) && Number(value) >= 0)
+                dispatch(updateCartItemPriceLocal({ cart_id: item.cart_id, sellingPrice: value }));
+            }}
+            onBlur={() => setPrice(String(item.sellingPrice))}
+            containerStyle={{ marginBottom: 0 }}
+          />
+          {!valid && (
+            <Text style={{ color: p.danger, fontSize: 12 }}>
+              أدخل سعرًا صحيحًا؛ لم يتم تغيير السعر المحفوظ.
+            </Text>
+          )}
+        </View>
+        <View style={{ gap: 8 }}>
+          <Text style={ui.caption}>الكمية</Text>
+          <View style={s.quantity}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`زيادة كمية ${item.title}`}
+              disabled={item.quantity >= item.stock}
+              accessibilityState={{ disabled: item.quantity >= item.stock }}
+              onPress={() =>
+                dispatch(
+                  updateCartQuantityLocal({ cart_id: item.cart_id, quantity: item.quantity + 1 }),
+                )
+              }
+              style={[s.icon, item.quantity >= item.stock && { opacity: 0.35 }]}
+            >
+              <Icon name="plus" size={20} color={p.primary} />
+            </Pressable>
+            <Text style={s.name}>{item.quantity}</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`تقليل كمية ${item.title}`}
+              disabled={item.quantity <= 1}
+              accessibilityState={{ disabled: item.quantity <= 1 }}
+              onPress={() =>
+                dispatch(
+                  updateCartQuantityLocal({ cart_id: item.cart_id, quantity: item.quantity - 1 }),
+                )
+              }
+              style={[s.icon, item.quantity <= 1 && { opacity: 0.35 }]}
+            >
+              <Icon name="minus" size={20} color={p.primary} />
+            </Pressable>
+          </View>
+        </View>
+      </View>
+      <View style={ui.section}>
+        <Text style={ui.caption}>إجمالي المنتج</Text>
+        <Text style={ui.link}>{(item.sellingPrice * item.quantity).toFixed(2)} USD</Text>
+      </View>
+    </Card>
   );
-
+}
+export default function CartScreen({ navigation }: ScreenProps) {
+  const dispatch = useAppDispatch();
+  const { data: items, totalPrice } = useAppSelector((state) => state.cart.userCart);
+  const merchant = useAppSelector((state) => state.AuthSlice.userData?.role === 'Merchant');
   return (
     <ScreenContainer>
       <HeaderComponent
         title="سلة المشتريات"
+        showBack={false}
         rightComponent={
-          cartItems.length > 0 ? (
-            <TouchableOpacity onPress={clearAll} style={styles.clearBtn}>
-              <Icon name="trash-can-outline" size={hp(2.2)} color="#e74c3c" />
-              <CustomText style={styles.clearBtnText}>تفريغ</CustomText>
-            </TouchableOpacity>
-          ) : null
+          items.length ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="تفريغ السلة"
+              onPress={() => dispatch(clearCartLocal())}
+              style={s.icon}
+            >
+              <Icon name="trash-can-outline" size={23} color={p.danger} />
+            </Pressable>
+          ) : undefined
         }
       />
-
-      {cartItems.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Icon name="cart-off" size={hp(8)} color={COLORS.gray} />
-          <CustomText style={styles.emptyText}>السلة فارغة حالياً</CustomText>
-          <GradientBtn
-            text="تصفح المنتجات"
-            onPress={() => navigation.navigate(ScreenNames.HomeScreen)}
-            containerStyle={styles.exploreBtn}
-            colors={[COLORS.mainOrange, '#f08b5e']}
-          />
-        </View>
-      ) : (
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          {cartItems.map((item: any) => {
-            const itemId = String(item.cart_id || item.productCode || item.id);
-            return (
-              <View key={itemId} style={styles.cartItem}>
-                <Image source={{ uri: item.image || item.imageUrl }} style={styles.productCover} />
-
-                <View style={styles.itemInfo}>
-                  <CustomText style={styles.itemTitle} numberOfLines={2}>
-                    {item.title || item.name}
-                  </CustomText>
-                  <CustomText style={styles.itemEdition}>{item.category || 'عام'}</CustomText>
-                  {item.stock === 0 && (
-                    <CustomText
-                      style={{
-                        color: '#EF4444',
-                        fontSize: hp(1.2),
-                        marginTop: 2,
-                        fontFamily: 'Montserrat-Medium',
-                      }}
-                    >
-                      ⚠️ غير متوفر بالمخزون
-                    </CustomText>
-                  )}
-
-                  {isMerchant && item.merchantSellPrice !== undefined && (
-                    <CustomText
-                      style={{
-                        color: '#64748B',
-                        fontSize: hp(1.2),
-                        marginTop: 2,
-                        fontFamily: 'Montserrat-Medium',
-                      }}
-                    >
-                      سعرك (التكلفة): {item.merchantSellPrice} $
-                    </CustomText>
-                  )}
-
-                  {/* Price Input */}
-                  <View style={styles.priceEditRow}>
-                    <CustomText style={styles.priceLabel}>سعر البيع:</CustomText>
-                    <CustomTextInput
-                      value={String(item.sellingPrice ?? item.price ?? 0)}
-                      onChangeText={(v) => updatePrice(itemId, v)}
-                      keyboardType="numeric"
-                      containerStyle={styles.priceInputContainer}
-                      style={styles.priceInput}
-                    />
-                    <CustomText style={styles.currencyLabel}>$</CustomText>
-                  </View>
-                </View>
-
-                <View style={styles.itemRight}>
-                  <TouchableOpacity onPress={() => removeItem(itemId)} style={styles.deleteBtn}>
-                    <Icon name="delete-outline" size={hp(2.4)} color="#e74c3c" />
-                  </TouchableOpacity>
-                  <View style={styles.qtyControl}>
-                    <TouchableOpacity
-                      style={styles.qtyBtn}
-                      onPress={() => updateQty(itemId, (item.quantity || 1) + 1)}
-                    >
-                      <Icon name="plus" size={hp(1.6)} color={COLORS.charcoal} />
-                    </TouchableOpacity>
-                    <CustomText style={styles.qtyText}>{item.quantity || 1}</CustomText>
-                    <TouchableOpacity
-                      style={styles.qtyBtn}
-                      onPress={() => updateQty(itemId, (item.quantity || 1) - 1)}
-                    >
-                      <Icon name="minus" size={hp(1.6)} color={COLORS.charcoal} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[ui.page, s.content]}
+        >
+          {!items.length ? (
+            <View style={s.empty}>
+              <View style={s.emptyIcon}>
+                <Icon name="cart-outline" size={50} color={p.primary} />
               </View>
-            );
-          })}
-
-          <View style={styles.summaryBox}>
-            <View style={styles.summaryRow}>
-              <CustomText style={styles.summaryLabel}>المجموع</CustomText>
-              <CustomText style={styles.summaryValue}>{subtotal.toFixed(2)} $</CustomText>
+              <Text style={ui.title}>السلة فارغة حالياً</Text>
+              <Text style={[ui.caption, { textAlign: 'center' }]}>
+                اختر المنتجات التي تريدها، وستظهر هنا لمراجعتها قبل إرسال الطلب.
+              </Text>
+              <Button
+                title="تصفح المنتجات"
+                onPress={() => navigation.navigate('ProductsScreen')}
+                icon="arrow-left"
+              />
             </View>
-          </View>
-
-          <GradientBtn
-            text={'إتمام الطلب'}
-            onPress={() => navigation.navigate(ScreenNames.CheckoutScreen, { subtotal, cartItems })}
-            colors={[COLORS.mainOrange, '#f08b5e']}
-            leftIcon={<Icon name="arrow-left" size={hp(2.1)} color={COLORS.white} />}
-          />
+          ) : (
+            <>
+              <View>
+                <Text style={ui.title}>راجع طلبك</Text>
+                <Text style={ui.caption}>
+                  {items.length} منتجات · يمكنك تعديل سعر البيع والكمية
+                </Text>
+              </View>
+              {items.map((item) => (
+                <Item key={item.cart_id} item={item} merchant={merchant} />
+              ))}
+              <Card style={{ backgroundColor: p.soft }}>
+                <View style={ui.section}>
+                  <Text style={s.name}>إجمالي المنتجات</Text>
+                  <Text style={s.total}>{totalPrice.toFixed(2)} USD</Text>
+                </View>
+                <Text style={ui.caption}>تُعرض رسوم التوصيل في الخطوة التالية حسب المنطقة.</Text>
+              </Card>
+              <Button
+                title="إتمام الطلب"
+                icon="arrow-left"
+                onPress={() => navigation.navigate('CheckoutScreen')}
+              />
+            </>
+          )}
         </ScrollView>
-      )}
+      </KeyboardAvoidingView>
     </ScreenContainer>
   );
 }
+const s = StyleSheet.create({
+  content: { width: '100%', maxWidth: 680, alignSelf: 'center' },
+  row: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12 },
+  image: {
+    width: 64,
+    height: 72,
+    resizeMode: 'contain',
+    borderRadius: 12,
+    backgroundColor: p.background,
+  },
+  name: { fontFamily: t.bold, fontSize: 16 },
+  icon: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  quantity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: p.soft,
+    borderRadius: 12,
+  },
+  total: { fontFamily: t.bold, fontSize: 21, color: p.primary },
+  empty: { paddingVertical: 64, gap: 18, alignItems: 'center' },
+  emptyIcon: { padding: 24, borderRadius: 30, backgroundColor: p.soft },
+});

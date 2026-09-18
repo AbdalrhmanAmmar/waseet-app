@@ -33,7 +33,13 @@ const HeaderComponent: React.FC<HeaderComponentProps> = ({
     <View style={[styles.container, containerStyle]}>
       <View style={styles.left}>
         {showBack && (
-          <TouchableOpacity style={styles.backBtn} onPress={handleBack} activeOpacity={0.7}>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="رجوع"
+            style={styles.backBtn}
+            onPress={handleBack}
+            activeOpacity={0.7}
+          >
             <Icon name="chevron-right" size={hp(2.8)} color={COLORS.charcoal} />
           </TouchableOpacity>
         )}

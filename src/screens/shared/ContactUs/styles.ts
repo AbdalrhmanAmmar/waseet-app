@@ -4,7 +4,7 @@ import { StyleSheet } from 'react-native';
 export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.lightGrey },
   header: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     paddingHorizontal: hp(1.9),
     paddingVertical: hp(1.4),
@@ -63,7 +63,7 @@ export const styles = StyleSheet.create({
     lineHeight: hp(2.4),
   },
   contactCard: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     backgroundColor: COLORS.white,
     borderRadius: hp(1.6),
