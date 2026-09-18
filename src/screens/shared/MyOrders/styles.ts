@@ -1,0 +1,561 @@
+import { COLORS, FONTS, hp, wp } from '@/theme/index';
+import { StyleSheet } from 'react-native';
+
+export const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: wp(4),
+    paddingTop: hp(1.2),
+    paddingBottom: hp(0.6),
+    backgroundColor: COLORS.white,
+  },
+  searchContainer: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  tabsContainer: {
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingVertical: hp(1),
+  },
+  tabsScrollContent: {
+    paddingHorizontal: wp(4),
+    flexDirection: 'row',
+    gap: wp(2),
+    alignItems: 'center',
+  },
+  tabItem: {
+    paddingHorizontal: wp(3.5),
+    paddingVertical: hp(0.8),
+    borderRadius: hp(2),
+    backgroundColor: '#F1F5F9',
+  },
+  tabItemActive: {
+    backgroundColor: COLORS.mainOrange,
+  },
+  tabText: {
+    fontSize: hp(1.4),
+    fontFamily: FONTS.fontFamilyMedium,
+    color: '#64748B',
+  },
+  tabTextActive: {
+    color: COLORS.white,
+    fontFamily: FONTS.fontFamilyBold,
+  },
+  list: {
+    padding: wp(4),
+    paddingBottom: hp(8),
+  },
+  centerLoader: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  footerLoader: {
+    paddingVertical: hp(2),
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: hp(10),
+  },
+  emptyText: {
+    color: '#64748B',
+    marginTop: hp(1.5),
+    fontSize: hp(1.6),
+    fontFamily: FONTS.fontFamilyMedium,
+  },
+  orderCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: hp(1.8),
+    padding: hp(1.8),
+    marginBottom: hp(1.6),
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  orderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: hp(1.2),
+    borderBottomWidth: 1,
+    borderBottomColor: '#F8FAFC',
+  },
+  orderIdBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  orderIdText: {
+    fontSize: hp(1.7),
+    fontFamily: FONTS.fontFamilyBold,
+    color: COLORS.charcoal,
+  },
+  statusBadge: {
+    borderRadius: hp(2),
+    paddingHorizontal: hp(1.2),
+    paddingVertical: hp(0.4),
+  },
+  statusText: {
+    fontSize: hp(1.3),
+    fontFamily: FONTS.fontFamilyBold,
+  },
+  orderBody: {
+    paddingVertical: hp(1.2),
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: hp(0.6),
+  },
+  infoLabel: {
+    fontSize: hp(1.4),
+    color: '#64748B',
+    fontFamily: FONTS.fontFamilyRegular,
+  },
+  infoValue: {
+    fontSize: hp(1.45),
+    color: COLORS.charcoal,
+    fontFamily: FONTS.fontFamilyMedium,
+    flex: 1,
+  },
+  orderFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: hp(1.2),
+    borderTopWidth: 1,
+    borderTopColor: '#F8FAFC',
+  },
+  totalLabel: {
+    fontSize: hp(1.3),
+    color: '#94A3B8',
+    fontFamily: FONTS.fontFamilyRegular,
+  },
+  totalValue: {
+    fontSize: hp(1.9),
+    fontFamily: FONTS.fontFamilyBold,
+    color: COLORS.mainOrange,
+  },
+  merchantProfitText: {
+    fontSize: hp(1.2),
+    fontFamily: FONTS.fontFamilyMedium,
+    marginTop: 2,
+  },
+  profitPositive: {
+    color: '#10B981',
+  },
+  profitNegative: {
+    color: '#EF4444',
+  },
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  historyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: wp(3),
+    paddingVertical: hp(0.7),
+    borderRadius: hp(1.2),
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1,
+    borderColor: '#FFEDD5',
+  },
+  historyBtnText: {
+    fontSize: hp(1.3),
+    fontFamily: FONTS.fontFamilyBold,
+    color: COLORS.mainOrange,
+  },
+  detailsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: wp(3),
+    paddingVertical: hp(0.7),
+    borderRadius: hp(1.2),
+    backgroundColor: '#F1F5F9',
+  },
+  detailsBtnText: {
+    fontSize: hp(1.3),
+    fontFamily: FONTS.fontFamilyBold,
+    color: '#334155',
+  },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: hp(2.5),
+    borderTopRightRadius: hp(2.5),
+    maxHeight: hp(85),
+    paddingBottom: hp(3),
+  },
+  statusChangeModalContent: {
+    maxHeight: hp(82),
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: hp(2),
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  modalTitle: {
+    fontSize: hp(1.9),
+    fontFamily: FONTS.fontFamilyBold,
+    color: COLORS.charcoal,
+  },
+  modalTabs: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  modalTab: {
+    flex: 1,
+    paddingVertical: hp(1.4),
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  modalTabActive: {
+    borderBottomColor: COLORS.mainOrange,
+  },
+  modalTabText: {
+    fontSize: hp(1.5),
+    fontFamily: FONTS.fontFamilyMedium,
+    color: '#64748B',
+  },
+  modalTabTextActive: {
+    color: COLORS.mainOrange,
+    fontFamily: FONTS.fontFamilyBold,
+  },
+  modalBody: {
+    padding: hp(2),
+  },
+  modalLoaderContainer: {
+    paddingVertical: hp(6),
+    alignItems: 'center',
+  },
+  loaderText: {
+    marginTop: 10,
+    color: '#64748B',
+    fontFamily: FONTS.fontFamilyRegular,
+    fontSize: hp(1.4),
+  },
+  modalSectionTitle: {
+    fontSize: hp(1.6),
+    fontFamily: FONTS.fontFamilyBold,
+    color: COLORS.charcoal,
+    marginBottom: hp(1.2),
+    marginTop: hp(1),
+  },
+  notesSectionTitle: {
+    marginTop: hp(1.5),
+  },
+  customerInfoCard: {
+    backgroundColor: '#F8FAFC',
+    padding: hp(1.4),
+    borderRadius: hp(1.4),
+    marginBottom: hp(1.5),
+  },
+  customerNameText: {
+    fontSize: hp(1.5),
+    fontFamily: FONTS.fontFamilyBold,
+    color: COLORS.charcoal,
+  },
+  customerSubText: {
+    fontSize: hp(1.35),
+    color: '#64748B',
+    marginTop: 4,
+    fontFamily: FONTS.fontFamilyRegular,
+  },
+  itemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: hp(1.2),
+    borderRadius: hp(1.4),
+    backgroundColor: '#F8FAFC',
+    marginBottom: hp(1),
+    gap: 10,
+  },
+  itemImage: {
+    width: hp(6),
+    height: hp(6),
+    borderRadius: hp(1),
+  },
+  itemInfo: {
+    flex: 1,
+  },
+  itemTitle: {
+    fontSize: hp(1.5),
+    fontFamily: FONTS.fontFamilyBold,
+    color: COLORS.charcoal,
+  },
+  itemQty: {
+    fontSize: hp(1.3),
+    color: '#64748B',
+    fontFamily: FONTS.fontFamilyRegular,
+    marginTop: 2,
+  },
+  itemProfitText: {
+    fontSize: hp(1.2),
+    fontFamily: FONTS.fontFamilyMedium,
+    marginTop: 2,
+  },
+  itemPrice: {
+    fontSize: hp(1.5),
+    fontFamily: FONTS.fontFamilyBold,
+    color: COLORS.mainOrange,
+  },
+  emptyProductsContainer: {
+    paddingVertical: hp(2),
+    alignItems: 'center',
+  },
+  emptyProductsText: {
+    color: '#94A3B8',
+    fontSize: hp(1.4),
+    fontFamily: FONTS.fontFamilyRegular,
+  },
+  summaryCard: {
+    marginTop: hp(2),
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    paddingTop: hp(1.5),
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  summaryRowLabel: {
+    color: '#64748B',
+    fontSize: hp(1.4),
+    fontFamily: FONTS.fontFamilyRegular,
+  },
+  summaryRowValue: {
+    fontSize: hp(1.5),
+    fontFamily: FONTS.fontFamilyMedium,
+    color: COLORS.charcoal,
+  },
+  summaryProfitValue: {
+    fontSize: hp(1.5),
+    fontFamily: FONTS.fontFamilyBold,
+  },
+  summaryTotalValue: {
+    fontSize: hp(1.8),
+    fontFamily: FONTS.fontFamilyBold,
+    color: COLORS.mainOrange,
+  },
+  summaryStatusValue: {
+    fontSize: hp(1.5),
+    fontFamily: FONTS.fontFamilyBold,
+  },
+  editStatusBtn: {
+    marginTop: hp(2.5),
+  },
+
+  // Timeline inside modal
+  timelineList: {
+    paddingVertical: hp(1),
+  },
+  timelineItem: {
+    flexDirection: 'row',
+    marginBottom: hp(2),
+  },
+  timelineLeft: {
+    alignItems: 'center',
+    marginRight: 12,
+    width: 24,
+  },
+  timelineDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#CBD5E1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+  },
+  dotActive: {
+    backgroundColor: COLORS.mainOrange,
+    borderWidth: 2,
+    borderColor: '#FFEDD5',
+  },
+  timelineLine: {
+    width: 2,
+    flex: 1,
+    backgroundColor: '#E2E8F0',
+    marginVertical: 4,
+  },
+  timelineContent: {
+    flex: 1,
+  },
+  timelineBadgesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 2,
+  },
+  historyFromBadge: {
+    borderRadius: hp(2),
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+  },
+  historyFromText: {
+    fontSize: hp(1.2),
+    fontFamily: FONTS.fontFamilyMedium,
+  },
+  historyToBadge: {
+    borderRadius: hp(2),
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+  },
+  historyToText: {
+    fontSize: hp(1.3),
+    fontFamily: FONTS.fontFamilyBold,
+  },
+  timelineNoteText: {
+    fontSize: hp(1.3),
+    color: '#475569',
+    fontFamily: FONTS.fontFamilyRegular,
+    marginTop: 2,
+  },
+  timelineFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  timelineDate: {
+    fontSize: hp(1.25),
+    color: '#94A3B8',
+    fontFamily: FONTS.fontFamilyRegular,
+  },
+  timelineActorText: {
+    fontSize: hp(1.2),
+    color: '#64748B',
+    fontFamily: FONTS.fontFamilyRegular,
+  },
+  emptyHistoryContainer: {
+    paddingVertical: hp(4),
+    alignItems: 'center',
+  },
+  emptyHistoryText: {
+    color: '#64748B',
+    marginTop: 8,
+    fontSize: hp(1.5),
+    fontFamily: FONTS.fontFamilyRegular,
+  },
+
+  // Management Change Status Styles
+  statusChangeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: wp(3),
+    paddingVertical: hp(0.7),
+    borderRadius: hp(1.2),
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  statusChangeBtnText: {
+    fontSize: hp(1.3),
+    fontFamily: FONTS.fontFamilyBold,
+    color: '#2563EB',
+  },
+  statusOptionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: hp(1.4),
+    paddingHorizontal: wp(4),
+    borderRadius: hp(1.4),
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    marginBottom: hp(1),
+    backgroundColor: COLORS.white,
+  },
+  statusOptionItemSelected: {
+    borderColor: COLORS.mainOrange,
+    backgroundColor: '#FFF7ED',
+  },
+  statusOptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  statusBadgeSmall: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  statusOptionLabel: {
+    fontSize: hp(1.5),
+    fontFamily: FONTS.fontFamilyMedium,
+    color: COLORS.charcoal,
+  },
+  statusOptionLabelSelected: {
+    fontFamily: FONTS.fontFamilyBold,
+    color: COLORS.mainOrange,
+  },
+  notesInput: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: hp(1.4),
+    padding: hp(1.4),
+    fontSize: hp(1.4),
+    color: COLORS.charcoal,
+    fontFamily: FONTS.fontFamilyRegular,
+    minHeight: hp(8),
+    textAlignVertical: 'top',
+    marginTop: hp(1),
+    marginBottom: hp(2),
+  },
+  confirmStatusButton: {
+    backgroundColor: COLORS.mainOrange,
+    borderRadius: hp(1.4),
+    paddingVertical: hp(1.6),
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: COLORS.mainOrange,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+    marginBottom: hp(2),
+  },
+  confirmStatusButtonDisabled: {
+    opacity: 0.7,
+  },
+  confirmStatusButtonText: {
+    color: COLORS.white,
+    fontSize: hp(1.6),
+    fontFamily: FONTS.fontFamilyBold,
+  },
+});

@@ -1,0 +1,68 @@
+import { COLORS, FONTS, hp } from '@/theme/index';
+import { StyleSheet } from 'react-native';
+export const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: COLORS.white },
+  topCircle: {
+    position: 'absolute',
+    top: -hp(11.8),
+    alignSelf: 'center',
+    width: hp(35.3),
+    height: hp(35.3),
+    borderRadius: hp(17.6),
+    backgroundColor: COLORS.lightGray,
+  },
+  content: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: hp(3.5) },
+  iconContainer: {
+    width: hp(14.1),
+    height: hp(14.1),
+    borderRadius: hp(7.1),
+    overflow: 'hidden',
+    shadowColor: COLORS.secondary,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 10,
+    marginBottom: hp(3.5),
+  },
+  iconGradient: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  title: {
+    fontSize: hp(2.8),
+    fontFamily: FONTS.fontFamilyBold,
+    color: COLORS.charcoal,
+    textAlign: 'center',
+    marginBottom: hp(1.4),
+  },
+  subtitle: {
+    fontSize: hp(1.6),
+    fontFamily: FONTS.fontFamilyRegular,
+    color: COLORS.darkgray,
+    textAlign: 'center',
+    lineHeight: hp(2.6),
+    marginBottom: hp(2.8),
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: hp(0.7),
+    backgroundColor: COLORS.primary100,
+    paddingHorizontal: hp(1.6),
+    paddingVertical: hp(0.9),
+    borderRadius: hp(1.2),
+  },
+  statusText: { fontSize: hp(1.4), fontFamily: FONTS.fontFamilySemiBold, color: COLORS.primary },
+
+  footer: { paddingHorizontal: hp(2.8), gap: hp(1.4) },
+  primaryBtn: { borderRadius: hp(3.5), overflow: 'hidden', width: '100%' },
+  secondaryBtn: {
+    paddingVertical: hp(1.9),
+    alignItems: 'center',
+    borderRadius: hp(3.5),
+    borderWidth: 1.5,
+    borderColor: COLORS.bordercolor,
+  },
+  secondaryBtnText: {
+    fontSize: hp(1.8),
+    fontFamily: FONTS.fontFamilySemiBold,
+    color: COLORS.darkgray,
+  },
+});

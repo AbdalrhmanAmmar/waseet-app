@@ -1,0 +1,9 @@
+import { useDeliveryOrderStatusMutation } from '@/api/delivery-agent';
+import { StatusEditor } from '@/components/shared/orders/StatusEditor';
+import type { Order } from '@/types/models';
+export function DeliveryOrderActions({ order }: { order: Order }) {
+  const [save, result] = useDeliveryOrderStatusMutation();
+  return (
+    <StatusEditor order={order} saving={result.isLoading} save={(value) => save(value).unwrap()} />
+  );
+}

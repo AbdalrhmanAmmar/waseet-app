@@ -1,0 +1,122 @@
+import { COLORS, FONTS, hp, wp } from '@/theme/index';
+import { StyleSheet } from 'react-native';
+
+export const styles = StyleSheet.create({
+  bg: { flex: 1 },
+  overlay: { flex: 1, backgroundColor: 'rgba(255, 255, 255, 0.4)' },
+  skipBtn: {
+    position: 'absolute',
+    right: hp(2.4),
+    zIndex: 10,
+    padding: hp(1),
+  },
+  skipText: {
+    fontSize: hp(1.8),
+    fontFamily: FONTS.fontFamilyBold,
+    color: COLORS.mainOrange,
+  },
+  content: {
+    flex: 1,
+    paddingTop: hp(12),
+    alignItems: 'center',
+  },
+  activeCardWrapper: {
+    height: hp(45),
+    width: wp(85),
+  },
+  cardContainer: {
+    width: wp(85),
+    height: hp(45),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  activeCard: {
+    width: wp(80),
+    height: hp(40),
+    backgroundColor: COLORS.white,
+    borderRadius: hp(3.5),
+    overflow: 'hidden',
+    elevation: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+  },
+  cardImage: {
+    width: '100%',
+    height: '100%',
+  },
+  cardBadge: {
+    position: 'absolute',
+    top: hp(2),
+    right: hp(2),
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingHorizontal: hp(1.5),
+    paddingVertical: hp(0.8),
+    borderRadius: hp(1.2),
+  },
+  cardBadgeText: {
+    fontSize: hp(1.4),
+    fontFamily: FONTS.fontFamilyBold,
+    color: COLORS.mainOrange,
+  },
+  textSection: {
+    marginTop: hp(4),
+    width: wp(85),
+    alignItems: 'center',
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    marginBottom: hp(3),
+  },
+  dot: {
+    width: hp(1),
+    height: hp(1),
+    borderRadius: hp(0.5),
+    backgroundColor: '#D1D1D1',
+    marginHorizontal: hp(0.6),
+  },
+  dotActive: {
+    width: hp(3),
+    backgroundColor: COLORS.mainOrange,
+  },
+  textContainer: {
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: hp(3.2),
+    fontFamily: FONTS.fontFamilyBold,
+    color: '#111A2C',
+    textAlign: 'center',
+    marginBottom: hp(1.5),
+    lineHeight: hp(4.2),
+  },
+  subtitle: {
+    fontSize: hp(1.6),
+    fontFamily: FONTS.fontFamilyRegular,
+    color: '#757D85',
+    textAlign: 'center',
+    lineHeight: hp(2.5),
+  },
+  continueBtn: {
+    position: 'absolute',
+    bottom: hp(5),
+    backgroundColor: COLORS.mainOrange,
+    width: wp(85),
+    height: hp(7.5),
+    borderRadius: hp(1.5),
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: COLORS.mainOrange,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 10,
+  },
+  continueBtnText: {
+    fontSize: hp(2.2),
+    fontFamily: FONTS.fontFamilyBold,
+    color: COLORS.white,
+  },
+});
