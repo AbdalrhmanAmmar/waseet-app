@@ -14,7 +14,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import Text from '@/components/shared/CustomText';
 import { useReducedMotion } from '@/hooks/shared/use-reduced-motion';
-import { palette as p, typography as t } from '@/theme/tokens';
+import { typography as t } from '@/theme/tokens';
+import { catalogPalette as p } from './catalog-theme';
 import {
   defaultFilters,
   normalizeNumber,
@@ -202,7 +203,7 @@ const s = StyleSheet.create({
     width: '100%',
     maxWidth: 560,
     alignSelf: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: p.background,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 22,
@@ -231,8 +232,8 @@ const s = StyleSheet.create({
     paddingHorizontal: 17,
     minHeight: 44,
     justifyContent: 'center',
-    borderRadius: 12,
-    backgroundColor: '#F2F5F1',
+    borderRadius: 24,
+    backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: p.border,
   },
@@ -251,6 +252,7 @@ const s = StyleSheet.create({
   range: { flexDirection: 'row-reverse', gap: 12, marginBottom: 12 },
   field: { flex: 1, gap: 4 },
   input: {
+    backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: p.border,
     borderRadius: 12,

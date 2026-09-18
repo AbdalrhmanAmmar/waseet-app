@@ -29,7 +29,7 @@ import type { ScreenProps } from '@/navigation/use-screen-props';
 import type { Product } from '@/types/models';
 import { catalogErrorMessage } from '@/domain/catalog-error';
 import Images from '@/theme/images';
-import { palette as p } from '@/theme/tokens';
+import { catalogPalette as p } from '@/components/shared/catalog/catalog-theme';
 import { styles as s } from './styles';
 
 type Row =
@@ -64,9 +64,14 @@ export default function ProductsScreen({
     if (focused && catalog.hasMore && !catalog.fetching && !catalog.error) catalog.loadMore();
   }, [focused, catalog]);
   const complete = !catalog.loading && !catalog.hasMore && !catalog.error;
-  const categories = [...new Set(catalog.data.map((item) => item.category).filter(Boolean))].sort(
-    (a, b) => a.localeCompare(b, 'ar'),
-  );
+  const categories = [
+    ...new Set(
+      catalog.data
+        .filter((item) => item.categoryProvided !== false)
+        .map((item) => item.category)
+        .filter(Boolean),
+    ),
+  ].sort((a, b) => a.localeCompare(b, 'ar'));
   const products = useMemo(
     () => filterProducts(catalog.data, search, filters),
     [catalog.data, search, filters],
@@ -131,34 +136,46 @@ export default function ProductsScreen({
     if (item.type === 'hero')
       return (
         <View style={s.hero}>
-          <View style={s.motif} pointerEvents="none">
-            <Icon name="cube-outline" size={110} color={p.primary} />
+          <View style={s.heading}>
+            <Text accessibilityRole="header" style={s.title}>
+              المنتجات
+            </Text>
+            <Text style={s.subtitle}>
+              {catalog.loading
+                ? 'جارٍ تحميل الكتالوج…'
+                : complete
+                  ? `${catalog.data.length} منتجًا`
+                  : `${catalog.data.length} منتج محمّل`}
+            </Text>
           </View>
-          <View style={s.brandRow}>
-            <Image source={Images.brandLogo} style={s.logo} accessibilityLabel="وسيط" />
-            <View style={s.role}>
-              <Icon
-                name={role === 'Merchant' ? 'storefront-outline' : 'badge-account-outline'}
-                size={15}
-                color={p.primary}
-              />
-              <Text style={s.roleText}>
-                {role === 'Merchant' ? 'واجهة التاجر' : 'واجهة المبيعات'}
-              </Text>
+          <View style={s.headerControls}>
+            <View style={s.brand} accessibilityLabel="وسيط" accessible>
+              <Image source={Images.brandLogo} style={s.logo} />
+              <Text style={s.brandName}>وسيط</Text>
             </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="إنشاء طلب جديد"
-              onPress={() => navigation.navigate('CreateOrder')}
-              style={s.createIcon}
-            >
-              <Icon name="file-document-plus-outline" size={26} color={p.deep} />
-            </Pressable>
+            <View style={s.toggle}>
+              {(['grid', 'list'] as const).map((mode) => (
+                <Pressable
+                  key={mode}
+                  accessibilityRole="radio"
+                  accessibilityLabel={mode === 'grid' ? 'عرض شبكي' : 'عرض قائمة'}
+                  aria-checked={view === mode}
+                  onPress={() => setView(mode)}
+                  style={({ pressed }) => [
+                    s.toggleButton,
+                    view === mode && s.activeToggle,
+                    pressed && s.pressed,
+                  ]}
+                >
+                  <Icon
+                    name={mode === 'grid' ? 'view-grid-outline' : 'format-list-bulleted'}
+                    size={22}
+                    color={view === mode ? p.primary : p.muted}
+                  />
+                </Pressable>
+              ))}
+            </View>
           </View>
-          <Text accessibilityRole="header" style={s.title}>
-            اكتشف منتجاتك
-          </Text>
-          <Text style={s.subtitle}>اختَر منتجاتك وجهّز طلبك بسهولة</Text>
         </View>
       );
     if (item.type === 'search')
@@ -169,7 +186,7 @@ export default function ProductsScreen({
               <Icon name="magnify" size={22} color={p.muted} />
               <TextInput
                 accessibilityLabel="البحث عن المنتجات"
-                placeholder="ابحث باسم المنتج أو الكود…"
+                placeholder="ابحث باسم المنتج أو الكود"
                 placeholderTextColor={p.muted}
                 value={search}
                 onChangeText={setSearch}
@@ -192,9 +209,9 @@ export default function ProductsScreen({
               accessibilityRole="button"
               accessibilityLabel={`تصفية وترتيب، ${activeCount} فلاتر مفعلة`}
               onPress={() => setFiltersOpen(true)}
-              style={s.filterButton}
+              style={({ pressed }) => [s.filterButton, pressed && s.pressed]}
             >
-              <Icon name="tune-variant" size={25} color="#fff" />
+              <Icon name="tune-variant" size={25} color={p.deep} />
               {!!activeCount && (
                 <View style={s.badge}>
                   <Text style={s.badgeText}>{activeCount}</Text>
@@ -243,10 +260,9 @@ export default function ProductsScreen({
       );
     if (item.type === 'toolbar')
       return (
-        <View style={{ paddingHorizontal: 20 }}>
+        <View style={{ paddingHorizontal: 16 }}>
           <View style={s.toolbar}>
-            <View>
-              <Text style={s.sectionTitle}>المنتجات</Text>
+            <View style={s.results}>
               <Text accessibilityLiveRegion="polite" style={s.count}>
                 {catalog.loading
                   ? 'جارٍ التحميل…'
@@ -255,24 +271,17 @@ export default function ProductsScreen({
                     : `${products.length} نتيجة ضمن ${catalog.data.length} منتج محمّل`}
               </Text>
             </View>
-            <View style={s.toggle}>
-              {(['list', 'grid'] as const).map((mode) => (
-                <Pressable
-                  key={mode}
-                  accessibilityRole="radio"
-                  accessibilityLabel={mode === 'grid' ? 'عرض شبكي' : 'عرض قائمة'}
-                  aria-checked={view === mode}
-                  onPress={() => setView(mode)}
-                  style={[s.toggleButton, view === mode && s.activeToggle]}
-                >
-                  <Icon
-                    name={mode === 'grid' ? 'view-grid-outline' : 'format-list-bulleted'}
-                    size={22}
-                    color={view === mode ? '#fff' : p.muted}
-                  />
-                </Pressable>
-              ))}
-            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="ترتيب المنتجات"
+              onPress={() => setFiltersOpen(true)}
+              style={({ pressed }) => [s.sortButton, pressed && s.pressed]}
+            >
+              <Text style={s.sortText}>
+                الترتيب: {sortOptions.find((option) => option.id === filters.sort)!.label}
+              </Text>
+              <Icon name="chevron-down" size={19} color={p.deep} />
+            </Pressable>
           </View>
           {!!catalog.error && catalog.data.length > 0 && (
             <View style={s.state}>
@@ -385,7 +394,7 @@ export default function ProductsScreen({
     );
   };
   return (
-    <ScreenContainer backgroundColor={p.background}>
+    <ScreenContainer backgroundColor={p.background} edges={['top', 'left', 'right']}>
       <FlatList
         style={s.list}
         contentContainerStyle={s.content}

@@ -22,8 +22,16 @@ const items = [
 async function setup(
   page: Page,
   role = 'Merchant',
-  options: { failNext?: boolean; empty?: boolean; failAll?: boolean; priceListId?: number } = {},
+  options: {
+    failNext?: boolean;
+    empty?: boolean;
+    failAll?: boolean;
+    priceListId?: number;
+    products?: Record<string, unknown>[];
+  } = {},
 ) {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const inventory = options.products ?? items;
   let failNext = !!options.failNext;
   let failAll = !!options.failAll;
   const calls: number[] = [];
@@ -57,10 +65,10 @@ async function setup(
       return route.fulfill({
         json: {
           data: {
-            items: options.empty ? [] : current === 1 ? items.slice(0, 2) : items.slice(2),
+            items: options.empty ? [] : inventory.slice((current - 1) * 2, current * 2),
             page: current,
-            totalPages: options.empty ? 1 : 2,
-            totalCount: options.empty ? 0 : 4,
+            totalPages: options.empty ? 1 : Math.ceil(inventory.length / 2),
+            totalCount: options.empty ? 0 : inventory.length,
           },
         },
       });
@@ -72,7 +80,7 @@ async function setup(
   await page.getByPlaceholder('أدخل كلمة المرور').fill('test-password');
   await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
   await page.getByRole('tab', { name: /المنتجات/ }).click();
-  await expect(page.getByRole('heading', { name: 'اكتشف منتجاتك' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'المنتجات', exact: true })).toBeVisible();
   return {
     calls,
     paths,
@@ -106,8 +114,8 @@ test('merchant catalog uses Product/all prices even when the account has a price
   await expect(page.getByText('4 نتيجة', { exact: true })).toBeVisible();
   await expect(page.getByRole('alert')).toHaveCount(0);
   const card = page.getByTestId('catalog-product-WS-104');
-  await expect(card).toContainText('35 USD');
-  await expect(card).toContainText('25 USD');
+  await expect(card).toContainText('35.00 USD');
+  await expect(card).toContainText('25.00 USD');
   expect(api.calls).toEqual([1, 2]);
   expect(
     api.paths.filter((path) => path.startsWith('Product/') || path.startsWith('price-lists')),
@@ -125,7 +133,7 @@ test('search finds later pages by code; filter draft validates, cancels and appl
   await expect(page.getByTestId('catalog-product-WS-316')).toBeVisible();
   await expect(page.getByTestId('catalog-product-WS-104')).toHaveCount(0);
   await page.getByRole('button', { name: 'مسح البحث', exact: true }).click();
-  await page.getByRole('button', { name: /تصفية وترتيب/ }).click();
+  await page.getByRole('button', { name: 'ترتيب المنتجات', exact: true }).click();
   await page.getByRole('textbox', { name: 'السعر الأدنى' }).fill('100');
   await page.getByRole('textbox', { name: 'السعر الأعلى' }).fill('10');
   await page.getByRole('button', { name: 'تطبيق الفلاتر' }).click();
@@ -194,6 +202,7 @@ test('sales catalog works at 320px without merchant prices; availability filter 
   await expect(page.getByText('3 نتيجة', { exact: true })).toBeVisible();
   await expect(page.getByTestId('catalog-product-WS-420')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: 'test-results/catalog-320.png', fullPage: true });
 });
 test('empty catalog and initial failure have distinct states', async ({ page }) => {
   const api = await setup(page, 'Merchant', { empty: true, failAll: true });
@@ -204,4 +213,47 @@ test('empty catalog and initial failure have distinct states', async ({ page }) 
   await expect(
     page.getByRole('heading', { name: 'لا توجد منتجات حاليًا', exact: true }),
   ).toBeVisible();
+});
+
+test('missing stock and broken photos stay explicit; zero prices and long titles fit narrow screens', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route('**/broken-catalog-photo.png', (route) =>
+    route.fulfill({ status: 404, body: '' }),
+  );
+  await setup(page, 'Merchant', {
+    products: [
+      {
+        productCode: 'WS-501',
+        name: 'منتج بدون معلومات مخزون',
+        expectedSellPrice: 12,
+        imageUrl: 'http://127.0.0.1:4173/broken-catalog-photo.png',
+      },
+      {
+        productCode: 'WS-502',
+        name: 'سماعات لاسلكية بلوتوث متعددة الاستخدامات مع حقيبة للشحن والتنقل',
+        expectedSellPrice: 0,
+        merchantSellPrice: 0,
+        quantity: 8,
+      },
+    ],
+  });
+  const unknown = page.getByTestId('catalog-product-WS-501');
+  await expect(unknown).toContainText('التوفر غير محدد');
+  await expect(unknown).toContainText('الصورة غير متاحة');
+  await expect(unknown.getByRole('button', { name: /إنشاء طلب/ })).toBeDisabled();
+  const available = page.getByTestId('catalog-product-WS-502');
+  await expect(available).toContainText('0.00 USD');
+  await expect(available).toContainText('متاح 8 قطعة');
+  await expect(available.getByRole('button', { name: /إنشاء طلب/ })).toBeEnabled();
+  // Unknown categories are not invented in cards or in the category selector.
+  await expect(page.getByRole('button', { name: 'تصنيف عام', exact: true })).toHaveCount(0);
+  for (const width of [320, 768]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await expect(available).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+  }
 });

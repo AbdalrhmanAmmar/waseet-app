@@ -2,10 +2,14 @@ import { useState } from 'react';
 import { Image, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import Text from '@/components/shared/CustomText';
-import { palette as p, typography as t } from '@/theme/tokens';
+import { typography as t } from '@/theme/tokens';
+import { catalogPalette as p } from './catalog-theme';
 import type { Product } from '@/types/models';
 import { salePrice } from './catalog-model';
 import { suggestedPrice } from '@/domain/product-details';
+
+const money = (value: number) =>
+  value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export function CatalogProductCard({
   item,
@@ -21,23 +25,22 @@ export function CatalogProductCard({
   onCreateOrder: () => void;
 }) {
   const [failedUri, setFailedUri] = useState<string>();
-  const { width, fontScale } = useWindowDimensions();
-  const inline = list && width >= 380 && fontScale <= 1.25;
-  const out = !Number.isFinite(item.stock) || item.stock <= 0;
+  const { fontScale } = useWindowDimensions();
+  const stacked = list && fontScale > 1.25;
+  const knownStock = item.stockKnown !== false && Number.isFinite(item.stock);
+  const out = !knownStock || item.stock <= 0;
   const price = salePrice(item);
   const validPrice = Number.isFinite(price) && price >= 0;
+  const merchantPrice = item.merchantSellPrice;
   return (
-    <View
-      style={[s.card, list && s.list, inline && s.inline]}
-      testID={`catalog-product-${item.productCode}`}
-    >
+    <View style={[s.card, list && s.list]} testID={`catalog-product-${item.productCode}`}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`تفاصيل ${item.title}`}
         onPress={onPress}
-        style={[list && s.listDetails, inline && s.inlineDetails]}
+        style={({ pressed }) => [list && !stacked && s.listDetails, pressed && s.pressed]}
       >
-        <View style={[s.photo, list && s.listPhoto, inline && s.inlinePhoto]}>
+        <View style={[s.photo, list && !stacked && s.listPhoto]}>
           {item.image && failedUri !== item.image ? (
             <Image
               source={{ uri: item.image }}
@@ -47,18 +50,17 @@ export function CatalogProductCard({
             />
           ) : (
             <View style={s.fallback}>
-              <Icon name="image-outline" size={32} color="#A2B7AB" />
+              <Icon name="image-outline" size={34} color="#A79F92" />
               <Text style={s.fallbackText}>الصورة غير متاحة</Text>
             </View>
           )}
-          <View style={[s.badge, out && s.outBadge]}>
-            <Text style={[s.badgeText, out && s.outText]}>{out ? 'نفدت الكمية' : 'متوفر'}</Text>
-          </View>
         </View>
-        <View style={[s.info, list && s.listInfo]}>
-          <Text style={s.category} numberOfLines={1}>
-            {item.category}
-          </Text>
+        <View style={[s.info, list && !stacked && s.listInfo]}>
+          {!!item.category && item.categoryProvided !== false && (
+            <Text style={s.category} numberOfLines={1}>
+              {item.category}
+            </Text>
+          )}
           <Text style={[s.title, list && s.listTitle]} numberOfLines={2}>
             {item.title}
           </Text>
@@ -69,31 +71,39 @@ export function CatalogProductCard({
             {suggestedPrice(item) != null ? 'سعر البيع المقترح' : 'سعر البيع'}
           </Text>
           <Text style={s.price}>
-            {validPrice ? price.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '—'}{' '}
-            <Text style={s.currency}>USD</Text>
+            {validPrice ? money(price) : '—'} <Text style={s.currency}>USD</Text>
           </Text>
           {merchant &&
-            item.merchantSellPrice != null &&
-            Number.isFinite(Number(item.merchantSellPrice)) && (
+            merchantPrice != null &&
+            Number.isFinite(merchantPrice) &&
+            merchantPrice >= 0 && (
               <View style={s.merchant}>
                 <Text style={s.merchantLabel}>سعر التاجر</Text>
-                <Text style={s.merchantPrice}>
-                  {Number(item.merchantSellPrice).toLocaleString('en-US')} USD
-                </Text>
+                <Text style={s.merchantPrice}>{money(merchantPrice)} USD</Text>
               </View>
             )}
         </View>
       </Pressable>
-      <View style={inline ? s.inlineAction : list ? s.listAction : s.action}>
+      <View style={s.action}>
+        <View style={s.stockRow}>
+          <View style={[s.stockDot, out && s.outDot]} />
+          <Text style={[s.stock, out && s.outText]}>
+            {!knownStock
+              ? 'التوفر غير محدد'
+              : out
+                ? 'نفدت الكمية'
+                : `متاح ${item.stock.toLocaleString('en-US')} قطعة`}
+          </Text>
+        </View>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`إنشاء طلب ${item.title}`}
           disabled={out}
           onPress={onCreateOrder}
-          style={[s.add, out && s.unavailable]}
+          style={({ pressed }) => [s.add, out && s.unavailable, pressed && s.pressed]}
         >
-          <Icon name="file-document-plus-outline" size={20} color={out ? p.muted : '#fff'} />
-          <Text style={[s.addText, out && { color: p.muted }]}>إنشاء طلب</Text>
+          <Icon name="file-document-plus-outline" size={21} color={out ? p.muted : p.deep} />
+          <Text style={[s.addText, out && s.disabledText]}>إنشاء طلب</Text>
         </Pressable>
       </View>
     </View>
@@ -104,71 +114,69 @@ const s = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     backgroundColor: '#fff',
-    borderRadius: 19,
-    padding: 8,
+    borderRadius: 18,
+    padding: 5,
     borderWidth: 1,
-    borderColor: '#E7EDE7',
-    gap: 8,
+    borderColor: p.border,
   },
-  list: { width: '100%', padding: 12 },
-  inline: { flexDirection: 'row-reverse', alignItems: 'center' },
-  inlineDetails: { flex: 1, gap: 8 },
-  inlinePhoto: { width: 65, aspectRatio: 0.65 },
-  inlineAction: { width: 108 },
+  list: { width: '100%', padding: 10 },
   listTitle: { minHeight: 0 },
   listDetails: { flexDirection: 'row-reverse', gap: 14, alignItems: 'center' },
-  photo: { aspectRatio: 1.14, backgroundColor: '#F2F3EF', borderRadius: 13, overflow: 'hidden' },
-  listPhoto: { width: '32%', aspectRatio: 0.9 },
+  photo: { aspectRatio: 1, backgroundColor: p.photo, borderRadius: 13, overflow: 'hidden' },
+  listPhoto: { width: '34%', aspectRatio: 0.85 },
   image: { width: '100%', height: '100%' },
-  fallback: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 3 },
-  fallbackText: { fontSize: 10, color: p.muted },
-  badge: {
-    position: 'absolute',
-    top: 7,
-    right: 7,
-    backgroundColor: '#D6F4E0',
-    paddingHorizontal: 7,
-    paddingVertical: 1,
-    borderRadius: 8,
-  },
-  badgeText: { color: '#146449', fontSize: 10, lineHeight: 20, fontFamily: t.bold },
-  outBadge: { backgroundColor: '#FAE7DF' },
-  outText: { color: '#8B5141' },
-  info: { paddingHorizontal: 3, paddingTop: 7 },
-  listInfo: { flex: 1, paddingTop: 0 },
-  category: { fontSize: 10, color: p.muted, lineHeight: 18 },
+  fallback: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 7, padding: 6 },
+  fallbackText: { fontSize: 11, color: p.muted, textAlign: 'center' },
+  info: { paddingHorizontal: 5, paddingTop: 8 },
+  listInfo: { flex: 1, minWidth: 0, paddingTop: 0 },
+  category: { fontSize: 11, color: p.champagne, lineHeight: 19 },
   title: { fontFamily: t.bold, fontSize: 15, lineHeight: 22, minHeight: 44, color: p.deep },
-  code: { fontSize: 11, color: p.muted, lineHeight: 18 },
-  caption: { fontSize: 10, color: p.muted, lineHeight: 18, marginTop: 3 },
+  code: { fontSize: 11, color: p.muted, lineHeight: 19, writingDirection: 'ltr' },
+  caption: { fontSize: 11, color: p.muted, lineHeight: 20, marginTop: 8 },
   price: {
-    fontSize: 21,
-    lineHeight: 28,
+    fontSize: 24,
+    lineHeight: 32,
     fontFamily: t.bold,
     color: p.deep,
     writingDirection: 'ltr',
   },
-  currency: { fontSize: 11 },
+  currency: { fontSize: 12 },
   merchant: {
-    backgroundColor: p.soft,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 8,
-    marginTop: 5,
+    flexDirection: 'row-reverse',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    columnGap: 4,
+    marginTop: 2,
   },
-  merchantLabel: { color: p.primary, fontSize: 10, lineHeight: 16 },
-  merchantPrice: { color: p.primary, fontFamily: t.bold, fontSize: 13, lineHeight: 20 },
-  action: { marginTop: 'auto' },
-  listAction: { alignSelf: 'flex-start', minWidth: 144 },
+  merchantLabel: { color: p.muted, fontSize: 11, lineHeight: 20 },
+  merchantPrice: {
+    color: p.ink,
+    fontFamily: t.medium,
+    fontSize: 11,
+    lineHeight: 20,
+    writingDirection: 'ltr',
+  },
+  action: { marginTop: 'auto', padding: 5, paddingTop: 8, gap: 8 },
+  stockRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  stockDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: p.primary },
+  outDot: { backgroundColor: '#A48670' },
+  stock: { fontSize: 11, lineHeight: 20, color: p.muted, flexShrink: 1 },
+  outText: { color: '#8A6249' },
   add: {
     minHeight: 44,
-    borderRadius: 10,
-    backgroundColor: p.primary,
+    borderRadius: 11,
+    backgroundColor: p.soft,
+    borderWidth: 1,
+    borderColor: p.primary,
     flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
-    paddingHorizontal: 6,
+    gap: 7,
+    paddingHorizontal: 7,
+    paddingVertical: 6,
   },
-  addText: { fontFamily: t.bold, color: '#fff', fontSize: 12 },
-  unavailable: { backgroundColor: '#EEF0EC' },
+  addText: { fontFamily: t.bold, color: p.deep, fontSize: 12, flexShrink: 1 },
+  unavailable: { backgroundColor: '#F2F1EE', borderColor: p.border },
+  disabledText: { color: p.muted },
+  pressed: { opacity: 0.65 },
 });
