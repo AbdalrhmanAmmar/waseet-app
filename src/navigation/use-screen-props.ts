@@ -40,6 +40,7 @@ export function useScreenProps() {
         OrderSuccess: `${base}/order-success`,
         ProductDetails: `${base}/product`,
         EditOrder: `${base}/edit-order`,
+        ProcessExternalReturn: `${base}/external-return`,
         CreateInternalReturn: `${base}/create-return`,
         OrderDetails: `${base}/order`,
         TrackOrder: `${base}/track`,

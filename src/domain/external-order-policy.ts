@@ -98,7 +98,8 @@ export type ExternalReturnInput = { items: { orderItemId: number; quantity: numb
 export const returnProcessed = (o: Order) =>
   o.isReturnProcessed === true ||
   o.items.some((i) => typeof i.returnedQuantity === 'number' && i.returnedQuantity > 0);
-export function externalReturnReason(
+// Access checks before live synchronization must not reject stale shipment/credit flags.
+export function externalReturnAccessReason(
   o: Order,
   actor: OrderActor | null | undefined,
   mode: DeliveryMode,
@@ -106,7 +107,20 @@ export function externalReturnReason(
   if (!actorActive(actor) || !isManagement(actor)) return 'معالجة المرتجع متاحة للإداري فقط.';
   if (mode !== 'external' || normalizeStatus(o.orderType) === 'return')
     return 'تتم المعالجة على الطلب الخارجي الأصلي.';
+  if (!hasReference(o.oliveryOrderId))
+    return 'معرف شحنة زحل غير متوفر. حدّث بيانات الطلب قبل المعالجة.';
+  return null;
+}
+export function externalReturnReason(
+  o: Order,
+  actor: OrderActor | null | undefined,
+  mode: DeliveryMode,
+) {
+  const access = externalReturnAccessReason(o, actor, mode);
+  if (access) return access;
   if (returnProcessed(o)) return 'تم تسجيل مرتجع لهذا الطلب بالفعل.';
+  if (o.isCredited === false)
+    return 'لم تُضف أرصدة الطلب بعد؛ لا يمكن معالجة المرتجع قبل تأكيد إضافة الرصيد.';
   if (o.canProcessReturn === false) return 'معالجة المرتجع غير متاحة لهذا الطلب حاليًا.';
   if (shipmentCode(o.oliveryStatus) !== 'delivered_with_return')
     return 'تتاح المعالجة عند التسليم مع مرتجع جزئي.';
@@ -156,6 +170,8 @@ export const externalReturnSnapshot = (o: Order) =>
     o.orderId,
     o.customerArea,
     o.userId,
+    o.totalMerchantProfitUSD,
+    o.isStockDecremented,
     o.items.map((i) => [
       i.orderItemId,
       i.productCode,

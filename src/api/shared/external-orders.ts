@@ -1,3 +1,5 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from '@/config/env';
 import { baseApi } from '../base-api';
 import type { RootState } from '@/store';
 import type { Id, Order } from '@/types/models';
@@ -5,6 +7,7 @@ import { actorFromUser, type OrderActor } from '@/domain/internal-order-policy';
 import {
   hasShipment,
   externalReturnReason,
+  externalReturnAccessReason,
   externalReturnSnapshot,
   validateExternalReturn,
   returnProcessed,
@@ -18,10 +21,36 @@ import {
   uncertainStatuses,
   type Query,
 } from './order-guards';
-type Receipt = { state: 'saved' | 'uncertain'; items: ExternalReturnInput['items'] };
+export type Receipt = { state: 'saved' | 'uncertain'; items: ExternalReturnInput['items'] };
 const receipts = new Map<string, Receipt>();
 const receiptKey = (id: Id, actor: OrderActor | null) =>
-  `${actor?.role}:${String(actor?.userId)}:${id}`;
+  `external-return:${API_URL}:${actor?.role}:${String(actor?.userId)}:${id}`;
+function recordedItems(order: Order) {
+  return order.items
+    .filter((item) => Number(item.returnedQuantity) > 0)
+    .map((item) => ({
+      orderItemId: Number(item.orderItemId),
+      quantity: Number(item.returnedQuantity),
+    }));
+}
+async function loadReceipt(key: string) {
+  if (receipts.has(key)) return receipts.get(key)!;
+  const raw = await AsyncStorage.getItem(key);
+  if (!raw) return null;
+  const value = JSON.parse(raw) as Receipt;
+  if (!['saved', 'uncertain'].includes(value.state) || !Array.isArray(value.items))
+    throw new Error('تعذر قراءة نتيجة المعالجة السابقة.');
+  receipts.set(key, value);
+  return value;
+}
+async function saveReceipt(key: string, value: Receipt) {
+  receipts.set(key, value);
+  await AsyncStorage.setItem(key, JSON.stringify(value));
+}
+async function clearReceipt(key: string) {
+  await AsyncStorage.removeItem(key);
+  receipts.delete(key);
+}
 async function read(id: Id, query: Query) {
   const result = await query({ url: `orders/${encodeURIComponent(id)}` });
   if (result.error) throw result.error;
@@ -40,9 +69,13 @@ export const externalOrdersApi = baseApi.injectEndpoints({
   overrideExisting: process.env.NODE_ENV === 'development',
   endpoints: (build) => ({
     externalReturnReceipt: build.query<Receipt | null, { orderId: Id; userId: Id; role: string }>({
-      queryFn: ({ orderId, userId, role }) => ({
-        data: receipts.get(receiptKey(orderId, { userId, role })) ?? null,
-      }),
+      async queryFn({ orderId, userId, role }) {
+        try {
+          return { data: await loadReceipt(receiptKey(orderId, { userId, role })) };
+        } catch (error) {
+          return { error: normalizeGuardError(error) };
+        }
+      },
       providesTags: ['Orders'],
     }),
     refreshExternalOrder: build.mutation<Order, { orderId: Id; sync?: boolean }>({
@@ -56,10 +89,11 @@ export const externalOrdersApi = baseApi.injectEndpoints({
           uncertainStatuses.delete(key);
           const actor = actorFromUser((api.getState() as RootState).AuthSlice.userData),
             receipt = receiptKey(orderId, actor),
-            previous = receipts.get(receipt);
+            previous = await loadReceipt(receipt);
           if (previous?.state === 'uncertain') {
-            if (returnProcessed(current)) receipts.set(receipt, { ...previous, state: 'saved' });
-            else if (current.isReturnProcessed === false) receipts.delete(receipt);
+            if (returnProcessed(current))
+              await saveReceipt(receipt, { state: 'saved', items: recordedItems(current) });
+            else if (current.isReturnProcessed === false) await clearReceipt(receipt);
           }
           return { data: current };
         } catch (error) {
@@ -88,8 +122,10 @@ export const externalOrdersApi = baseApi.injectEndpoints({
         pendingOrders.add(key);
         let submitted = false;
         try {
+          if (await loadReceipt(receipt))
+            throw { status: 'BUSY', message: 'تحقق من نتيجة العملية السابقة قبل متابعة المعالجة.' };
           const first = await freshOrderContext(orderId, query);
-          const denied = externalReturnReason(first.current, actor, first.mode);
+          const denied = externalReturnAccessReason(first.current, actor, first.mode);
           if (denied) throw { status: 'VALIDATION_ERROR', message: denied };
           const sync = await query({
             url: `orders/${encodeURIComponent(orderId)}/delivery-status`,
@@ -105,6 +141,7 @@ export const externalOrdersApi = baseApi.injectEndpoints({
               status: 'VALIDATION_ERROR',
               message: 'تغيرت بنود الطلب. حدّث التفاصيل وراجع الكميات قبل المعالجة.',
             };
+          await saveReceipt(receipt, { state: 'uncertain', items: input.items });
           submitted = true;
           const result = await query({
             url: `orders/${encodeURIComponent(orderId)}/olivery-returns`,
@@ -115,12 +152,12 @@ export const externalOrdersApi = baseApi.injectEndpoints({
             const certain =
               typeof result.error.status === 'number' &&
               [200, 400, 401, 403, 404, 422].includes(result.error.status);
-            if (!certain) receipts.set(receipt, { state: 'uncertain', items: input.items });
+            if (certain) await clearReceipt(receipt);
             try {
               const actual = await read(orderId, query);
               if (returnProcessed(actual)) {
-                const saved: Receipt = { state: 'saved', items: input.items };
-                receipts.set(receipt, saved);
+                const saved: Receipt = { state: 'saved', items: recordedItems(actual) };
+                await saveReceipt(receipt, saved).catch(() => {});
                 return { data: saved };
               }
             } catch {
@@ -129,7 +166,7 @@ export const externalOrdersApi = baseApi.injectEndpoints({
             throw result.error;
           }
           const saved: Receipt = { state: 'saved', items: input.items };
-          receipts.set(receipt, saved);
+          await saveReceipt(receipt, saved).catch(() => {});
           try {
             await read(orderId, query);
           } catch {

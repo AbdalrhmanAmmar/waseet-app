@@ -528,12 +528,12 @@ test('external partial return validates quantities, reviews once and displays re
     animations: 'disabled',
   });
   await page.getByRole('button', { name: 'تأكيد معالجة المرتجع', exact: true }).click();
-  await expect(page.getByText('تم تسجيل مرتجع لهذا الطلب.', { exact: true })).toBeVisible();
+  await expect(page.getByText('تم تسجيل المرتجع الخارجي', { exact: true })).toBeVisible();
   expect(api.writes).toEqual([
     { method: 'POST', body: { items: [{ orderItemId: 44, quantity: 1 }] } },
   ]);
   expect(api.state.order.status).toBe('Printed Confirmed');
-  await expect(page.getByText('الكمية المرتجعة: 1', { exact: true })).toBeVisible();
+  await expect(page.getByText('الكمية المرتجعة: 1', { exact: true }).last()).toBeVisible();
 });
 test('external partial return rechecks live eligibility and does not write after tracking changes', async ({
   page,
@@ -554,11 +554,8 @@ test('ambiguous external return blocks repeat POST until explicit negative verif
   await page.getByRole('button', { name: 'تأكيد معالجة المرتجع', exact: true }).click();
   await expect(page.getByRole('alert')).toBeVisible();
   await expect(page.getByRole('button', { name: 'مراجعة الكميات', exact: true })).toBeDisabled();
-  await page.getByRole('button', { name: 'إغلاق المرتجع', exact: true }).click();
   await page.getByRole('button', { name: 'التحقق من نتيجة المرتجع', exact: true }).click();
-  await expect(
-    page.getByRole('button', { name: 'معالجة المرتجع الجزئي', exact: true }),
-  ).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'مراجعة الكميات', exact: true })).toBeEnabled();
   expect(api.writes).toHaveLength(1);
 });
 
@@ -627,3 +624,51 @@ for (const external of [false, true])
     expect(api.writes).toHaveLength(1);
     expect(api.writes[0].method).toBe('PUT');
   });
+
+test('external uncertain receipt survives reload with missing processed flag', async ({ page }) => {
+  const api = await prepareReturn(page);
+  api.state.lostReturn = true;
+  Reflect.deleteProperty(api.state.order, 'isReturnProcessed');
+  await page.getByRole('button', { name: 'مراجعة الكميات', exact: true }).click();
+  await page.getByRole('button', { name: 'تأكيد معالجة المرتجع', exact: true }).click();
+  await expect(page.getByRole('alert')).toBeVisible();
+  await page.reload();
+  await page.goto('/login');
+  await page.getByPlaceholder('أدخل بريدك الإلكتروني').fill('test@example.com');
+  await page.getByPlaceholder('أدخل كلمة المرور').fill('test-password');
+  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
+  await expect(page).toHaveURL(/management-employee$/);
+  await navigate(page, '/management-employee/external-return?id=21');
+  await expect(
+    page.getByRole('button', { name: 'التحقق من نتيجة المرتجع', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: 'مراجعة الكميات', exact: true })).toBeDisabled();
+  expect(api.writes).toHaveLength(1);
+});
+
+test('external screen synchronizes stale tracking and ignores missing assignment', async ({
+  page,
+}) => {
+  const api = await setup(page, 'ManagementEmployee', true);
+  Reflect.deleteProperty(api.state.order, 'assignedToEmployeeId');
+  Object.assign(api.state.order.items[0], { orderItemId: 44 });
+  Object.assign(api.state.order, { oliveryStatus: 'delivered', isCredited: true });
+  api.state.syncStatus = 'delivered_with_return';
+  await page.getByRole('button', { name: 'معالجة المرتجع الجزئي', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'إرجاع البند 44', exact: true }).click();
+  await page.getByRole('button', { name: 'مراجعة الكميات', exact: true }).click();
+  await page.getByRole('button', { name: 'تأكيد معالجة المرتجع', exact: true }).click();
+  await expect(page.getByText('تم تسجيل المرتجع الخارجي', { exact: true })).toBeVisible();
+  expect(api.writes).toHaveLength(1);
+});
+
+test('external return cannot submit when live order is explicitly not credited', async ({
+  page,
+}) => {
+  const api = await prepareReturn(page);
+  Object.assign(api.state.order, { isCredited: false });
+  await page.getByRole('button', { name: 'مراجعة الكميات', exact: true }).click();
+  await page.getByRole('button', { name: 'تأكيد معالجة المرتجع', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('الرصيد');
+  expect(api.writes).toHaveLength(0);
+});

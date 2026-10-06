@@ -127,9 +127,11 @@ test('external edit window uses local status OR raw waiting, never filtered deli
   assert.equal(canEditExternal(o, { role: 'Merchant', userId: 7 }, 'external'), false);
 });
 test('partial return eligibility and item quantities exclude repeats and unrelated roles', () => {
-  const order = { ...o, oliveryStatus: 'تم التسليم ويوجد مرتجع' };
+  const order = { ...o, oliveryOrderId: 123, oliveryStatus: 'تم التسليم ويوجد مرتجع' };
   const actor = { role: 'ManagementEmployee', userId: 7 };
   assert.equal(externalReturnReason(order, actor, 'external'), null);
+  assert.ok(externalReturnReason({ ...order, isCredited: false }, actor, 'external'));
+  assert.equal(externalReturnReason({ ...order, isCredited: true }, actor, 'external'), null);
   assert.ok(externalReturnReason({ ...order, isReturnProcessed: true }, actor, 'external'));
   assert.ok(externalReturnReason(order, { role: 'Merchant', userId: 7 }, 'external'));
   assert.equal(validateExternalReturn(order, { items: [{ orderItemId: 11, quantity: 2 }] }), null);
