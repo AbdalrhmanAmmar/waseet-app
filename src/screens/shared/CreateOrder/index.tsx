@@ -22,7 +22,9 @@ import {
   type DraftErrors,
   type OrderDraft,
 } from '@/domain/order-draft';
-import { formatMoney } from '@/domain/product-details';
+import { formatMoney, suggestedPrice } from '@/domain/product-details';
+import { salesApi } from '@/api/sales-employee';
+import { salesOrderOptions } from '@/domain/sales-order-options';
 import { catalogErrorMessage } from '@/domain/catalog-error';
 import { normalizeNumber } from '@/components/shared/catalog/catalog-model';
 import { catalogApi, refreshProductDetails, useDeliveryAreasQuery } from '@/api/shared/catalog';
@@ -38,6 +40,8 @@ import { palette as p } from '@/theme/tokens';
 
 export default function CreateOrder({ navigation, route }: ScreenProps) {
   const { role, userData } = useSession();
+  const isSales = role === 'SalesEmployee';
+  const stockPolicy = isSales ? 'server' : 'catalog';
   const allowed = can(role, 'orders.create');
   const dispatch = useAppDispatch();
   const nav = useNavigation();
@@ -53,7 +57,10 @@ export default function CreateOrder({ navigation, route }: ScreenProps) {
     const seed = route.params.product as Product | undefined;
     if (seed)
       initial.items = [
-        draftItem(seed, Math.max(1, Math.floor(Number(route.params.quantity) || 1))),
+        draftItem(
+          isSales ? salesOrderOptions([seed])[0] : seed,
+          Math.max(1, Math.floor(Number(route.params.quantity) || 1)),
+        ),
       ];
     return initial;
   });
@@ -118,7 +125,7 @@ export default function CreateOrder({ navigation, route }: ScreenProps) {
   };
   const reviewOrder = async () => {
     if (lock.current || !allowed || !userData || uncertain) return;
-    const validation = validateOrder(draft, areas.data ?? []);
+    const validation = validateOrder(draft, areas.data ?? [], stockPolicy);
     if (Object.keys(validation).length) {
       showErrors(validation);
       return;
@@ -127,7 +134,7 @@ export default function CreateOrder({ navigation, route }: ScreenProps) {
     setChecking(true);
     setError('');
     try {
-      // Refresh only selected products, and keep the operator's edited price and color.
+      // Keep the operator's price and color while revalidating against the role's source.
       const freshAreas = await dispatch(
         catalogApi.endpoints.deliveryAreas.initiate(undefined, {
           subscribe: false,
@@ -137,7 +144,28 @@ export default function CreateOrder({ navigation, route }: ScreenProps) {
       if (freshAreas.error || !freshAreas.data)
         throw freshAreas.error ?? new Error('تعذر تحميل مناطق التوصيل');
       const freshItems = [];
+      const options = isSales
+        ? await dispatch(
+            salesApi.endpoints.salesOrderOptions.initiate(String(userData.userId), {
+              subscribe: false,
+              forceRefetch: true,
+            }),
+          )
+        : null;
+      if (options && (options.error || !options.data))
+        throw options.error ?? new Error('تعذر تحديث خيارات المنتجات');
       for (const row of draft.items) {
+        if (options) {
+          const product = options.data?.find(
+            (item) => String(item.productCode) === String(row.product.productCode),
+          );
+          if (!product)
+            throw new Error(
+              `المنتج ${row.product.title} لم يعد ضمن خيارات الطلب. احذفه أو اختر منتجًا آخر.`,
+            );
+          freshItems.push({ ...row, product });
+          continue;
+        }
         const result = await dispatch(
           refreshProductDetails({ product_id: row.product.productCode, user_id: userData.userId }),
         );
@@ -147,7 +175,7 @@ export default function CreateOrder({ navigation, route }: ScreenProps) {
       if (!mounted.current) return;
       const freshDraft = { ...draft, items: freshItems };
       setDraft(freshDraft);
-      const next = validateOrder(freshDraft, freshAreas.data);
+      const next = validateOrder(freshDraft, freshAreas.data, stockPolicy);
       if (Object.keys(next).length) {
         showErrors(next);
         return;
@@ -163,7 +191,7 @@ export default function CreateOrder({ navigation, route }: ScreenProps) {
   };
   const submit = async () => {
     if (lock.current || !review || uncertain || !allowed) return;
-    const next = validateOrder(draft, areas.data ?? []);
+    const next = validateOrder(draft, areas.data ?? [], stockPolicy);
     if (Object.keys(next).length) {
       setReview(false);
       showErrors(next);
@@ -353,6 +381,7 @@ export default function CreateOrder({ navigation, route }: ScreenProps) {
                 disabled={busy}
                 errors={errors}
                 merchant={role === 'Merchant'}
+                sales={isSales}
                 onChange={(patch) => {
                   setDraft((previous) => ({
                     ...previous,
@@ -451,10 +480,11 @@ export default function CreateOrder({ navigation, route }: ScreenProps) {
                   image: product.image,
                   caption: draft.items.some((row) => row.key === String(product.productCode))
                     ? 'مضاف بالفعل — عدّل كميته داخل الطلب'
-                    : `#${product.productCode} · ${product.stock > 0 ? `متاح ${product.stock} قطعة` : 'نفدت الكمية'}`,
+                    : isSales
+                      ? `#${product.productCode} · سعر البيع المقترح: ${formatMoney(suggestedPrice(product))}`
+                      : `#${product.productCode} · ${product.stock > 0 ? `متاح ${product.stock} قطعة` : 'نفدت الكمية'}`,
                   disabled:
-                    !Number.isFinite(product.stock) ||
-                    product.stock <= 0 ||
+                    (!isSales && (!Number.isFinite(product.stock) || product.stock <= 0)) ||
                     draft.items.some((row) => row.key === String(product.productCode)),
                 }))
               : (areas.data ?? []).map((area) => ({

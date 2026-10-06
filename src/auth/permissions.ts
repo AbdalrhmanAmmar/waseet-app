@@ -1,10 +1,11 @@
 import type { Role } from './roles';
-export type Permission = 'catalog.read' | 'orders.create' | 'orders.status' | 'profit.read';
+export type Permission =
+  'catalog.read' | 'orders.create' | 'orders.status' | 'orders.edit' | 'profit.read';
 const permissions: Record<Role, readonly Permission[]> = {
-  Merchant: ['catalog.read', 'orders.create', 'profit.read'],
-  SalesEmployee: ['catalog.read', 'orders.create'],
-  ManagementEmployee: ['orders.status'],
-  DeliveryAgent: ['orders.status'],
+  Merchant: ['catalog.read', 'orders.create', 'orders.status', 'orders.edit', 'profit.read'],
+  SalesEmployee: ['catalog.read', 'orders.create', 'orders.status', 'orders.edit'],
+  ManagementEmployee: ['orders.status', 'orders.edit'],
+  DeliveryAgent: ['orders.status', 'orders.edit'],
 };
 export function can(role: Role | null | undefined, permission: Permission): boolean {
   return !!role && permissions[role].includes(permission);

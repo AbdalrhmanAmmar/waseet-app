@@ -1,7 +1,13 @@
 import { useManagementOrders } from '@/hooks/management-employee';
-import { useScreenProps } from '@/navigation/use-screen-props';
-import Orders from '@/screens/shared/MyOrders';
+import { OrdersWorkspace } from '@/components/shared/orders/OrdersWorkspace';
+import { ManagementStatusSheet } from '@/components/management-employee/orders/ManagementStatusSheet';
 export default function ManagementOrdersScreen() {
   const controller = useManagementOrders();
-  return <Orders {...useScreenProps()} title="طلبات الإدارة" controller={controller} />;
+  return (
+    <OrdersWorkspace
+      controller={controller}
+      variant="management"
+      StatusSheet={ManagementStatusSheet}
+    />
+  );
 }

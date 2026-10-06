@@ -14,7 +14,10 @@ test('all roles have distinct destinations, legacy Sales is normalized, unknown 
 test('role permissions separate catalog, profits and order actions', () => {
   assert.equal(can('Merchant', 'profit.read'), true);
   assert.equal(can('SalesEmployee', 'profit.read'), false);
-  assert.equal(can('Merchant', 'orders.status'), false);
+  for (const role of ROLES) {
+    assert.equal(can(role, 'orders.status'), true);
+    assert.equal(can(role, 'orders.edit'), true);
+  }
   assert.equal(can('DeliveryAgent', 'orders.create'), false);
   assert.equal(can('DeliveryAgent', 'orders.status'), true);
   assert.equal(can('ManagementEmployee', 'catalog.read'), false);

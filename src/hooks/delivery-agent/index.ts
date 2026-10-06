@@ -1,5 +1,8 @@
 import { useDeliveriesInfiniteQuery } from '@/api/delivery-agent';
-import { useOrderList } from '../shared/use-order-list';
+import { useSession } from '../shared/use-session';
+import { useOrderWorkspace } from '../shared/use-order-workspace';
 export function useDeliveryOrders() {
-  return useOrderList(useDeliveriesInfiniteQuery);
+  const { userData } = useSession();
+  const query = useDeliveriesInfiniteQuery(String(userData?.userId ?? ''), { skip: !userData });
+  return useOrderWorkspace(query);
 }

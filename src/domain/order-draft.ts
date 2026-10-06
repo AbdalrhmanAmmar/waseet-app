@@ -38,7 +38,11 @@ export const lineTotal = (row: DraftItem) => {
 };
 export const orderSubtotal = (draft: OrderDraft) =>
   Math.round(draft.items.reduce((sum, row) => sum + lineTotal(row), 0) * 100) / 100;
-export function validateOrder(draft: OrderDraft, areas: DeliveryArea[]): DraftErrors {
+export function validateOrder(
+  draft: OrderDraft,
+  areas: DeliveryArea[],
+  stockPolicy: 'catalog' | 'server' = 'catalog',
+): DraftErrors {
   const errors: DraftErrors = {};
   if (draft.customerName.trim().length < 2)
     errors.customerName = 'اسم العميل يجب أن يكون حرفين على الأقل';
@@ -71,9 +75,10 @@ export function validateOrder(draft: OrderDraft, areas: DeliveryArea[]): DraftEr
     if (!Number.isInteger(qty) || qty < 1)
       errors[`${prefix}.quantity`] = 'أدخل كمية صحيحة أكبر من صفر';
     else if (
-      row.product.stockKnown === false ||
-      !Number.isFinite(row.product.stock) ||
-      qty > row.product.stock
+      stockPolicy === 'catalog' &&
+      (row.product.stockKnown === false ||
+        !Number.isFinite(row.product.stock) ||
+        qty > row.product.stock)
     )
       errors[`${prefix}.quantity`] = 'الكمية المطلوبة غير متاحة في المخزون';
     if (!Number.isFinite(price) || price <= 0)

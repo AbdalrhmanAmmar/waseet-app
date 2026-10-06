@@ -1,0 +1,41 @@
+import { View } from 'react-native';
+import Text from '../CustomText';
+import { Card, Button, ui } from '../ui';
+import type { DeliveryMode } from '@/domain/order-workflow';
+export function DeliveryModeCard({
+  mode,
+  loading,
+  retry,
+}: {
+  mode: DeliveryMode;
+  loading: boolean;
+  retry: () => void;
+}) {
+  return (
+    <Card>
+      <Text style={ui.title}>
+        {loading
+          ? 'جارٍ التحقق من جهة التوصيل'
+          : mode === 'internal'
+            ? 'توصيل داخلي'
+            : mode === 'external'
+              ? 'توصيل خارجي — Olivery'
+              : 'تعذر تحديد جهة التوصيل'}
+      </Text>
+      <Text style={ui.caption}>
+        {loading
+          ? 'انتظر التحقق لإتاحة الإجراءات المناسبة.'
+          : mode === 'internal'
+            ? 'يمكن تعديل الطلب غير النهائي واختيار الخطوة التالية المتاحة.'
+            : mode === 'external'
+              ? 'بيانات الطلب مقفلة. يمكنك التأكيد أو تسجيل التعثر أثناء التجهيز، أو حل التعثر بملاحظة. المراحل اللاحقة تديرها جهة التوصيل.'
+              : 'التعديل وتغيير الحالة مقفلان حتى يتم التحقق من منطقة الطلب.'}
+      </Text>
+      {!loading && mode === 'unknown' && (
+        <View>
+          <Button title="إعادة التحقق من التوصيل" secondary onPress={retry} />
+        </View>
+      )}
+    </Card>
+  );
+}

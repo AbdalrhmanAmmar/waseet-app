@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
@@ -7,6 +8,7 @@ import { useBalance } from '@/hooks/shared/use-balance';
 import { balanceNumber, formatBalance } from '@/domain/balance';
 import { s } from './styles';
 export function BalanceCard() {
+  const router = useRouter();
   const { user, busy, failed, refresh } = useBalance();
   const [hidden, setHidden] = useState(false);
   const value = balanceNumber(user?.dollarBalance);
@@ -64,7 +66,8 @@ export function BalanceCard() {
           '••••••'
         ) : value !== null ? (
           <>
-            {formatBalance(value)} <Text style={{ fontSize: 16, color: '#C6E7DB' }}>USD</Text>
+            {formatBalance(value)}{' '}
+            <Text style={{ fontSize: 16, lineHeight: 55, color: '#C6E7DB' }}>USD</Text>
           </>
         ) : busy ? (
           'جارٍ تحميل الرصيد…'
@@ -94,6 +97,27 @@ export function BalanceCard() {
         </Text>
       </View>
       {stale && time && <Text style={s.balanceMeta}>آخر قيمة مؤكدة: {time}</Text>}
+      {user?.role === 'Merchant' && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="طلب سحب"
+          onPress={() => router.push('/merchant/withdrawal')}
+          style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: 14,
+            padding: 14,
+            alignItems: 'center',
+            flexDirection: 'row-reverse',
+            justifyContent: 'center',
+            gap: 10,
+          }}
+        >
+          <Icon name="bank-transfer-out" size={22} color="#103E32" />
+          <Text style={{ color: '#103E32', fontFamily: 'Tajawal-Bold', fontSize: 16 }}>
+            طلب سحب
+          </Text>
+        </Pressable>
+      )}
     </LinearGradient>
   );
 }

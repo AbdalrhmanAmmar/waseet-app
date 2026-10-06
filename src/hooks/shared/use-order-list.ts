@@ -22,6 +22,7 @@ export function useOrderList(useQuery: QueryHook) {
   ];
   return {
     orders,
+    hasMore: result.hasNextPage,
     error: result.error,
     loading: result.isLoading,
     fetching: result.isFetching,

@@ -1,22 +1,21 @@
+import { guardedStatusChange, guardedOrderUpdate, type UpdateOrderArgs } from './order-guards';
 import type { Id, Order, OrderInput, Page, PageParams, StatusInput } from '@/types/models';
 import { baseApi } from '../base-api';
-import { list, order, page, unwrap } from '../normalizers';
-export const statusRequest = ({ orderId, status, notes }: StatusInput) => ({
-  url: `orders/${encodeURIComponent(orderId)}/status`,
-  method: 'POST',
-  data: { targetStatus: status, ...(notes?.trim() ? { note: notes.trim() } : {}) },
-});
+import { order, orderDetails, orderStatuses, page, unwrap } from '../normalizers';
 export const ordersApi = baseApi.injectEndpoints({
   // Fast Refresh re-evaluates this module while retaining the base API instance.
   overrideExisting: process.env.NODE_ENV === 'development',
   endpoints: (build) => ({
     orderStatuses: build.query<{ status: string; isTerminal: boolean }[], void>({
-      query: () => ({ url: 'orders/statuses' }),
-      transformResponse: (data) =>
-        list(data).map((item) => ({
-          status: String(item.status),
-          isTerminal: item.isTerminal === true,
-        })),
+      async queryFn(_args, _api, _options, query) {
+        const result = await query({ url: 'orders/statuses' });
+        if (result.error) return { error: result.error };
+        try {
+          return { data: orderStatuses(result.data) };
+        } catch {
+          return { error: { status: 'INVALID_RESPONSE', message: 'تعذر التحقق من حالات الطلب' } };
+        }
+      },
     }),
     orderFeed: build.infiniteQuery<Page<Order>, string, number>({
       infiniteQueryOptions: {
@@ -34,14 +33,35 @@ export const ordersApi = baseApi.injectEndpoints({
       providesTags: ['Orders'],
     }),
     order: build.query<Order, Id>({
-      query: (id) => ({ url: `orders/${encodeURIComponent(id)}` }),
-      transformResponse: (data) => order(unwrap(data)),
+      async queryFn(id, _api, _options, query) {
+        const result = await query({ url: `orders/${encodeURIComponent(id)}` });
+        if (result.error) return { error: result.error };
+        try {
+          return { data: orderDetails(result.data, id) };
+        } catch {
+          return { error: { status: 'INVALID_RESPONSE', message: 'تعذر التحقق من تفاصيل الطلب' } };
+        }
+      },
       providesTags: ['Orders'],
     }),
     orderHistory: build.query<Record<string, any>[], Id>({
-      query: (id) => ({ url: `orders/${encodeURIComponent(id)}/history` }),
-      transformResponse: list,
+      async queryFn(id, _api, _options, query) {
+        const result = await query({ url: `orders/${encodeURIComponent(id)}/history` });
+        if (result.error) return { error: result.error };
+        const body = unwrap(result.data);
+        if (!Array.isArray(body) || body.some((event) => !event || typeof event !== 'object'))
+          return { error: { status: 'INVALID_RESPONSE', message: 'تعذر قراءة سجل العمليات' } };
+        return { data: body };
+      },
       providesTags: ['Orders'],
+    }),
+    changeOrderStatus: build.mutation<unknown, StatusInput>({
+      queryFn: (args, _api, _options, baseQuery) => guardedStatusChange(args, baseQuery),
+      invalidatesTags: ['Orders'],
+    }),
+    updateOrder: build.mutation<unknown, UpdateOrderArgs>({
+      queryFn: (args, _api, _options, baseQuery) => guardedOrderUpdate(args, baseQuery),
+      invalidatesTags: ['Orders', 'Products'],
     }),
     createOrder: build.mutation<{ orderId?: Id }, OrderInput>({
       query: (data) => ({ url: 'orders', method: 'POST', data }),
@@ -57,4 +77,6 @@ export const {
   useOrderQuery,
   useOrderHistoryQuery,
   useCreateOrderMutation,
+  useChangeOrderStatusMutation,
+  useUpdateOrderMutation,
 } = ordersApi;

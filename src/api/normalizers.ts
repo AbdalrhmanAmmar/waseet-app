@@ -1,4 +1,4 @@
-import type { Order, Page, PageParams, Product } from '@/types/models';
+import type { Order, Page, PageParams, Product, DeliveryArea } from '@/types/models';
 import { mediaUrl, optionalPrice } from '@/domain/product-details';
 type Raw = Record<string, any>;
 export function unwrap(value: unknown): any {
@@ -78,8 +78,53 @@ export function order(item: Raw): Order {
     items: item.items ?? item.orderItems ?? [],
   };
 }
+export function orderDetails(value: unknown, expectedId: string | number): Order {
+  const raw = unwrap(value);
+  if (
+    !raw ||
+    String(raw.orderId ?? raw.id) !== String(expectedId) ||
+    !Array.isArray(raw.items) ||
+    raw.items.some((item: unknown) => !item || typeof item !== 'object') ||
+    typeof raw.status !== 'string'
+  )
+    throw new Error('تعذر التحقق من تفاصيل الطلب');
+  return {
+    ...order(raw),
+    orderTotalUSD:
+      optionalPrice(raw.orderTotalUSD ?? raw.totalPrice ?? raw.totalAmount) ?? Number.NaN,
+    deliveryFee: optionalPrice(raw.deliveryFee ?? raw.fee) ?? undefined,
+  };
+}
+export function orderStatuses(value: unknown): { status: string; isTerminal: boolean }[] {
+  const raw = unwrap(value);
+  if (
+    !Array.isArray(raw) ||
+    raw.some(
+      (item) =>
+        typeof item?.status !== 'string' ||
+        !item.status.trim() ||
+        typeof item?.isTerminal !== 'boolean',
+    )
+  )
+    throw new Error('تعذر التحقق من حالات الطلب');
+  return raw.map(({ status, isTerminal }) => ({ status, isTerminal }));
+}
 export function errorMessage(error: unknown): string {
   if (typeof error === 'string') return error;
   const value = error as Raw | null;
   return value?.message ?? value?.data?.message ?? 'تعذر إتمام الطلب. حاول مرة أخرى.';
+}
+
+export function deliveryAreas(value: unknown): DeliveryArea[] {
+  const body = unwrap(value);
+  if (!Array.isArray(body)) throw new Error('استجابة مناطق التوصيل غير صالحة');
+  return body.map((item) => ({
+    deliveryAreaId: item.deliveryAreaId ?? item.id ?? item.city,
+    city: item.city ?? item.name ?? item.areaName,
+    fee: item.fee == null ? null : Number(item.fee),
+    isInternalDelivery:
+      typeof item.isInternalDelivery === 'boolean' ? item.isInternalDelivery : undefined,
+    oliveryAreaId: item.oliveryAreaId ?? null,
+    oliveryAreaName: typeof item.oliveryAreaName === 'string' ? item.oliveryAreaName : null,
+  }));
 }

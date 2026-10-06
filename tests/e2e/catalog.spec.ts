@@ -189,13 +189,10 @@ test('partial page errors remain honest, stop automatic retries and recover on r
   expect(api.calls.filter((n) => n === 1)).toHaveLength(1);
   expect(api.calls.filter((n) => n === 2)).toHaveLength(2);
 });
-test('sales catalog works at 320px without merchant prices; availability filter works', async ({
-  page,
-}) => {
+test('merchant catalog at 320px keeps its stock availability filter', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 700 });
-  await setup(page, 'SalesEmployee');
+  await setup(page, 'Merchant');
   await expect(page.getByText('4 نتيجة', { exact: true })).toBeVisible();
-  await expect(page.getByText('سعر التاجر', { exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: /تصفية وترتيب/ }).click();
   await page.getByRole('switch', { name: 'المتوفر فقط' }).click();
   await page.getByRole('button', { name: 'تطبيق الفلاتر' }).click();

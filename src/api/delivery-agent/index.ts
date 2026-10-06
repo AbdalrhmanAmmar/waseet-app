@@ -1,7 +1,7 @@
 import type { Order, Page, StatusInput } from '@/types/models';
 import { baseApi } from '../base-api';
 import { order, page } from '../normalizers';
-import { statusRequest } from '../shared/orders';
+import { guardedStatusChange } from '../shared/order-guards';
 export const deliveryApi = baseApi.injectEndpoints({
   // Fast Refresh re-evaluates this module while retaining the base API instance.
   overrideExisting: process.env.NODE_ENV === 'development',
@@ -20,7 +20,7 @@ export const deliveryApi = baseApi.injectEndpoints({
       providesTags: ['Orders'],
     }),
     deliveryOrderStatus: build.mutation<unknown, StatusInput>({
-      query: statusRequest,
+      queryFn: (args, _api, _options, baseQuery) => guardedStatusChange(args, baseQuery),
       invalidatesTags: ['Orders'],
     }),
   }),

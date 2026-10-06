@@ -1,6 +1,6 @@
 import type { DeliveryArea, Id, Page, PageParams, Product } from '@/types/models';
 import { baseApi } from '../base-api';
-import { list, page, product, unwrap } from '../normalizers';
+import { deliveryAreas, page, product, unwrap } from '../normalizers';
 export const catalogApi = baseApi.injectEndpoints({
   // Fast Refresh re-evaluates this module while retaining the base API instance.
   overrideExisting: process.env.NODE_ENV === 'development',
@@ -34,13 +34,15 @@ export const catalogApi = baseApi.injectEndpoints({
       providesTags: ['Products'],
     }),
     deliveryAreas: build.query<DeliveryArea[], void>({
-      query: () => ({ url: 'delivery-areas' }),
-      transformResponse: (data) =>
-        list(data).map((item) => ({
-          deliveryAreaId: item.deliveryAreaId ?? item.id ?? item.city,
-          city: item.city ?? item.name ?? item.areaName,
-          fee: item.fee == null ? null : Number(item.fee),
-        })),
+      async queryFn(_arg, _api, _options, baseQuery) {
+        const result = await baseQuery({ url: 'delivery-areas' });
+        if (result.error) return { error: result.error };
+        try {
+          return { data: deliveryAreas(result.data) };
+        } catch {
+          return { error: { status: 'INVALID_RESPONSE', message: 'تعذر قراءة مناطق التوصيل' } };
+        }
+      },
     }),
   }),
 });

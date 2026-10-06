@@ -39,6 +39,7 @@ export function useScreenProps() {
         MenuScreen: '/account/menu',
         OrderSuccess: `${base}/order-success`,
         ProductDetails: `${base}/product`,
+        EditOrder: `${base}/edit-order`,
         OrderDetails: `${base}/order`,
         TrackOrder: `${base}/track`,
         EditProfileScreen: '/account/edit-profile',

@@ -1,12 +1,19 @@
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Text from '../CustomText';
-import { statusLabel } from '../orders/statuses';
+import { OrderStatusSummary } from '../orders/OrderStatusSummary';
+import type { DeliveryMode } from '@/domain/order-workflow';
 import { palette as p, typography as t } from '@/theme/tokens';
 import type { Order } from '@/types/models';
-export default function OrderCard({ order, onPress }: { order: Order; onPress: () => void }) {
-  const done = ['Delivered', 'Completed'].includes(order.status);
-  const failed = ['Cancelled', 'Rejected', 'Stuck', 'Returned'].includes(order.status);
+export default function OrderCard({
+  order,
+  onPress,
+  mode = 'unknown',
+}: {
+  order: Order;
+  onPress: () => void;
+  mode?: DeliveryMode;
+}) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -24,15 +31,8 @@ export default function OrderCard({ order, onPress }: { order: Order; onPress: (
         </View>
         <Icon name="chevron-left" size={20} color={p.muted} />
       </View>
+      <OrderStatusSummary order={order} mode={mode} />
       <View style={s.bottom}>
-        <View style={[s.status, { backgroundColor: done ? p.soft : failed ? '#FCECEC' : p.warm }]}>
-          <View
-            style={[s.dot, { backgroundColor: done ? p.primary : failed ? p.danger : '#A56720' }]}
-          />
-          <Text style={[s.statusText, { color: done ? p.primary : failed ? p.danger : '#86551D' }]}>
-            {statusLabel(order.status)}
-          </Text>
-        </View>
         <Text style={s.amount}>
           {order.orderTotalUSD.toLocaleString('en-US')} <Text style={s.currency}>USD</Text>
         </Text>
@@ -80,7 +80,7 @@ const s = StyleSheet.create({
   },
   dot: { width: 6, height: 6, borderRadius: 3 },
   statusText: { fontSize: 12, fontFamily: t.medium },
-  amount: { fontSize: 20, fontFamily: t.bold, writingDirection: 'ltr' },
+  amount: { fontSize: 20, lineHeight: 30, fontFamily: t.bold, writingDirection: 'ltr' },
   currency: { fontSize: 11, color: p.muted },
   date: { fontSize: 12, color: p.muted },
 });

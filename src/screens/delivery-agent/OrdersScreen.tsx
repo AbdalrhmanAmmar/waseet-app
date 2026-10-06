@@ -1,7 +1,9 @@
 import { useDeliveryOrders } from '@/hooks/delivery-agent';
-import { useScreenProps } from '@/navigation/use-screen-props';
-import Orders from '@/screens/shared/MyOrders';
+import { OrdersWorkspace } from '@/components/shared/orders/OrdersWorkspace';
+import { DeliveryStatusSheet } from '@/components/delivery-agent/orders/DeliveryStatusSheet';
 export default function DeliveryOrdersScreen() {
   const controller = useDeliveryOrders();
-  return <Orders {...useScreenProps()} title="توصيلاتي" controller={controller} />;
+  return (
+    <OrdersWorkspace controller={controller} variant="delivery" StatusSheet={DeliveryStatusSheet} />
+  );
 }

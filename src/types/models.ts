@@ -43,6 +43,10 @@ export interface Product {
   [key: string]: unknown;
 }
 export interface Order {
+  deliveryMode?: string | null;
+  oliveryStatus?: string | null;
+  deliveryStatus?: string | null;
+  orderType?: string | null;
   orderId: Id;
   customerName: string;
   status: string;
@@ -76,6 +80,9 @@ export interface DeliveryArea {
   deliveryAreaId: Id;
   city: string;
   fee: number | null;
+  isInternalDelivery?: boolean;
+  oliveryAreaId?: number | null;
+  oliveryAreaName?: string | null;
 }
 export interface OrderInput {
   customerName: string;
@@ -88,4 +95,5 @@ export interface StatusInput {
   orderId: Id;
   status: string;
   notes?: string;
+  expectedStatus?: string;
 }

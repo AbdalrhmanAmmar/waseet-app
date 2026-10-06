@@ -50,20 +50,7 @@ export default function ProfileScreen({ navigation }: ScreenProps) {
   ];
   return (
     <ScreenContainer>
-      <HeaderComponent
-        title="حسابي"
-        showBack={false}
-        rightComponent={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="فتح القائمة"
-            onPress={() => navigation.navigate('MenuScreen')}
-            style={{ padding: 8 }}
-          >
-            <Icon name="menu" size={24} color={p.ink} />
-          </Pressable>
-        }
-      />
+      <HeaderComponent title="حسابي" showBack={false} />
       <ScrollView
         testID="profile-content"
         contentContainerStyle={ui.page}

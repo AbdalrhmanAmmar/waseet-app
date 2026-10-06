@@ -3,19 +3,13 @@ import { Button } from '@/components/shared/ui';
 import { useSession } from '@/hooks/shared/use-session';
 import { can } from '@/auth/permissions';
 import { AsyncState } from '@/components/shared/AsyncState';
-import { orderStatuses } from '@/components/shared/orders/statuses';
+import { OrderDeliveryFilters } from '@/components/shared/orders/OrderDeliveryFilters';
+import { useOrderDeliveryFilters } from '@/hooks/shared/use-order-delivery-filters';
+import { resolveDeliveryMode } from '@/domain/order-delivery-list';
 import type { useOrderList } from '@/hooks/shared/use-order-list';
 import type { ScreenProps } from '@/navigation/use-screen-props';
 import { useMemo, useState } from 'react';
-import {
-  FlatList,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  View,
-} from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, TextInput } from 'react-native';
 type Props = ScreenProps & {
   title: string;
   controller: ReturnType<typeof useOrderList>;
@@ -24,17 +18,15 @@ type Props = ScreenProps & {
 export default function OrdersScreen({ navigation, title, controller, summary }: Props) {
   const { role } = useSession();
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('');
+  const delivery = useOrderDeliveryFilters(controller.orders);
   const filtered = useMemo(
     () =>
-      controller.orders.filter(
-        (order) =>
-          (!status || order.status === status) &&
-          `${order.orderId} ${order.customerName} ${order.customerMobile ?? ''}`
-            .toLowerCase()
-            .includes(search.toLowerCase()),
+      delivery.orders.filter((order) =>
+        `${order.orderId} ${order.customerName} ${order.customerMobile ?? ''}`
+          .toLowerCase()
+          .includes(search.toLowerCase()),
       ),
-    [controller.orders, status, search],
+    [delivery.orders, search],
   );
   return (
     <ScreenContainer>
@@ -52,30 +44,21 @@ export default function OrdersScreen({ navigation, title, controller, summary }:
         onChangeText={setSearch}
         placeholder="ابحث في الطلبات المحملة بالرقم أو العميل"
       />
-      <View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filters}
-        >
-          {[{ value: '', label: 'الكل' }, ...orderStatuses].map((item) => (
-            <Pressable
-              key={item.value}
-              onPress={() => setStatus(item.value)}
-              style={[styles.pill, item.value === status && styles.selected]}
-            >
-              <CustomText>{item.label}</CustomText>
-            </Pressable>
-          ))}
-        </ScrollView>
-      </View>
-      {summary}
       <AsyncState
         loading={controller.loading}
         error={controller.error}
         onRetry={controller.refresh}
       />
       <FlatList
+        ListHeaderComponent={
+          <>
+            <OrderDeliveryFilters controller={delivery} />
+            {summary}
+            <CustomText style={{ fontSize: 12, marginBottom: 12 }}>
+              النتائج والفلاتر ضمن الطلبات المحمّلة: {filtered.length} طلب
+            </CustomText>
+          </>
+        }
         data={filtered}
         keyExtractor={(item) => String(item.orderId)}
         contentContainerStyle={styles.list}
@@ -85,7 +68,17 @@ export default function OrdersScreen({ navigation, title, controller, summary }:
             onRefresh={controller.refresh}
           />
         }
-        onEndReached={controller.loadMore}
+        ListFooterComponent={
+          controller.hasMore ? (
+            <Button
+              title="تحميل المزيد من الطلبات"
+              loading={controller.fetching}
+              onPress={controller.loadMore}
+              secondary
+            />
+          ) : null
+        }
+        onEndReached={controller.error ? undefined : controller.loadMore}
         onEndReachedThreshold={0.4}
         ListEmptyComponent={
           !controller.loading && !controller.error ? (
@@ -95,6 +88,7 @@ export default function OrdersScreen({ navigation, title, controller, summary }:
         renderItem={({ item }) => (
           <OrderCard
             order={item}
+            mode={resolveDeliveryMode(item, delivery.areas)}
             onPress={() => navigation.navigate('OrderDetails', { orderId: item.orderId })}
           />
         )}

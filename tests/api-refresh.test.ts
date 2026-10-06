@@ -14,7 +14,7 @@ test('API modules can reload against the same base API during development', () =
         const { baseApi } = require('./src/api/base-api.ts');
         const files = [
           './src/api/shared/catalog.ts', './src/api/shared/orders.ts', './src/api/shared/home.ts',
-          './src/api/shared/account.ts', './src/api/merchant/index.ts',
+          './src/api/shared/account.ts', './src/api/merchant/index.ts', './src/api/sales-employee/index.ts',
           './src/api/management-employee/index.ts', './src/api/delivery-agent/index.ts',
         ];
         const errors = [];
@@ -23,6 +23,7 @@ test('API modules can reload against the same base API during development', () =
         const names = Object.keys(baseApi.endpoints).sort();
         assert.ok(names.includes('productDetails'));
         assert.ok(names.includes('orders'));
+        assert.ok(names.includes('salesOrderOptions'));
         for (const file of files) {
           delete require.cache[require.resolve(file)];
           require(file);

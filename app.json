@@ -9,16 +9,26 @@
     "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/images/app-icon.png",
-      "bundleIdentifier": "com.selling"
+      "bundleIdentifier": "app.waseet.com",
+      "infoPlist": {
+        "ExpoLocalization_supportsRTL": true,
+        "CFBundleLocalizations": [
+          "ar",
+          "en"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "buildNumber": "2"
     },
     "android": {
       "predictiveBackGestureEnabled": false,
-      "package": "com.selling",
+      "package": "app.waseet.com",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png",
         "backgroundColor": "#F8FAF7"
-      }
+      },
+      "versionCode": 4
     },
     "web": {
       "output": "single",
@@ -40,8 +50,14 @@
         "expo-localization",
         {
           "supportedLocales": {
-            "ios": ["ar", "en"],
-            "android": ["ar", "en"]
+            "ios": [
+              "ar",
+              "en"
+            ],
+            "android": [
+              "ar",
+              "en"
+            ]
           }
         }
       ],
@@ -52,7 +68,12 @@
       "reactCompiler": true
     },
     "extra": {
-      "supportsRTL": true
-    }
+      "supportsRTL": true,
+      "router": {},
+      "eas": {
+        "projectId": "d45a788d-f713-49f0-9859-60a09452664b"
+      }
+    },
+    "owner": "abdo1999"
   }
 }

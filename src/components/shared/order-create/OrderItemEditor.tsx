@@ -7,10 +7,12 @@ import { lineTotal, type DraftItem, type DraftErrors } from '@/domain/order-draf
 import { normalizeNumber } from '../catalog/catalog-model';
 import { formatMoney } from '@/domain/product-details';
 import { palette as p } from '@/theme/tokens';
+import { SalesProductPrices } from '@/components/sales-employee/SalesProductPrices';
 export function OrderItemEditor({
   row,
   errors,
   merchant,
+  sales = false,
   disabled,
   onChange,
   onRemove,
@@ -18,6 +20,7 @@ export function OrderItemEditor({
   row: DraftItem;
   errors: DraftErrors;
   merchant: boolean;
+  sales?: boolean;
   disabled?: boolean;
   onChange: (patch: Partial<DraftItem>) => void;
   onRemove: () => void;
@@ -40,7 +43,8 @@ export function OrderItemEditor({
           <View style={{ flex: 1 }}>
             <Text style={s.itemName}>{row.product.title}</Text>
             <Text style={s.caption}>
-              #{row.product.productCode} · متاح {row.product.stock} قطعة
+              #{row.product.productCode}
+              {!sales ? ` · متاح ${row.product.stock} قطعة` : ''}
             </Text>
           </View>
         </View>
@@ -63,7 +67,7 @@ export function OrderItemEditor({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`زيادة كمية ${row.product.title}`}
-          disabled={disabled || !Number.isFinite(qty) || qty >= row.product.stock}
+          disabled={disabled || !Number.isFinite(qty) || (!sales && qty >= row.product.stock)}
           onPress={() => onChange({ quantity: String(qty + 1) })}
           style={s.icon}
         >
@@ -90,6 +94,7 @@ export function OrderItemEditor({
           <Icon name="minus" size={22} color={p.primary} />
         </Pressable>
       </View>
+      {sales && <SalesProductPrices product={row.product} />}
       <Field
         editable={!disabled}
         label={`سعر بيع ${row.product.title} (USD)`}

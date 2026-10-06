@@ -59,3 +59,22 @@ Swagger يعلن غالبية استجابات النجاح بوصف `OK` دون
 `GET orders` يدعم Status وFromDate وToDate مع pagination. الملخص يقرأ totalCount للإجمالي وProcessing وDelivered، والرسم يحمّل صفحات الفترة كاملة ويتحقق من العدد والتواريخ قبل العرض. لا تُستخدم واجهة admin/dashboard للتاجر. [تفاصيل الربط والحدود](home-dashboard.ar.md).
 
 الرصيد يُقرأ من dollarBalance في بيانات الدخول والحساب. إذا لم يُرجع تحديث الحساب قيمة صالحة، تظهر القيمة السابقة بصفتها آخر رصيد معروف، لا بوصفها تحديثًا ناجحًا. لا يوجد طلب تعديل رصيد ضمن هذا التنفيذ.
+
+
+## واجهة المندوب وتحديث الحالة
+
+شاشة المندوب تحمل صفحات `GET orders/my-deliveries` بالتتابع وتبحث وتفلتر محليًا، مع بيان نقص نطاق البحث والأعداد قبل اكتمال الصفحات. فتح نافذة تغيير الحالة يجدد `GET orders/{id}` و`GET orders/statuses`، ثم يرسل `POST orders/{id}/status` بالحقول `targetStatus` و`note` الاختيارية بعد تأكيد المستخدم. يشترط سبب للحالة `Stuck`، ولا يسمح الحفظ عند تعذر التحقق أو نهائية الحالة. الخادم يظل صاحب قرار السماح بالانتقال.
+
+روابط الاتصال تستخدم `customerMobile`، والخرائط بحث بالحقول `customerAddress` و`customerArea` فقط. لا يوجد حقل مبلغ تحصيل صريح في العقد الذي تمت مراجعته؛ لذلك لا تعرض شاشة المندوب `orderTotalUSD` تحت تسمية «المطلوب تحصيله».
+
+## Sales product order options
+
+`SalesEmployee` (including normalized `sales`) uses `GET Product/order-options` for the product list, order picker and pre-review revalidation. Contract supplied by the project owner: `{ isSuccess: true, message, data: [{ productCode, name, originalPrice, merchantSellPrice, expectedSellPrice, effectiveExpectedSellPrice }] }`. This is an unpaginated list. Sales normalization whitelists display fields and excludes `merchantSellPrice`; missing stock is not zero or a client-side ordering limit. No sales product detail GET is issued. Refreshing the options checks selected IDs without overwriting the operator's quantity, color or actual selling price. Stock validation remains authoritative on order submission. Merchant endpoints remain unchanged. See [sales workflow](sales-order-options.ar.md).
+
+## Management orders workspace
+
+Management continues to use `GET orders` with `page` and `pageSize`. Its redesigned workspace shares presentation and pagination logic with delivery, but never calls `orders/my-deliveries`. Status changes retain the existing `POST orders/{id}/status` contract and the `managementOrderStatus` mutation. Fresh order/status data is checked before review, and the backend remains authoritative for transitions. See [management workspace](management-orders.ar.md).
+
+## تحديث دورة الطلب الداخلي والخارجي — 19 سبتمبر 2026
+
+أضيف `PUT orders/{id}` لتعديل العميل وقائمة العناصر الكاملة واللون، وجرى إتاحة التعديل وتغيير الحالة في واجهة الأدوار الأربعة حسب توجيه صاحب المشروع. قبل POST/PUT يعاد التحقق من `orders/{id}` و`delivery-areas` و`orders/statuses`. `isInternalDelivery` مطلوب لتحديد الداخلي/الخارجي؛ غيابه يقفل الكتابة ولا يُفسّر على أنه داخلي. الخارجي يقبل التأكيد أو التعثر من Processing وحل التعثر إلى Processing بملاحظة فقط، وتعديل بياناته مقفل. تفاصيل القواعد، payloads، وحدود صلاحيات الخادم في [تقرير دورة الطلب](order-workflow.ar.md).

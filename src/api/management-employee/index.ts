@@ -1,12 +1,12 @@
 import type { StatusInput } from '@/types/models';
 import { baseApi } from '../base-api';
-import { statusRequest } from '../shared/orders';
+import { guardedStatusChange } from '../shared/order-guards';
 export const managementApi = baseApi.injectEndpoints({
   // Fast Refresh re-evaluates this module while retaining the base API instance.
   overrideExisting: process.env.NODE_ENV === 'development',
   endpoints: (build) => ({
     managementOrderStatus: build.mutation<unknown, StatusInput>({
-      query: statusRequest,
+      queryFn: (args, _api, _options, baseQuery) => guardedStatusChange(args, baseQuery),
       invalidatesTags: ['Orders'],
     }),
   }),

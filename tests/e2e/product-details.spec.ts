@@ -122,16 +122,13 @@ test('fresh details and prices use Product/id only, copy, expand and prefill an 
   ).toHaveValue('35');
 });
 
-test('missing suggested price is explicit and sales users do not request or see merchant pricing', async ({
-  page,
-}) => {
-  const api = await setup(page, { role: 'SalesEmployee', suggested: null });
+test('missing suggested price remains explicit in merchant details', async ({ page }) => {
+  const api = await setup(page, { role: 'Merchant', suggested: null });
   await expect(page.getByTestId('detail-suggested-price')).toHaveText('غير محدد');
-  await expect(page.getByTestId('detail-merchant-price')).toHaveCount(0);
   await expect(page.getByRole('radio', { name: 'الفيديو', exact: true })).toHaveCount(0);
   expect(api.calls.some((path) => path.includes('merchant-price'))).toBe(false);
   await page.getByRole('button', { name: 'إنشاء طلب بهذا المنتج', exact: true }).click();
-  await expect(page).toHaveURL(/\/sales-employee\/create-order/);
+  await expect(page).toHaveURL(/\/merchant\/create-order/);
 });
 test('deleted product never falls back to stale card data', async ({ page }) => {
   await setup(page, { fail: 404 });

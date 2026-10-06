@@ -40,6 +40,15 @@ async function setup(page: Page, role = 'Merchant') {
     let data: unknown = [];
     if (path === 'Auth/login') data = { user, token: 'test-session' };
     else if (path === 'User/7') data = user;
+    else if (path === 'Product/order-options')
+      data = products.map(({ productCode, name, expectedSellPrice }) => ({
+        productCode,
+        name,
+        expectedSellPrice,
+        originalPrice: 12,
+        merchantSellPrice: 999,
+        effectiveExpectedSellPrice: null,
+      }));
     else if (path === 'Product/all')
       data = { items: products, page: 1, totalPages: 1, totalCount: products.length };
     else if (path === 'Product/8') data = { ...products[0], quantity: state.stock };
@@ -85,7 +94,7 @@ async function setup(page: Page, role = 'Merchant') {
   await expect(page).toHaveURL(/\/create-order/);
   return state;
 }
-async function fill(page: Page) {
+async function fill(page: Page, sales = false) {
   await page.getByLabel('اسم العميل *', { exact: true }).fill('سارة أحمد');
   await page.getByLabel('رقم الهاتف السوري *', { exact: true }).fill('٠٩١٢٣٤٥٦٧٨');
   await page.getByRole('button', { name: 'اختيار منطقة التوصيل', exact: true }).click();
@@ -93,7 +102,10 @@ async function fill(page: Page) {
   await page.getByRole('button', { name: 'اختيار دمشق', exact: true }).click();
   await page.getByLabel('العنوان التفصيلي *', { exact: true }).fill('شارع النصر، بجوار المكتبة');
   await page.getByRole('button', { name: 'إضافة منتج', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'اختيار منتج نافد', exact: true })).toBeDisabled();
+  if (!sales)
+    await expect(
+      page.getByRole('button', { name: 'اختيار منتج نافد', exact: true }),
+    ).toBeDisabled();
   await page.getByLabel('البحث في المنتجات', { exact: true }).fill('٨');
   await page.getByRole('button', { name: 'اختيار حقيبة يومية', exact: true }).click();
   await page.getByLabel('كمية حقيبة يومية', { exact: true }).fill('٢');
@@ -107,7 +119,7 @@ for (const role of ['Merchant', 'SalesEmployee'])
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
     const state = await setup(page, role);
-    await fill(page);
+    await fill(page, role === 'SalesEmployee');
     if (role === 'SalesEmployee') await expect(page.getByText(/فرق السعر المتوقع/)).toHaveCount(0);
     await page.getByRole('button', { name: 'إضافة منتج', exact: true }).click();
     await expect(
@@ -130,7 +142,15 @@ for (const role of ['Merchant', 'SalesEmployee'])
     expect(
       state.calls.filter((p) => p.includes('merchant-price') || p.includes('price-lists')),
     ).toEqual([]);
-    expect(state.calls).toContain('Product/8');
+    if (role === 'Merchant') expect(state.calls).toContain('Product/8');
+    else {
+      expect(state.calls).toContain('Product/order-options');
+      expect(
+        state.calls.filter(
+          (path) => path.startsWith('Product/') && path !== 'Product/order-options',
+        ),
+      ).toEqual([]);
+    }
     // Wait for the React Native modal entrance animation before capturing the preview.
     await page.waitForTimeout(400);
     await page.screenshot({ path: `test-results/${role}-order-review.png`, fullPage: true });
