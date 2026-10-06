@@ -1,8 +1,10 @@
+import { hasReference } from './external-order-policy';
 import type { Order, DeliveryArea } from '@/types/models';
 import { deliveryMode, type DeliveryMode } from './order-workflow';
 import { orderStatusPresentation } from './order-status-presentation';
 export type DeliveryFilter = 'all' | 'internal' | 'external';
 export function resolveDeliveryMode(order: Order, areas: DeliveryArea[]): DeliveryMode {
+  if (hasReference(order.oliveryOrderId) || hasReference(order.oliverySequence)) return 'external';
   const stored = order.deliveryMode?.trim().toLowerCase();
   return stored === 'internal' || stored === 'external'
     ? stored

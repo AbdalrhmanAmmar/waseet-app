@@ -10,24 +10,37 @@ const tones = {
   info: ['#ECF3FE', '#285C94'],
   danger: ['#FCECEC', '#B83D3D'],
 };
-export function OrderStatusSummary({ order, mode }: { order: Order; mode: DeliveryMode }) {
+export function OrderStatusSummary({
+  order,
+  mode,
+  showMode = true,
+}: {
+  order: Order;
+  mode: DeliveryMode;
+  showMode?: boolean;
+}) {
   const rows = [{ title: 'حالة الطلب', value: order.status, source: 'internal' as const }];
   const tracking =
     mode === 'external'
-      ? [{ title: 'حالة الشحنة', value: order.oliveryStatus, source: 'external' as const }]
+      ? [
+          { title: 'حالة زحل', value: order.oliveryStatus, source: 'external' as const },
+          { title: 'حالة التوصيل', value: order.deliveryStatus, source: 'external' as const },
+        ]
       : order.deliveryStatus
         ? [{ title: 'حالة التوصيل', value: order.deliveryStatus, source: 'internal' as const }]
         : [];
   return (
     <View style={{ gap: 8 }}>
-      <Text style={{ fontSize: 12, color: '#677A70' }}>
-        {mode === 'internal'
-          ? 'توصيل داخلي'
-          : mode === 'external'
-            ? 'توصيل خارجي'
-            : 'نوع التوصيل غير محدد'}
-        {order.orderType?.toLowerCase() === 'return' ? ' · طلب مرتجع' : ''}
-      </Text>
+      {showMode && (
+        <Text style={{ fontSize: 12, color: '#677A70' }}>
+          {mode === 'internal'
+            ? 'توصيل داخلي'
+            : mode === 'external'
+              ? 'حالة زحل'
+              : 'نوع التوصيل غير محدد'}
+          {order.orderType?.toLowerCase() === 'return' ? ' · طلب مرتجع' : ''}
+        </Text>
+      )}
       {[...rows, ...tracking].map((row) => {
         const item = orderStatusPresentation(row.value, row.source);
         const [backgroundColor, color] = tones[item.tone];

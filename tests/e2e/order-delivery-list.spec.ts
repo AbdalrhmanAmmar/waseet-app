@@ -55,9 +55,12 @@ for (const role of ['Merchant', 'SalesEmployee', 'ManagementEmployee', 'Delivery
     await page.getByPlaceholder('أدخل كلمة المرور').fill('test-password');
     await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
     await page.getByRole('tab', { name: /الطلبات/ }).click();
-    await page.getByRole('button', { name: 'نوع التوصيل خارجي', exact: true }).click();
+    await page.getByRole('button', { name: 'نوع التوصيل حالة زحل', exact: true }).click();
     await expect(page.getByRole('button', { name: 'فتح طلب #101', exact: true })).toHaveCount(0);
     await expect(page.getByText('تم التسليم مع إرجاع جزئي', { exact: true })).toBeVisible();
+    const externalCard = page.getByRole('button', { name: 'فتح طلب #102', exact: true });
+    for (const label of ['حالة الطلب', 'حالة زحل', 'حالة التوصيل', 'غير متاحة حاليًا'])
+      await expect(externalCard.getByText(label, { exact: true })).toBeVisible();
     await expect(
       page
         .getByRole('button', { name: 'فتح طلب #102', exact: true })
@@ -66,7 +69,7 @@ for (const role of ['Merchant', 'SalesEmployee', 'ManagementEmployee', 'Delivery
     await page.getByRole('button', { name: 'فلترة الحالات', exact: true }).click();
     await page.getByLabel('البحث في الحالات').fill('إرجاع جزئي');
     await page
-      .getByRole('checkbox', { name: 'حالة الشحنة: تم التسليم مع إرجاع جزئي', exact: true })
+      .getByRole('checkbox', { name: 'حالة زحل: تم التسليم مع إرجاع جزئي', exact: true })
       .click();
     await page.getByRole('button', { name: 'عرض النتائج', exact: true }).click();
     await expect(page.getByRole('button', { name: 'فتح طلب #103', exact: true })).toHaveCount(0);

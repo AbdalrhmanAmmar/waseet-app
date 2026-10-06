@@ -1,3 +1,12 @@
+import { ReturnSettlement } from './InternalReturnPanel';
+import { returnSettlementSnapshot } from '@/domain/internal-return';
+import {
+  externalTerminal,
+  externalTargets,
+  externalActionReason,
+  externalActionCopy,
+} from '@/domain/external-order-policy';
+import { useRefreshExternalOrderMutation } from '@/api/shared/external-orders';
 import { resolveDeliveryMode } from '@/domain/order-delivery-list';
 import { useSession } from '@/hooks/shared/use-session';
 import {
@@ -22,15 +31,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import Text from '@/components/shared/CustomText';
-import { useOrderQuery, useOrderStatusesQuery } from '@/api/shared/orders';
+import { useOrderQuery } from '@/api/shared/orders';
 import { statusLabel } from '@/components/shared/orders/statuses';
-import { isOrderTerminal } from '@/domain/order-workspace';
-import {
-  normalizeStatus,
-  transitionOptions,
-  requiresStatusNote,
-  mutationError,
-} from '@/domain/order-workflow';
+import { normalizeStatus, mutationError } from '@/domain/order-workflow';
 import { useDeliveryAreasQuery } from '@/api/shared/catalog';
 import { useReducedMotion } from '@/hooks/shared/use-reduced-motion';
 import type { Id, StatusInput } from '@/types/models';
@@ -52,7 +55,6 @@ export function OrderStatusSheet({
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
   const query = useOrderQuery(orderId, { refetchOnMountOrArgChange: true });
-  const statuses = useOrderStatusesQuery(undefined, { refetchOnMountOrArgChange: true });
   const areas = useDeliveryAreasQuery(undefined, { refetchOnMountOrArgChange: true });
   const lock = useRef(false);
   const [checking, setChecking] = useState(false);
@@ -60,20 +62,20 @@ export function OrderStatusSheet({
   const [status, setStatus] = useState('');
   const [notes, setNotes] = useState('');
   const [review, setReview] = useState(false);
+  const [settlement, setSettlement] = useState<string>();
+  const [acknowledged, setAcknowledged] = useState(false);
   const [error, setError] = useState('');
   const order = query.currentData;
   const mode = order
     ? resolveDeliveryMode(order, areas.error ? [] : (areas.currentData ?? []))
     : 'unknown';
-  const contextError = mode === 'unknown' || (mode === 'external' && !!statuses.error);
+  const contextError = mode === 'unknown';
   const resolvingStuck = normalizeStatus(order?.status) === 'stuck';
-  const loading = query.isFetching || statuses.isFetching || areas.isFetching;
+  const loading = query.isFetching || areas.isFetching;
   const validOrder = order && String(order.orderId) === String(orderId);
   const terminal =
     order &&
-    (mode === 'internal'
-      ? internalTerminal(order.status)
-      : isOrderTerminal(order.status, statuses.data));
+    (mode === 'internal' ? internalTerminal(order.status) : externalTerminal(order.status));
   const options = !terminal
     ? mode === 'internal' && order
       ? internalTargets(order, actorFromUser(userData), mode).map((value) => ({
@@ -81,19 +83,25 @@ export function OrderStatusSheet({
           isTerminal: internalTerminal(value),
           reason: null,
         }))
-      : transitionOptions(mode, order?.status ?? '', statuses.data ?? [])
+      : order
+        ? externalTargets(order, actorFromUser(userData), mode).map((value) => ({
+            status: value,
+            isTerminal: value === 'Cancelled',
+            reason: externalActionReason(order, value),
+          }))
+        : []
     : [];
   const selected = options.find((item) => item.status === status && !item.reason);
   const ready = !loading && !query.error && !contextError && validOrder && !!selected;
-  const needsNote =
-    mode === 'internal'
-      ? internalRequiresNote(order?.status ?? '', status)
-      : requiresStatusNote(order?.status ?? '', status);
+  const needsNote = internalRequiresNote(order?.status ?? '', status);
+  const [verify, verification] = useRefreshExternalOrderMutation();
+  const [uncertain, setUncertain] = useState(false);
+  const copy = mode === 'external' ? externalActionCopy : internalActionCopy;
   const close = () => {
     if (!lock.current) onClose();
   };
   const confirm = async () => {
-    if (!ready || busy || lock.current) return;
+    if (!ready || busy || uncertain || lock.current) return;
     if (needsNote && !notes.trim()) {
       setError(
         resolvingStuck
@@ -104,16 +112,29 @@ export function OrderStatusSheet({
     }
     setError('');
     if (!review) {
+      setSettlement(order ? returnSettlementSnapshot(order) : undefined);
+      setAcknowledged(false);
       setReview(true);
+      return;
+    }
+    if (mode === 'internal' && normalizeStatus(status) === 'completedreturned' && !acknowledged) {
+      setError('أكد مراجعة الكميات والتسوية أولًا.');
       return;
     }
     lock.current = true;
     setChecking(true);
     try {
-      await save({ orderId, status, notes: notes.trim(), expectedStatus: order?.status });
+      await save({
+        orderId,
+        status,
+        notes: notes.trim(),
+        expectedStatus: order?.status,
+        expectedReturnSettlement: settlement,
+      });
       onSaved();
     } catch (err) {
       setError(mutationError(err));
+      if ((err as { status?: string })?.status === 'STATUS_UNCERTAIN') setUncertain(true);
       setReview(false);
       setStatus('');
       void query.refetch();
@@ -191,7 +212,6 @@ export function OrderStatusSheet({
                   accessibilityRole="button"
                   onPress={() => {
                     void query.refetch();
-                    void statuses.refetch();
                     void areas.refetch();
                   }}
                   style={s.secondary}
@@ -206,13 +226,31 @@ export function OrderStatusSheet({
                 <Text style={s.name}>
                   {statusLabel(order.status)} ← {statusLabel(selected.status)}
                 </Text>
-                <Text style={s.hint}>
-                  {mode === 'internal'
-                    ? internalActionCopy[normalizeStatus(selected.status)]?.effect
-                    : 'تأكد أن الحالة الجديدة تطابق ما حدث لهذا الطلب.'}
-                </Text>
+                <Text style={s.hint}>{copy[normalizeStatus(selected.status)]?.effect}</Text>
                 {selected.isTerminal && (
                   <Text style={s.hint}>هذه حالة نهائية؛ تأكد من اختيارك قبل الحفظ.</Text>
+                )}
+                {mode === 'internal' && normalizeStatus(status) === 'completedreturned' && (
+                  <>
+                    <ReturnSettlement order={order} />
+                    <Pressable
+                      accessibilityRole="checkbox"
+                      accessibilityLabel="راجعت الكميات والتسوية وأوافق على إكمال المرتجع"
+                      accessibilityState={{ checked: acknowledged }}
+                      disabled={busy}
+                      onPress={() => setAcknowledged((v) => !v)}
+                      style={s.option}
+                    >
+                      <Icon
+                        name={acknowledged ? 'checkbox-marked' : 'checkbox-blank-outline'}
+                        size={24}
+                        color={p.primary}
+                      />
+                      <Text style={[s.hint, { flex: 1 }]}>
+                        راجعت الكميات والتسوية وأوافق على إكمال المرتجع
+                      </Text>
+                    </Pressable>
+                  </>
                 )}
                 {!!notes.trim() && <Text style={s.address}>{notes.trim()}</Text>}
               </View>
@@ -220,7 +258,7 @@ export function OrderStatusSheet({
               <>
                 <Text style={s.hint}>
                   {mode === 'external'
-                    ? 'توصيل خارجي: التأكيد أو التعثر أثناء التجهيز، وحل التعثر فقط.'
+                    ? 'حالة زحل تُحدّث من شركة التوصيل'
                     : `توصيل داخلي · ${String(order.orderType).toLowerCase() === 'return' ? 'طلب مرتجع' : 'طلب عادي'}`}
                 </Text>
                 <View style={[s.notice, { flexDirection: 'row-reverse', alignItems: 'center' }]}>
@@ -240,8 +278,8 @@ export function OrderStatusSheet({
                 </View>
                 {!options.length && (
                   <Text style={s.hint}>
-                    لا توجد إجراءات متاحة لحسابك. يجب اكتمال بيانات نوع الطلب والملكية والإسناد
-                    للتحقق من الصلاحيات.
+                    لا توجد إجراءات متاحة لحسابك. يجب اكتمال بيانات نوع الطلب والملكية للتحقق من
+                    الصلاحيات.
                   </Text>
                 )}
                 {options.map((item) => (
@@ -280,26 +318,21 @@ export function OrderStatusSheet({
                     />
                     <View style={{ flex: 1 }}>
                       <Text style={s.buttonText}>
-                        {mode === 'internal'
-                          ? (internalActionCopy[normalizeStatus(item.status)]?.label ??
-                            statusLabel(item.status))
-                          : statusLabel(item.status)}
+                        {copy[normalizeStatus(item.status)]?.label ?? statusLabel(item.status)}
                       </Text>
-                      {mode === 'internal' && (
-                        <Text style={s.hint}>
-                          {internalActionCopy[normalizeStatus(item.status)]?.effect}
-                        </Text>
-                      )}
+                      <Text style={s.hint}>{copy[normalizeStatus(item.status)]?.effect}</Text>
                       {!!item.reason && <Text style={s.hint}>{item.reason}</Text>}
                     </View>
                   </Pressable>
                 ))}
+
                 {!!options.length && (
                   <Text style={s.hint}>
                     {needsNote ? 'ملاحظة مطلوبة لإتمام الإجراء' : 'ملاحظة للمتابعة (اختياري)'} ·{' '}
                     {notes.length}/500
                   </Text>
                 )}
+
                 {!!options.length && (
                   <TextInput
                     accessibilityLabel="ملاحظات تغيير الحالة"
@@ -329,11 +362,30 @@ export function OrderStatusSheet({
               </Text>
             )}
           </ScrollView>
+          {uncertain && (
+            <Pressable
+              accessibilityRole="button"
+              disabled={verification.isLoading}
+              style={s.secondary}
+              onPress={async () => {
+                try {
+                  await verify({ orderId, sync: false }).unwrap();
+                  await query.refetch().unwrap();
+                  setUncertain(false);
+                  setError('');
+                } catch (e) {
+                  setError(mutationError(e));
+                }
+              }}
+            >
+              <Text style={s.buttonText}>التحقق من نتيجة المحاولة السابقة</Text>
+            </Pressable>
+          )}
           {!!options.length && (
             <View style={{ gap: 10 }}>
               <Pressable
                 accessibilityRole="button"
-                disabled={!ready || busy}
+                disabled={!ready || busy || uncertain}
                 onPress={() => void confirm()}
                 style={[s.primary, (!ready || busy) && s.disabled]}
               >

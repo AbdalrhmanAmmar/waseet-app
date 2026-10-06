@@ -67,24 +67,63 @@ export function product(item: Raw): Product {
     image: mediaUrl(item.imageUrl ?? item.imagePath ?? item.image ?? item.product_image),
   };
 }
+function firstDefined(source: Raw, keys: string[]) {
+  return keys.map((key) => source[key]).find((value) => value !== undefined);
+}
+function routingValue(item: Raw, keys: string[], nestedKeys = keys) {
+  const direct = firstDefined(item, keys);
+  if (direct !== undefined) return direct;
+  const nested =
+    item.olivery && typeof item.olivery === 'object' && !Array.isArray(item.olivery)
+      ? firstDefined(item.olivery, nestedKeys)
+      : undefined;
+  return nested;
+}
 export function order(item: Raw): Order {
+  const rawId = routingValue(
+    item,
+    ['oliveryOrderId', 'olivery_order_id', 'OliveryOrderId'],
+    ['oliveryOrderId', 'olivery_order_id', 'OliveryOrderId', 'orderId', 'order_id'],
+  );
+  const reference = (value: unknown) =>
+    typeof value === 'string' || typeof value === 'number' || value === null ? value : undefined;
+  const optionalText = (value: unknown) =>
+    typeof value === 'string' || value === null ? value : undefined;
+  const flag = (keys: string[]) => {
+    const value = firstDefined(item, keys);
+    return typeof value === 'boolean' ? value : undefined;
+  };
   return {
     ...item,
     userId: item.userId ?? item.UserId,
-    orderType: item.orderType ?? item.OrderType,
-    // Detail responses may expose only the nullable routing envelope.
-    // Missing routing data stays unknown; an explicit ID always takes precedence.
-    oliveryOrderId:
-      item.oliveryOrderId !== undefined
-        ? item.oliveryOrderId
-        : item.OliveryOrderId !== undefined
-          ? item.OliveryOrderId
-          : item.olivery === null
-            ? null
-            : undefined,
-    assignedToEmployeeId: item.assignedToEmployeeId ?? item.AssignedToEmployeeId,
+    orderType: item.orderType ?? item.order_type ?? item.OrderType,
+    deliveryMode: item.deliveryMode ?? item.delivery_mode ?? item.DeliveryMode,
+    oliveryOrderId: reference(
+      rawId !== undefined ? rawId : item.olivery === null ? null : undefined,
+    ),
+    oliverySequence: reference(
+      routingValue(
+        item,
+        ['oliverySequence', 'olivery_sequence', 'OliverySequence'],
+        ['oliverySequence', 'olivery_sequence', 'OliverySequence', 'sequence', 'Sequence'],
+      ),
+    ),
+    oliveryStatus: optionalText(
+      routingValue(
+        item,
+        ['oliveryStatus', 'olivery_status', 'OliveryStatus'],
+        ['oliveryStatus', 'olivery_status', 'OliveryStatus', 'status', 'Status'],
+      ),
+    ),
+    deliveryStatus: optionalText(
+      firstDefined(item, ['deliveryStatus', 'delivery_status', 'DeliveryStatus']),
+    ),
+    isReturnProcessed: flag(['isReturnProcessed', 'is_return_processed', 'IsReturnProcessed']),
+    canProcessReturn: flag(['canProcessReturn', 'can_process_return', 'CanProcessReturn']),
+    assignedToEmployeeId: firstDefined(item, ['assignedToEmployeeId', 'AssignedToEmployeeId']),
     assignedToDeliveryAgentId: item.assignedToDeliveryAgentId ?? item.AssignedToDeliveryAgentId,
-    isReturnFinalized: item.isReturnFinalized ?? item.IsReturnFinalized,
+    isReturnFinalized: flag(['isReturnFinalized', 'is_return_finalized', 'IsReturnFinalized']),
+    originalOrderId: item.originalOrderId ?? item.original_order_id ?? item.OriginalOrderId,
     orderId: item.orderId ?? item.id ?? item.order_id,
     customerName: item.customerName ?? item.customer ?? '',
     secondCustomerPhone:
@@ -92,7 +131,13 @@ export function order(item: Raw): Order {
     status: item.status ?? item.orderStatus ?? '',
     orderTotalUSD: Number(item.orderTotalUSD ?? item.totalPrice ?? item.totalAmount ?? 0),
     deliveryFee: Number(item.deliveryFee ?? item.fee ?? 0),
-    items: item.items ?? item.orderItems ?? [],
+    items: (item.items ?? item.orderItems ?? []).map((row: Raw) => ({
+      ...row,
+      orderItemId: row.orderItemId ?? row.order_item_id,
+      originalOrderItemId:
+        row.originalOrderItemId ?? row.original_order_item_id ?? row.OriginalOrderItemId,
+      returnedQuantity: row.returnedQuantity ?? row.returned_quantity ?? null,
+    })),
   };
 }
 export function orderDetails(value: unknown, expectedId: string | number): Order {

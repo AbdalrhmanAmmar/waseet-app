@@ -1,10 +1,11 @@
-import { actorFromUser, canEditInternal } from '@/domain/internal-order-policy';
+import { orderEditDecision } from '@/domain/order-edit-policy';
+import { actorFromUser } from '@/domain/internal-order-policy';
 import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, ScrollView, View } from 'react-native';
 import { useNavigation } from 'expo-router';
 import { usePreventRemove, type NavigationAction } from 'expo-router/react-navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useOrderQuery, useOrderStatusesQuery, useUpdateOrderMutation } from '@/api/shared/orders';
+import { useOrderQuery, useUpdateOrderMutation } from '@/api/shared/orders';
 import { useOrderDeliveryMode } from '@/hooks/shared/use-order-delivery-mode';
 import { useSession } from '@/hooks/shared/use-session';
 import { useReducedMotion } from '@/hooks/shared/use-reduced-motion';
@@ -45,8 +46,25 @@ const values = (order: Order) => ({
 });
 export default function EditOrderRoute() {
   const props = useScreenProps();
+  const { can } = useSession();
   const id = props.route.params.orderId ?? props.route.params.id;
-  const query = useOrderQuery(String(id ?? ''), { skip: !id, refetchOnMountOrArgChange: true });
+  const query = useOrderQuery(String(id ?? ''), {
+    skip: !id || !can('orders.edit'),
+    refetchOnMountOrArgChange: true,
+  });
+  if (!can('orders.edit'))
+    return (
+      <ScreenContainer>
+        <Header title="تعديل الطلب" />
+        <View style={ui.page}>
+          <Text accessibilityRole="alert">تعديل بيانات الطلب متاح لموظف الإدارة فقط.</Text>
+          <Button
+            title="العودة إلى تفاصيل الطلب"
+            onPress={() => props.navigation.replace('OrderDetails', { orderId: id })}
+          />
+        </View>
+      </ScreenContainer>
+    );
   if (query.currentData && String(query.currentData.orderId) === String(id))
     return (
       <OrderEditor
@@ -79,7 +97,6 @@ function OrderEditor({
 }: ScreenProps & { order: Order; detailError: boolean; detailLoading: boolean }) {
   const { can, userData } = useSession();
   const mode = useOrderDeliveryMode(order);
-  const statuses = useOrderStatusesQuery(undefined, { refetchOnMountOrArgChange: true });
   const [baseline] = useState(() => orderVersion(order));
   const [initial] = useState(() => values(order));
   const [form, setForm] = useState(initial);
@@ -105,12 +122,9 @@ function OrderEditor({
   const nav = useNavigation();
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
-  const allowed =
-    can('orders.edit') &&
-    canEditInternal(order, actorFromUser(userData), mode.mode) &&
-    !mode.isError &&
-    !statuses.error;
-  const pending = detailLoading || mode.isFetching || statuses.isFetching;
+  const decision = orderEditDecision(order, actorFromUser(userData), mode.mode);
+  const allowed = can('orders.edit') && decision.allowed && !mode.isError;
+  const pending = detailLoading || mode.isFetching;
   usePreventRemove(!saved && (dirty || result.isLoading), ({ data }) => {
     if (!lock.current) setLeave(data.action);
   });
@@ -154,9 +168,9 @@ function OrderEditor({
   const check = () => {
     if (!allowed || pending || detailError)
       return 'تعذر تأكيد صلاحية تعديل الطلب. حدّث التفاصيل وجهة التوصيل.';
-    if (deliveryMode(form.customerArea, mode.currentData ?? []) !== 'internal')
-      return 'اختر منطقة توصيل داخلي مؤكدة.';
-    return validateOrderUpdate(input, 'internal');
+    if (deliveryMode(form.customerArea, mode.currentData ?? []) !== mode.mode)
+      return 'اختر منطقة من نوع توصيل الطلب نفسه.';
+    return validateOrderUpdate(input, mode.mode);
   };
   const submit = async () => {
     if (lock.current || !review) return;
@@ -208,12 +222,9 @@ function OrderEditor({
             loading={mode.isFetching}
             retry={() => void mode.refetch()}
           />
-          {statuses.error && (
-            <Button title="إعادة تحميل الحالات" secondary onPress={() => void statuses.refetch()} />
-          )}
           {!allowed && !pending && (
             <Text accessibilityRole="alert" style={s.error}>
-              التعديل متاح لموظف الإدارة المسند إليه الطلب الداخلي فقط، بعد التحقق من بياناته.
+              {decision.reason}
             </Text>
           )}
           <View
@@ -239,6 +250,7 @@ function OrderEditor({
                 onChangeText={(v) => change('secondCustomerPhone', v)}
               />
               <Text style={ui.caption}>منطقة التوصيل: {form.customerArea}</Text>
+              <Text style={ui.caption}>يمكن اختيار منطقة من نوع التوصيل الحالي نفسه.</Text>
               <Button title="تغيير منطقة التوصيل" secondary onPress={() => setAreaPicker(true)} />
               <Field
                 label="العنوان التفصيلي *"
@@ -345,14 +357,18 @@ function OrderEditor({
       </KeyboardAvoidingView>
       {areaPicker && (
         <ChoiceSheet
-          title="مناطق التوصيل الداخلي"
+          title={mode.mode === 'external' ? 'مناطق التوصيل الخارجي' : 'مناطق التوصيل الداخلي'}
           loading={mode.isFetching}
           error={mode.error ? 'تعذر تحميل المناطق' : undefined}
           onRetry={() => void mode.refetch()}
           onClose={() => setAreaPicker(false)}
           choices={(mode.currentData ?? [])
-            .filter((a) => a.isInternalDelivery === true)
-            .map((a) => ({ key: String(a.deliveryAreaId), title: a.city, caption: 'توصيل داخلي' }))}
+            .filter((a) => a.isInternalDelivery === (mode.mode === 'internal'))
+            .map((a) => ({
+              key: String(a.deliveryAreaId),
+              title: a.city,
+              caption: mode.mode === 'external' ? 'توصيل خارجي' : 'توصيل داخلي',
+            }))}
           onSelect={(key) => {
             const area = mode.currentData?.find((a) => String(a.deliveryAreaId) === key);
             if (area) change('customerArea', area.city);

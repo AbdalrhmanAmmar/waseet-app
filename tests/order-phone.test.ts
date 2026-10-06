@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { primaryPhoneError, primaryPhonePayload } from '../src/domain/order-phone';
+import {
+  customerWhatsAppUrl,
+  primaryPhoneError,
+  primaryPhonePayload,
+} from '../src/domain/order-phone';
 import { validateOrder, emptyOrder, orderPayload } from '../src/domain/order-draft';
 import { order } from '../src/api/normalizers';
 test('phone rules distinguish internal, external and unresolved delivery without destroying input', () => {
@@ -28,4 +32,19 @@ test('additional phone accepts arbitrary long text, survives normalization and i
   );
   assert.equal(order({ second_customer_phone: '+20 123' }).secondCustomerPhone, '+20 123');
   assert.equal(orderPayload({ ...draft, secondCustomerPhone: ' ' }).secondCustomerPhone, undefined);
+});
+
+test('WhatsApp links normalize Syrian local and explicit international numbers without guessing invalid numbers', () => {
+  for (const value of [
+    '0912345678',
+    '٠٩١٢٣٤٥٦٧٨',
+    '+963 912 345 678',
+    '00963912345678',
+    '963912345678',
+  ]) {
+    assert.equal(customerWhatsAppUrl(value), 'https://wa.me/963912345678');
+  }
+  assert.equal(customerWhatsAppUrl('+20 (100) 123-4567'), 'https://wa.me/201001234567');
+  for (const value of [undefined, null, '', '123', 'invalid', '0912345678/hello', '01001234567'])
+    assert.equal(customerWhatsAppUrl(value), null);
 });

@@ -19,7 +19,7 @@ export function OrderDeliveryFilters({
   const count = controller.statuses.length + controller.localStatuses.length;
   const groups = [
     {
-      title: controller.mode === 'external' ? 'حالة الشحنة' : 'حالة الطلب',
+      title: controller.mode === 'external' ? 'حالة زحل' : 'حالة الطلب',
       catalog:
         controller.mode === 'external' ? EXTERNAL_DELIVERY_STATUSES : INTERNAL_DELIVERY_STATUSES,
       selected: controller.statuses,
@@ -43,7 +43,7 @@ export function OrderDeliveryFilters({
           <Pressable
             key={mode}
             accessibilityRole="button"
-            accessibilityLabel={`نوع التوصيل ${['الكل', 'داخلي', 'خارجي'][i]}`}
+            accessibilityLabel={`نوع التوصيل ${['الكل', 'داخلي', 'حالة زحل'][i]}`}
             accessibilityState={{ selected: controller.mode === mode }}
             onPress={() => controller.setMode(mode)}
             style={{
@@ -61,7 +61,7 @@ export function OrderDeliveryFilters({
                 fontFamily: 'Tajawal-Bold',
               }}
             >
-              {['الكل', 'داخلي', 'خارجي'][i]}
+              {['الكل', 'داخلي', 'حالة زحل'][i]}
             </Text>
           </Pressable>
         ))}

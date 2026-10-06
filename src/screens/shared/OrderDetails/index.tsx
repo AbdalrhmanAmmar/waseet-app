@@ -1,9 +1,14 @@
-import { actorFromUser, canEditInternal, internalTerminal } from '@/domain/internal-order-policy';
+import { orderEditDecision } from '@/domain/order-edit-policy';
+import { customerWhatsAppUrl } from '@/domain/order-phone';
+import { InternalReturnPanel } from '@/components/shared/orders/InternalReturnPanel';
+import { externalTerminal } from '@/domain/external-order-policy';
+import { ExternalOrderPanel } from '@/components/shared/orders/ExternalOrderPanel';
+import { actorFromUser, internalTerminal } from '@/domain/internal-order-policy';
 import { useState } from 'react';
-import { Linking, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
-import { useOrderQuery, useOrderStatusesQuery } from '@/api/shared/orders';
+import { useOrderQuery } from '@/api/shared/orders';
 import Text from '@/components/shared/CustomText';
 import Header from '@/components/shared/HeaderComponent';
 import ScreenContainer from '@/components/shared/ScreenContainer';
@@ -16,7 +21,6 @@ import { OrderHistoryPanel, displayDate } from '@/components/shared/orders/Order
 import { OrderWaybill } from '@/components/shared/orders/OrderWaybill';
 import { useOrderDeliveryMode } from '@/hooks/shared/use-order-delivery-mode';
 import { useSession } from '@/hooks/shared/use-session';
-import { terminalStatus } from '@/domain/order-workflow';
 import { orderPhone } from '@/domain/order-workspace';
 import { formatMoney, optionalPrice } from '@/domain/product-details';
 import { palette as p, typography as t } from '@/theme/tokens';
@@ -62,21 +66,14 @@ function DetailsContent({
 }: Props & { order: Order; refreshing: boolean; stale: boolean; refresh: () => void }) {
   const { role, can, userData } = useSession();
   const mode = useOrderDeliveryMode(order);
-  const statuses = useOrderStatusesQuery();
   const [contactError, setContactError] = useState(''),
     [copied, setCopied] = useState(false);
   const terminal =
-    mode.mode === 'internal'
-      ? internalTerminal(order.status)
-      : terminalStatus(order.status, statuses.data);
+    mode.mode === 'internal' ? internalTerminal(order.status) : externalTerminal(order.status);
+  const editDecision = orderEditDecision(order, actorFromUser(userData), mode.mode);
   const canEdit =
-    can('orders.edit') &&
-    canEditInternal(order, actorFromUser(userData), mode.mode) &&
-    !mode.isFetching &&
-    !statuses.isFetching &&
-    !statuses.error &&
-    !stale &&
-    !refreshing;
+    can('orders.edit') && editDecision.allowed && !mode.isFetching && !stale && !refreshing;
+  const returning = mode.mode === 'internal' && String(order.orderType).toLowerCase() === 'return';
   const phone = orderPhone(order.customerMobile);
   const secondPhone = orderPhone(order.secondCustomerPhone ?? undefined);
   const itemsTotal = order.items.reduce(
@@ -105,7 +102,7 @@ function DetailsContent({
           <Icon name="package-variant-closed" size={32} color={p.primary} />
         </View>
         <Text style={ui.caption}>{displayDate(order.createdAt)}</Text>
-        <Text style={ui.caption}>إجمالي الطلب المسجل</Text>
+        <Text style={ui.caption}>{returning ? 'قيمة المرتجع المسجلة' : 'إجمالي الطلب المسجل'}</Text>
         <Text style={s.amount}>{formatMoney(optionalPrice(order.orderTotalUSD))}</Text>
         <Text style={ui.caption}>عدد القطع: {Number.isFinite(pieces) ? pieces : 'غير متوفر'}</Text>
       </View>
@@ -116,32 +113,73 @@ function DetailsContent({
       />
       <Card>
         <Text style={ui.title}>إجراءات الطلب</Text>
-        <Button
-          title="تعديل الطلب"
-          icon="file-document-edit-outline"
-          secondary
-          disabled={!canEdit}
-          onPress={() => navigation.navigate('EditOrder', { orderId: order.orderId })}
-        />
-        {!canEdit && (
-          <Text style={ui.caption}>
-            {'التعديل متاح لموظف الإدارة المسند إليه الطلب الداخلي فقط.'}
-          </Text>
+        {can('orders.edit') && (
+          <Button
+            title="تعديل الطلب"
+            icon="file-document-edit-outline"
+            secondary
+            disabled={!canEdit}
+            onPress={() => navigation.navigate('EditOrder', { orderId: order.orderId })}
+          />
         )}
-        {statuses.error && (
-          <Button title="إعادة تحميل الحالات" secondary onPress={() => void statuses.refetch()} />
+        {can('orders.edit') && !canEdit && (
+          <Text style={ui.caption}>
+            {editDecision.allowed ? 'جارٍ التحقق من أحدث بيانات الطلب.' : editDecision.reason}
+          </Text>
         )}
         {can('orders.status') && (
           <OrderActions order={order} disabled={stale || refreshing || terminal} />
         )}
       </Card>
+      {mode.mode !== 'external' && (
+        <InternalReturnPanel
+          order={order}
+          mode={mode.mode}
+          disabled={stale || refreshing || mode.isFetching}
+          refresh={() => {
+            refresh();
+            void mode.refetch();
+          }}
+        />
+      )}
       <Card>
         <Text style={ui.title}>بيانات العميل</Text>
         <Text>العميل: {order.customerName}</Text>
-        <Text selectable>الهاتف: {order.customerMobile || 'غير متوفر'}</Text>
-        {!!order.secondCustomerPhone && (
-          <Text selectable>الهاتف الإضافي: {order.secondCustomerPhone}</Text>
-        )}
+        {[
+          { label: 'الهاتف الأساسي', value: order.customerMobile },
+          { label: 'الهاتف الإضافي', value: order.secondCustomerPhone },
+        ].map(({ label, value }) => {
+          const url = customerWhatsAppUrl(value);
+          return (
+            <View key={label} style={s.contactRow}>
+              <Text style={ui.caption}>{label}</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`فتح واتساب ${label}: ${value || 'غير متوفر'}`}
+                accessibilityState={{ disabled: !url }}
+                disabled={!url}
+                onPress={() => {
+                  setContactError('');
+                  if (url)
+                    void Linking.openURL(url).catch(() =>
+                      setContactError('تعذر فتح واتساب. تأكد من توفر التطبيق أو جرّب مرة أخرى.'),
+                    );
+                }}
+                style={({ pressed }) => [s.whatsappRow, pressed && { opacity: 0.7 }]}
+              >
+                <Icon name="whatsapp" size={26} color={url ? p.primary : p.muted} />
+                <Text style={[s.phoneNumber, !url && { color: p.muted }]}>
+                  {value || 'غير متوفر'}
+                </Text>
+              </Pressable>
+              {!!value && !url && (
+                <Text style={ui.caption}>
+                  لفتح واتساب، يلزم رقم صحيح مع رمز الدولة أو رقم جوال سوري يبدأ بـ 09.
+                </Text>
+              )}
+            </View>
+          );
+        })}
         <Text>المنطقة: {order.customerArea || 'غير متوفرة'}</Text>
         <Text>العنوان: {order.customerAddress || 'غير متوفر'}</Text>
         <Button
@@ -191,10 +229,16 @@ function DetailsContent({
               #{String(item.productCode ?? '—')} · الكمية: {String(item.quantity ?? 'غير متوفر')}
             </Text>
             <Text style={ui.caption}>اللون: {String(item.color || 'غير محدد')}</Text>
+            {item.returnedQuantity != null && (
+              <Text style={ui.caption}>الكمية المرتجعة: {String(item.returnedQuantity)}</Text>
+            )}
             {role === 'Merchant' && (
               <Text>سعر التاجر: {formatMoney(optionalPrice(item.merchantSellPriceUSD))}</Text>
             )}
-            <Text>سعر البيع: {formatMoney(optionalPrice(item.actualSellPriceUSD))}</Text>
+            <Text>
+              {returning ? 'سعر الإرجاع' : 'سعر البيع'}:{' '}
+              {formatMoney(optionalPrice(item.actualSellPriceUSD))}
+            </Text>
             <Text style={ui.link}>
               إجمالي المنتج:{' '}
               {formatMoney(
@@ -209,29 +253,46 @@ function DetailsContent({
         ))}
         {!order.items.length && <Text style={ui.caption}>لا توجد تفاصيل منتجات لهذا الطلب</Text>}
       </Card>
-      <Card>
-        <Text style={ui.title}>الملخص المالي</Text>
-        <Text>قيمة المنتجات: {formatMoney(Number.isFinite(itemsTotal) ? itemsTotal : null)}</Text>
-        <Text>رسوم التوصيل: {formatMoney(optionalPrice(order.deliveryFee))}</Text>
-        {Profit && role === 'Merchant' && <Profit value={order.totalMerchantProfitUSD} />}
-        <Text style={ui.title}>
-          الإجمالي المسجل: {formatMoney(optionalPrice(order.orderTotalUSD))}
-        </Text>
-        <Text style={ui.caption}>
-          الإجمالي المعتمد هو المسجل في الخادم، والأرباح ضمن قيمة المنتجات.
-        </Text>
-      </Card>
-      <Card>
-        <Text style={ui.title}>{mode.mode === 'external' ? 'حالة Olivery' : 'حالة التوصيل'}</Text>
-        <Text>{deliveryStatus ? statusLabel(deliveryStatus) : 'لم تُسجّل بعد'}</Text>
-        <Button title="تحديث حالة التوصيل" secondary disabled={refreshing} onPress={refresh} />
-      </Card>
+      {!returning && (
+        <Card>
+          <Text style={ui.title}>الملخص المالي</Text>
+          <Text>قيمة المنتجات: {formatMoney(Number.isFinite(itemsTotal) ? itemsTotal : null)}</Text>
+          <Text>رسوم التوصيل: {formatMoney(optionalPrice(order.deliveryFee))}</Text>
+          {Profit && role === 'Merchant' && <Profit value={order.totalMerchantProfitUSD} />}
+          <Text style={ui.title}>
+            الإجمالي المسجل: {formatMoney(optionalPrice(order.orderTotalUSD))}
+          </Text>
+          <Text style={ui.caption}>
+            الإجمالي المعتمد هو المسجل في الخادم، والأرباح ضمن قيمة المنتجات.
+          </Text>
+        </Card>
+      )}
+      {mode.mode === 'external' ? (
+        <ExternalOrderPanel order={order} />
+      ) : (
+        <Card>
+          <Text style={ui.title}>حالة التوصيل</Text>
+          <Text>{deliveryStatus ? statusLabel(deliveryStatus) : 'لم تُسجّل بعد'}</Text>
+          <Button title="تحديث حالة التوصيل" secondary disabled={refreshing} onPress={refresh} />
+        </Card>
+      )}
       <OrderHistoryPanel id={order.orderId} />
       <OrderWaybill order={order} />
     </ScrollView>
   );
 }
 const s = StyleSheet.create({
+  contactRow: { gap: 4, paddingVertical: 8, borderBottomWidth: 1, borderColor: p.border },
+  whatsappRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12, minHeight: 48 },
+  phoneNumber: {
+    flex: 1,
+    color: p.primary,
+    fontFamily: t.bold,
+    fontSize: 18,
+    lineHeight: 28,
+    writingDirection: 'ltr',
+    textAlign: 'right',
+  },
   hero: { backgroundColor: p.soft, padding: 24, borderRadius: 24, gap: 10 },
   status: { borderRadius: 16, padding: 8, backgroundColor: '#fff' },
   amount: { color: p.deep, fontSize: 30, lineHeight: 44, fontFamily: t.bold },

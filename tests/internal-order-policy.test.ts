@@ -7,7 +7,7 @@ import {
   internalRequiresNote,
 } from '../src/domain/internal-order-policy';
 import { orderDetails } from '../src/api/normalizers';
-import { guardedStatusChange } from '../src/api/shared/order-guards';
+import { guardedStatusChange, uncertainStatuses } from '../src/api/shared/order-guards';
 const order = orderDetails(
   {
     orderId: 21,
@@ -61,7 +61,8 @@ test('all internal normal transition permissions match the four-role matrix', ()
       );
       assert.equal(
         internalTargets({ ...order, status: from }, { role, userId: 99 }, 'internal').includes(to),
-        to === 'Cancelled',
+        to === 'Cancelled' ||
+          (['DeliveryAgent', 'ManagementEmployee'].includes(role) && allowed.includes(role)),
         `unassigned/non-owner ${role}: ${from} -> ${to}`,
       );
     }
@@ -92,7 +93,13 @@ test('return lifecycle never exposes normal delivery or cancellation', () => {
           ? expected
           : [],
       );
-      assert.deepEqual(internalTargets(returning, { role, userId: 99 }, 'internal'), []);
+      assert.deepEqual(
+        internalTargets(returning, { role, userId: 99 }, 'internal'),
+        role === 'ManagementEmployee' ||
+          (role === 'DeliveryAgent' && ['Confirmed', 'returned_in_progress'].includes(status))
+          ? expected
+          : [],
+      );
       assert.deepEqual(
         internalTargets({ ...returning, isReturnFinalized: true }, { role, userId: 7 }, 'internal'),
         [],
@@ -148,7 +155,7 @@ test('assigned management may edit closed internal orders; cancellation is not t
       );
   assert.equal(
     canEditInternal(order, { role: 'ManagementEmployee', userId: 99 }, 'internal'),
-    false,
+    true,
   );
   assert.equal(internalTerminal('Cancelled'), false);
   assert.equal(internalTerminal('completed_returned'), true);
@@ -175,8 +182,9 @@ test('PascalCase backend identity fields preserve explicit null routing', () => 
     'Cancelled',
   ]);
 });
-test('guard rechecks assignment, verifies post-write details and handles a lost response', async () => {
+test('guard ignores reassignment, verifies post-write details and handles a lost response', async () => {
   for (const scenario of ['reassigned', 'lost-response', 'unconfirmed', 'success']) {
+    uncertainStatuses.clear();
     let current = { ...order, assignedToEmployeeId: scenario === 'reassigned' ? 99 : 7 };
     let writes = 0,
       reads = 0;
@@ -199,9 +207,9 @@ test('guard rechecks assignment, verifies post-write details and handles a lost 
       },
       { role: 'ManagementEmployee', userId: 7 },
     );
-    assert.equal(writes, scenario === 'reassigned' ? 0 : 1);
-    assert.equal(!!result.error, ['reassigned', 'unconfirmed'].includes(scenario));
-    if (scenario !== 'reassigned') assert.equal(reads, 2);
+    assert.equal(writes, 1);
+    assert.equal(!!result.error, scenario === 'unconfirmed');
+    assert.equal(reads, 2);
   }
 });
 
@@ -255,6 +263,41 @@ test('merchant detail contract with olivery null permits cancellation without ow
       internalTargets(
         orderDetails({ ...raw, ...patch }, 657173),
         { role: 'Merchant', userId: 7 },
+        'internal',
+      ),
+      [],
+    );
+  }
+});
+
+test('delivery status actions ignore absent, null and different assignment but preserve lifecycle rules', () => {
+  for (const assignedToDeliveryAgentId of [undefined, null, 99]) {
+    const current = { ...order, assignedToDeliveryAgentId };
+    const actor = { role: 'DeliveryAgent', userId: 7 };
+    assert.deepEqual(
+      internalTargets({ ...current, status: 'Out for Delivery' }, actor, 'internal'),
+      ['Delivered', 'Refused on Delivery', 'Postponed', 'Stuck', 'Cancelled'],
+    );
+    assert.deepEqual(
+      internalTargets({ ...current, orderType: 'Return', status: 'Confirmed' }, actor, 'internal'),
+      ['returned_in_progress'],
+    );
+    assert.deepEqual(
+      internalTargets(
+        { ...current, orderType: 'Return', status: 'returned_in_progress' },
+        actor,
+        'internal',
+      ),
+      ['returned_delivered'],
+    );
+    assert.deepEqual(
+      internalTargets({ ...current, orderType: 'Return', status: 'Processing' }, actor, 'internal'),
+      [],
+    );
+    assert.deepEqual(
+      internalTargets(
+        { ...current, orderType: 'Return', status: 'returned_delivered' },
+        actor,
         'internal',
       ),
       [],

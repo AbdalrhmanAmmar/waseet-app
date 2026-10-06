@@ -39,8 +39,8 @@ export function internalContextValid(order: Order, mode: DeliveryMode) {
     ['normal', 'return'].includes(String(order.orderType).toLowerCase())
   );
 }
-export function assignedManagement(order: Order, actor: OrderActor | null | undefined) {
-  return actor?.role === 'ManagementEmployee' && same(order.assignedToEmployeeId, actor.userId);
+export function isManagement(actor: OrderActor | null | undefined) {
+  return actor?.role === 'ManagementEmployee';
 }
 export function canEditInternal(
   order: Order,
@@ -49,7 +49,7 @@ export function canEditInternal(
 ) {
   return (
     internalContextValid(order, mode) &&
-    assignedManagement(order, actor) &&
+    isManagement(actor) &&
     !['pending', 'rejected', 'suspended', 'blocked', 'inactive', 'disabled'].includes(
       actor?.accountStatus?.toLowerCase() ?? '',
     )
@@ -82,8 +82,8 @@ export function internalTargets(
   const returning = String(order.orderType).toLowerCase() === 'return';
   const from = normalizeStatus(order.status);
   const targets = (returning ? returns : normal)[from] ?? [];
-  const management = assignedManagement(order, actor);
-  const delivery = role === 'DeliveryAgent' && same(order.assignedToDeliveryAgentId, actor.userId);
+  const management = isManagement(actor);
+  const delivery = role === 'DeliveryAgent';
   return targets.filter((target) => {
     const to = normalizeStatus(target);
     if (returning) {

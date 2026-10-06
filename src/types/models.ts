@@ -98,4 +98,5 @@ export interface StatusInput {
   status: string;
   notes?: string;
   expectedStatus?: string;
+  expectedReturnSettlement?: string;
 }

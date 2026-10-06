@@ -1,3 +1,4 @@
+import { externalTerminal } from '@/domain/external-order-policy';
 import { internalTerminal } from '@/domain/internal-order-policy';
 import { OrderDeliveryFilters } from './OrderDeliveryFilters';
 import { useOrderDeliveryFilters } from '@/hooks/shared/use-order-delivery-filters';
@@ -50,7 +51,9 @@ export function OrdersWorkspace({
     (order) =>
       !(resolveDeliveryMode(order, delivery.areas) === 'internal'
         ? internalTerminal(order.status)
-        : isOrderTerminal(order.status, statuses.data)),
+        : resolveDeliveryMode(order, delivery.areas) === 'external'
+          ? externalTerminal(order.status)
+          : isOrderTerminal(order.status, statuses.data)),
   ).length;
   const filtered = useMemo(
     () =>
@@ -60,7 +63,9 @@ export function OrdersWorkspace({
             filter !== 'attention' ||
             !(resolveDeliveryMode(order, delivery.areas) === 'internal'
               ? internalTerminal(order.status)
-              : isOrderTerminal(order.status, statuses.data)),
+              : resolveDeliveryMode(order, delivery.areas) === 'external'
+                ? externalTerminal(order.status)
+                : isOrderTerminal(order.status, statuses.data)),
         ),
         search,
         filter === 'attention' ? '' : filter,
@@ -228,7 +233,9 @@ export function OrdersWorkspace({
             terminal={
               resolveDeliveryMode(item, delivery.areas) === 'internal'
                 ? internalTerminal(item.status)
-                : isOrderTerminal(item.status, statuses.data)
+                : resolveDeliveryMode(item, delivery.areas) === 'external'
+                  ? externalTerminal(item.status)
+                  : isOrderTerminal(item.status, statuses.data)
             }
             onOpen={() => navigation.navigate('OrderDetails', { orderId: item.orderId })}
             onUpdate={() => {

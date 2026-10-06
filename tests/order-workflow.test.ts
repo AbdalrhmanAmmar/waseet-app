@@ -149,7 +149,7 @@ test('status mutation verifies current status, delivery mode and mandatory note 
       data: { targetStatus: 'Confirmed' },
     },
   );
-  for (const options of [{ status: 'Delivered' }, { area: 'حلب' }, { invalidDetail: true }]) {
+  for (const options of [{ status: 'Delivered' }, { invalidDetail: true }]) {
     const api = mock(options);
     const response = await guardedStatusChange(
       { orderId: 21, status: 'Cancelled', expectedStatus: 'Processing' },
@@ -163,8 +163,12 @@ test('status mutation verifies current status, delivery mode and mandatory note 
   await guardedStatusChange(
     { orderId: 21, status: 'Processing', notes: '  تم التواصل  ' },
     stuck.query,
+    actor,
   );
-  assert.deepEqual(stuck.requests.at(-1)?.data, { targetStatus: 'Processing', note: 'تم التواصل' });
+  assert.deepEqual(stuck.requests.find((r) => r.method === 'POST')?.data, {
+    targetStatus: 'Processing',
+    note: 'تم التواصل',
+  });
 });
 test('editing sends all rows and colors, rejects concurrent changes and original or target external area', async () => {
   const baseline = orderVersion(orderDetails(original, 21));
