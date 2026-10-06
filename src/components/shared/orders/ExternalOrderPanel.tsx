@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Text from '../CustomText';
 import { Card, Button, ui } from '../ui';
 import { useSession } from '@/hooks/shared/use-session';
@@ -18,7 +18,8 @@ export function ExternalOrderPanel({ order }: { order: Order }) {
   const { navigation } = useScreenProps();
   const [refresh, refreshing] = useRefreshExternalOrderMutation();
   const [error, setError] = useState(''),
-    [updated, setUpdated] = useState(false);
+    [updated, setUpdated] = useState<Date | null>(null);
+  const lock = useRef(false);
   const receipt = useExternalReturnReceiptQuery({
     orderId: order.orderId,
     userId: userData?.userId ?? '',
@@ -27,19 +28,24 @@ export function ExternalOrderPanel({ order }: { order: Order }) {
   const saved = receipt.data?.state === 'saved' || returnProcessed(order);
   const uncertain = receipt.data?.state === 'uncertain';
   const verify = async () => {
+    if (lock.current) return;
+    lock.current = true;
     setError('');
     try {
       await refresh({ orderId: order.orderId, sync: true }).unwrap();
-      setUpdated(true);
+      setUpdated(new Date());
     } catch (e) {
       setError(mutationError(e));
+    } finally {
+      lock.current = false;
     }
   };
   const recorded = order.items.filter((i) => Number(i.returnedQuantity) > 0);
   return (
     <>
       <Card>
-        <Text style={ui.title}>حالة زحل</Text>
+        <Text style={ui.title}>متابعة الشحنة · زحل</Text>
+        <Text style={ui.caption}>مراحل الشحنة تتحدث من شركة التوصيل تلقائيًا.</Text>
         <OrderStatusSummary order={order} mode="external" showMode={false} />
         {!!order.oliverySequence && (
           <Text style={ui.caption}>مرجع الشحنة: {String(order.oliverySequence)}</Text>
@@ -50,8 +56,20 @@ export function ExternalOrderPanel({ order }: { order: Order }) {
           loading={refreshing.isLoading}
           onPress={() => void verify()}
         />
-        {updated && <Text style={ui.caption}>تم تحديث حالة زحل في هذه الصفحة.</Text>}
-        {!!error && <Text accessibilityRole="alert">{error}</Text>}
+        {updated && (
+          <Text style={ui.caption}>
+            آخر تحديث ناجح:{' '}
+            {updated.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+        )}
+        {order.isCredited === true && <Text style={ui.caption}>أكد الخادم إضافة أرصدة الطلب.</Text>}
+        {order.isFeeDebited === true && (
+          <Text style={ui.caption}>أكد الخادم خصم رسوم التوصيل.</Text>
+        )}
+        {order.isRestocked === true && <Text style={ui.caption}>أكد الخادم إعادة المخزون.</Text>}
+        {!!error && (
+          <Text accessibilityRole="alert">لم ينجح التحديث؛ المعروض آخر بيانات متاحة. {error}</Text>
+        )}
       </Card>
       {(isManagement(actor) || saved) && (
         <Card>

@@ -672,3 +672,25 @@ test('external return cannot submit when live order is explicitly not credited',
   await expect(page.getByRole('alert')).toContainText('الرصيد');
   expect(api.writes).toHaveLength(0);
 });
+
+test('live tracking displays Arabic titles and verified effects without changing local status', async ({
+  page,
+}) => {
+  const api = await setup(page, 'ManagementEmployee', true);
+  Object.assign(api.state.order, {
+    status: 'Printed Confirmed',
+    oliveryStatus: 'تم استلام الشحنة من التاجر',
+    isCredited: true,
+    isRestocked: true,
+    isFeeDebited: false,
+  });
+  await page.getByRole('button', { name: 'تحديث حالة زحل', exact: true }).click();
+  await expect(page.getByText(/آخر تحديث ناجح:/)).toBeVisible();
+  await expect(page.getByText('أكد الخادم إضافة أرصدة الطلب.', { exact: true })).toBeVisible();
+  await expect(page.getByText('أكد الخادم إعادة المخزون.', { exact: true })).toBeVisible();
+  await expect(page.getByText('أكد الخادم خصم رسوم التوصيل.', { exact: true })).toHaveCount(0);
+  expect(api.writes).toHaveLength(0);
+  expect(api.state.order.status).toBe('Printed Confirmed');
+  await page.getByText('متابعة الشحنة · زحل', { exact: true }).scrollIntoViewIfNeeded();
+  await page.screenshot({ path: 'test-results/olivery-tracking.png' });
+});

@@ -1,3 +1,4 @@
+import { oliveryTitleCode } from './olivery-status';
 import type { DeliveryMode as OrderDeliveryMode } from './order-workflow';
 import type { Order as IOrder } from '@/types/models';
 // Presentation matching never changes API values or workflow transition rules.
@@ -82,12 +83,20 @@ export function orderStatusPresentation(
   mode: OrderDeliveryMode = 'unknown',
 ): StatusPresentation {
   const text = value?.trim() || 'غير محدد';
+  if (mode === 'external') {
+    const alias = oliveryTitleCode(text);
+    return (
+      (alias ? EXTERNAL_DELIVERY_STATUSES[alias] : undefined) ??
+      lookup(normalizedCatalogs.external, normalizeStatus(text)) ??
+      Object.values(EXTERNAL_DELIVERY_STATUSES).find((status) => status.label === text) ??
+      { label: text, tone: 'neutral' }
+    );
+  }
   const key = normalizeStatus(text);
   const exactInternal = lookup(INTERNAL_DELIVERY_STATUSES, text);
   const exactExternal = lookup(EXTERNAL_DELIVERY_STATUSES, text);
   if (exactInternal && exactExternal && exactInternal.label !== exactExternal.label) {
     if (mode === 'internal') return exactInternal;
-    if (mode === 'external') return exactExternal;
     return { label: text + ' (مصدر الحالة غير محدد)', tone: 'neutral' };
   }
   if (exactInternal || exactExternal) return exactInternal ?? exactExternal!;
@@ -100,7 +109,7 @@ export function orderStatusPresentation(
   };
   if (mode === 'internal' && Object.prototype.hasOwnProperty.call(oldInternalLabels, text))
     return INTERNAL_DELIVERY_STATUSES[oldInternalLabels[text]];
-  if (mode === 'internal' || mode === 'external') {
+  if (mode === 'internal') {
     const other = mode === 'internal' ? 'external' : 'internal';
     return (
       lookup(normalizedCatalogs[mode], key) ??

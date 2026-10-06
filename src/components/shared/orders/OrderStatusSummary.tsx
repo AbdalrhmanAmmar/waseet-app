@@ -57,7 +57,11 @@ export function OrderStatusSummary({
               }}
             >
               <Text style={{ color, fontSize: 13, lineHeight: 22, flexShrink: 1 }}>
-                {row.value?.trim() ? item.label : 'غير متاحة حاليًا'}
+                {row.value?.trim()
+                  ? item.label
+                  : mode === 'external' && row.title === 'حالة التوصيل'
+                    ? 'لا توجد حالة توصيل منفصلة لهذه المرحلة'
+                    : 'غير متاحة حاليًا'}
               </Text>
             </View>
           </View>

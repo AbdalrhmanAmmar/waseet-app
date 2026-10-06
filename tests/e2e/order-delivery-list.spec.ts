@@ -25,7 +25,7 @@ for (const role of ['Merchant', 'SalesEmployee', 'ManagementEmployee', 'Delivery
         orderId: 102,
         deliveryMode: 'external',
         status: 'Printed Confirmed',
-        oliveryStatus: 'delivered_with_return',
+        oliveryStatus: 'تم التسليم ويوجد مرتجع',
         deliveryStatus: null,
       },
       {
@@ -33,7 +33,7 @@ for (const role of ['Merchant', 'SalesEmployee', 'ManagementEmployee', 'Delivery
         orderId: 103,
         deliveryMode: 'external',
         status: 'Confirmed',
-        oliveryStatus: 'waiting',
+        oliveryStatus: 'بالانتظار',
       },
     ];
     await page.route('**/api/**', async (route) => {
@@ -59,8 +59,13 @@ for (const role of ['Merchant', 'SalesEmployee', 'ManagementEmployee', 'Delivery
     await expect(page.getByRole('button', { name: 'فتح طلب #101', exact: true })).toHaveCount(0);
     await expect(page.getByText('تم التسليم مع إرجاع جزئي', { exact: true })).toBeVisible();
     const externalCard = page.getByRole('button', { name: 'فتح طلب #102', exact: true });
-    for (const label of ['حالة الطلب', 'حالة زحل', 'حالة التوصيل', 'غير متاحة حاليًا'])
-      await expect(externalCard.getByText(label, { exact: true })).toBeVisible();
+    for (const label of [
+      'حالة الطلب',
+      'حالة زحل',
+      'حالة التوصيل',
+      'لا توجد حالة توصيل منفصلة لهذه المرحلة',
+    ])
+      await expect(externalCard.getByText(label, { exact: true }).last()).toBeVisible();
     await expect(
       page
         .getByRole('button', { name: 'فتح طلب #102', exact: true })

@@ -118,6 +118,8 @@ export function order(item: Raw): Order {
     deliveryStatus: optionalText(
       firstDefined(item, ['deliveryStatus', 'delivery_status', 'DeliveryStatus']),
     ),
+    isRestocked: flag(['isRestocked', 'is_restocked', 'IsRestocked']),
+    isFeeDebited: flag(['isFeeDebited', 'is_fee_debited', 'IsFeeDebited']),
     isCredited: flag(['isCredited', 'is_credited', 'IsCredited']),
     isStockDecremented: flag(['isStockDecremented', 'is_stock_decremented', 'IsStockDecremented']),
     isReturnProcessed: flag(['isReturnProcessed', 'is_return_processed', 'IsReturnProcessed']),

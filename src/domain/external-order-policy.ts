@@ -1,4 +1,5 @@
 import type { Order } from '@/types/models';
+import { oliveryTitleCode } from './olivery-status';
 import type { DeliveryMode } from './order-workflow';
 import { normalizeStatus } from './order-workflow';
 import { isManagement, type OrderActor } from './internal-order-policy';
@@ -19,7 +20,8 @@ export const actorActive = (a?: OrderActor | null) =>
   );
 export function shipmentCode(value: unknown) {
   const text = typeof value === 'string' ? value.trim() : '';
-  if (text === 'تم التسليم ويوجد مرتجع') return 'delivered_with_return';
+  const alias = oliveryTitleCode(text);
+  if (alias) return alias;
   return (
     Object.entries(EXTERNAL_DELIVERY_STATUSES).find(
       ([code, entry]) => normalizeStatus(code) === normalizeStatus(text) || entry.label === text,
@@ -73,7 +75,7 @@ export function canEditExternal(
     actorActive(actor) &&
     isManagement(actor) &&
     (['processing', 'stuck', 'confirmed'].includes(normalizeStatus(o.status)) ||
-      ['waiting', 'printingwaiting'].includes(normalizeStatus(o.oliveryStatus)))
+      ['waiting', 'printing_waiting'].includes(shipmentCode(o.oliveryStatus)))
   );
 }
 export const externalActionCopy: Record<string, { label: string; effect: string }> = {
