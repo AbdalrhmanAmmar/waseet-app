@@ -1,3 +1,4 @@
+import { isMerchantRole } from '@/auth/roles';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import {
@@ -381,7 +382,7 @@ export default function ProductsScreen({
               key={String(product.productCode)}
               item={product}
               list={listView}
-              merchant={role === 'Merchant'}
+              merchant={isMerchantRole(role)}
               onPress={() => navigation.navigate('ProductDetails', { product })}
               onCreateOrder={() => navigation.navigate('CreateOrder', { product })}
             />

@@ -1,3 +1,4 @@
+import { isMerchantRole } from '@/auth/roles';
 import { View } from 'react-native';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import Text from '../CustomText';
@@ -43,7 +44,7 @@ export function ReturnSettlement({ order }: { order: Order }) {
         </Text>
       ))}
       {role === 'ManagementEmployee' && line('تسوية الإدارة', order.totalAdminProfitUSD)}
-      {(role === 'ManagementEmployee' || role === 'Merchant') &&
+      {(role === 'ManagementEmployee' || isMerchantRole(role)) &&
         line('تسوية التاجر', order.totalMerchantProfitUSD)}
       <Text style={ui.caption}>
         {finalized

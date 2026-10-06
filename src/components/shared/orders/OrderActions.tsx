@@ -1,3 +1,4 @@
+import { isMerchantRole } from '@/auth/roles';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useChangeOrderStatusMutation } from '@/api/shared/orders';
@@ -12,14 +13,13 @@ export function OrderActions({ order, disabled = false }: { order: Order; disabl
     [saved, setSaved] = useState(false);
   const [save, result] = useChangeOrderStatusMutation();
   const { role } = useSession();
-  const variant =
-    role === 'Merchant'
-      ? 'merchant'
-      : role === 'SalesEmployee'
-        ? 'sales'
-        : role === 'DeliveryAgent'
-          ? 'delivery'
-          : 'management';
+  const variant = isMerchantRole(role)
+    ? 'merchant'
+    : role === 'SalesEmployee'
+      ? 'sales'
+      : role === 'DeliveryAgent'
+        ? 'delivery'
+        : 'management';
   return (
     <View style={{ gap: 12 }}>
       {saved && <Text style={ui.caption}>تم تحديث حالة الطلب.</Text>}

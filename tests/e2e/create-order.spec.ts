@@ -37,6 +37,7 @@ async function setup(page: Page, role = 'Merchant') {
     const request = route.request();
     const path = new URL(request.url()).pathname.split('/api/')[1];
     state.calls.push(path);
+    if (path !== 'Auth/login') expect(request.headers().authorization).toBe('Bearer test-session');
     let data: unknown = [];
     if (path === 'Auth/login') data = { user, token: 'test-session' };
     else if (path === 'User/7') data = user;
@@ -118,7 +119,7 @@ async function fill(page: Page, sales = false) {
   await page.getByLabel('سعر بيع حقيبة يومية (USD)', { exact: true }).fill('٣٢٫٥');
   await page.getByLabel('لون حقيبة يومية *', { exact: true }).fill('أسود');
 }
-for (const role of ['Merchant', 'SalesEmployee'])
+for (const role of ['Merchant', 'MerchantEmployee', 'SalesEmployee'])
   test(`${role}: direct order includes color, edited price, review, success and no cart`, async ({
     page,
   }) => {
@@ -148,7 +149,7 @@ for (const role of ['Merchant', 'SalesEmployee'])
     expect(
       state.calls.filter((p) => p.includes('merchant-price') || p.includes('price-lists')),
     ).toEqual([]);
-    if (role === 'Merchant') expect(state.calls).toContain('Product/8');
+    if (role !== 'SalesEmployee') expect(state.calls).toContain('Product/8');
     else {
       expect(state.calls).toContain('Product/order-options');
       expect(

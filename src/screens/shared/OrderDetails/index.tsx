@@ -1,3 +1,4 @@
+import { isMerchantRole } from '@/auth/roles';
 import { orderEditDecision } from '@/domain/order-edit-policy';
 import { customerWhatsAppUrl } from '@/domain/order-phone';
 import { InternalReturnPanel } from '@/components/shared/orders/InternalReturnPanel';
@@ -232,7 +233,7 @@ function DetailsContent({
             {item.returnedQuantity != null && (
               <Text style={ui.caption}>الكمية المرتجعة: {String(item.returnedQuantity)}</Text>
             )}
-            {role === 'Merchant' && (
+            {isMerchantRole(role) && (
               <Text>سعر التاجر: {formatMoney(optionalPrice(item.merchantSellPriceUSD))}</Text>
             )}
             <Text>
@@ -258,7 +259,7 @@ function DetailsContent({
           <Text style={ui.title}>الملخص المالي</Text>
           <Text>قيمة المنتجات: {formatMoney(Number.isFinite(itemsTotal) ? itemsTotal : null)}</Text>
           <Text>رسوم التوصيل: {formatMoney(optionalPrice(order.deliveryFee))}</Text>
-          {Profit && role === 'Merchant' && <Profit value={order.totalMerchantProfitUSD} />}
+          {Profit && isMerchantRole(role) && <Profit value={order.totalMerchantProfitUSD} />}
           <Text style={ui.title}>
             الإجمالي المسجل: {formatMoney(optionalPrice(order.orderTotalUSD))}
           </Text>

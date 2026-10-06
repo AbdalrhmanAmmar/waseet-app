@@ -1,10 +1,11 @@
+import { isMerchantRole } from '@/auth/roles';
 import { useSession } from '@/hooks/shared/use-session';
 import { Stack } from 'expo-router';
 export default function Layout() {
   const { role } = useSession();
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={role === 'Merchant'}>
+      <Stack.Protected guard={isMerchantRole(role)}>
         <Stack.Screen name="merchant" />
       </Stack.Protected>
       <Stack.Protected guard={role === 'SalesEmployee'}>

@@ -40,7 +40,7 @@ export function useCreateEmployee() {
       setError(
         unknown
           ? 'تعذر التأكد من نتيجة إنشاء الحساب. تحقق مع الدعم قبل إعادة المحاولة.'
-          : failure.message || 'تعذر إنشاء الحساب',
+          : `${failure.message || 'تعذر إنشاء الحساب'}\nرمز الاستجابة: ${failure.status}`,
       );
     } finally {
       setBusy(false);

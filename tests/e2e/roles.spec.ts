@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 const paths = {
   Merchant: 'merchant',
+  MerchantEmployee: 'merchant',
   SalesEmployee: 'sales-employee',
   ManagementEmployee: 'management-employee',
   DeliveryAgent: 'delivery-agent',
@@ -64,7 +65,7 @@ for (const role of Object.keys(paths) as (keyof typeof paths)[]) {
     const calls = await mockApi(page, role);
     await login(page);
     await expect(page).toHaveURL(new RegExp(`/${paths[role]}$`));
-    if (role === 'Merchant' || role === 'SalesEmployee') {
+    if (role === 'Merchant' || role === 'MerchantEmployee' || role === 'SalesEmployee') {
       await expect(page.getByRole('heading', { name: 'نظرة على حسابك' })).toBeVisible();
       await page.screenshot({
         path: `test-results/${role}-home.png`,
@@ -155,4 +156,30 @@ test('merchant browses product details and profile without losing the session', 
     animations: 'disabled',
   });
   expect(errors).toEqual([]);
+});
+
+test('merchant employee sees catalog and profile but cannot open owner-only actions', async ({
+  page,
+}) => {
+  const calls = await mockApi(page, 'MerchantEmployee');
+  await login(page);
+  await expect(page).toHaveURL(/\/merchant$/);
+  await expect(page.getByText('رصيد حسابك', { exact: true })).toHaveCount(0);
+  await page.getByRole('tab', { name: /المنتجات/ }).click();
+  await expect(page.getByText('منتج اختبار', { exact: true }).first()).toBeVisible();
+  expect(calls).toContain('Product/all');
+  await page.getByRole('tab', { name: /حسابي/ }).click();
+  await expect(page.getByText('موظف تاجر', { exact: true })).toBeVisible();
+  await expect(page.getByText('رصيد حسابك', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'إضافة موظف', exact: true })).toHaveCount(0);
+  for (const path of ['/merchant/withdrawal', '/merchant/create-employee']) {
+    await page.evaluate((url) => {
+      window.history.pushState({}, '', url);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, path);
+    await expect(page).toHaveURL(/\/merchant$/);
+  }
+  expect(
+    calls.some((p) => p.includes('withdrawl-requests') || p.includes('merchant-employees')),
+  ).toBe(false);
 });

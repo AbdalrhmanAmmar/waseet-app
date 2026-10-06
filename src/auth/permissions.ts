@@ -2,6 +2,7 @@ import type { Role } from './roles';
 export type Permission =
   'catalog.read' | 'orders.create' | 'orders.status' | 'orders.edit' | 'profit.read';
 const permissions: Record<Role, readonly Permission[]> = {
+  MerchantEmployee: ['catalog.read', 'orders.create', 'orders.status', 'profit.read'],
   Merchant: ['catalog.read', 'orders.create', 'orders.status', 'profit.read'],
   SalesEmployee: ['catalog.read', 'orders.create', 'orders.status'],
   ManagementEmployee: ['orders.status', 'orders.edit'],

@@ -2,6 +2,7 @@ import { API_URL } from '@/config/env';
 import { accountReview } from '@/auth/account-review';
 import type { ApiError } from '@/types/models';
 import { create } from 'axios';
+import { apiErrorMessage } from '@/domain/api-error-message';
 export const client = create({ baseURL: API_URL, timeout: 20000 });
 let token: string | null = null;
 let onUnauthorized = () => {};
@@ -22,7 +23,7 @@ client.interceptors.response.use(
     ) {
       return Promise.reject({
         status: response.status,
-        message: response.data.message ?? 'رفض الخادم الطلب',
+        message: apiErrorMessage(response.data, 'رفض الخادم الطلب'),
         ...(response.config.url === 'Auth/login' && {
           accountReview: accountReview(response.data),
         }),
@@ -42,12 +43,14 @@ client.interceptors.response.use(
     return Promise.reject({
       status: error.response?.status ?? 'NETWORK_ERROR',
       ...(error.config?.url === 'Auth/login' && { accountReview: accountReview(data) }),
-      message:
-        data?.message ??
-        data?.title ??
-        (typeof data === 'string' ? data : null) ??
-        (data?.errors ? Object.values(data.errors).flat().join(', ') : null) ??
-        'تعذر الاتصال بالخادم',
+      message: apiErrorMessage(
+        data,
+        error.response?.status === 405
+          ? 'الخادم لا يسمح بطريقة الطلب على هذا المسار'
+          : error.response
+            ? 'رفض الخادم الطلب'
+            : 'تعذر الاتصال بالخادم',
+      ),
     } satisfies ApiError);
   },
 );

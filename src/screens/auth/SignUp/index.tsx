@@ -13,7 +13,7 @@ import CountryPicker from '@/components/shared/CountryPicker';
 import { Brand, Button, Card, ui } from '@/components/shared/ui';
 import { AsyncState } from '@/components/shared/AsyncState';
 import { palette as p, typography as t } from '@/theme/tokens';
-import { ROLES, roleLabels, type Role } from '@/auth/roles';
+import { PUBLIC_ROLES as ROLES, roleLabels, type PublicRole as Role } from '@/auth/roles';
 import { signUpSchema } from '@/schemas/auth';
 import { birthDateFromParts } from '@/schemas/birth-date';
 import { useAppDispatch } from '@/hooks/shared/use-store';

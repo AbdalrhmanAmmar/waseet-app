@@ -1,3 +1,4 @@
+import { isMerchantRole } from '@/auth/roles';
 import { useCatalogInfiniteQuery } from '@/api/shared/catalog';
 import { useSalesOrderOptionsQuery } from '@/api/sales-employee';
 import { useSession } from './use-session';
@@ -5,7 +6,7 @@ export function useCatalog() {
   const { userData, role } = useSession();
   const isSales = role === 'SalesEmployee';
   const query = useCatalogInfiniteQuery(String(userData?.userId ?? ''), {
-    skip: !userData || role !== 'Merchant',
+    skip: !userData || !isMerchantRole(role),
   });
   const sales = useSalesOrderOptionsQuery(String(userData?.userId ?? ''), {
     skip: !userData || !isSales,

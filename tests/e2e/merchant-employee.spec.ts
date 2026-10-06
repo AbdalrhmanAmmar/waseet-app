@@ -12,13 +12,14 @@ for (const fail of [false, true])
     const posts: unknown[] = [];
     await page.route('**/api/**', async (route) => {
       const path = new URL(route.request().url()).pathname.split('/api/')[1];
-      if (path === 'user/merchant-employee') {
+      if (path === 'user/merchant-employees') {
+        expect(route.request().method()).toBe('POST');
         expect(route.request().headers().authorization).toBe('Bearer merchant-token');
         posts.push(route.request().postDataJSON());
         return route.fulfill({
           status: fail ? 409 : 200,
           json: fail
-            ? { message: 'البريد مستخدم بالفعل' }
+            ? { message: 'تعذر إنشاء الحساب', errors: { Email: ['البريد مستخدم بالفعل'] } }
             : { isSuccess: true, data: { userId: 88, token: 'employee-token' } },
         });
       }
@@ -57,7 +58,8 @@ for (const fail of [false, true])
       password: 'employee-password',
     });
     if (fail) {
-      await expect(page.getByText('البريد مستخدم بالفعل')).toBeVisible();
+      await expect(page.getByRole('alert')).toContainText('البريد مستخدم بالفعل');
+      await expect(page.getByRole('alert')).toContainText('409');
       await expect(page.getByLabel('البريد الإلكتروني', { exact: true })).toHaveValue(
         'employee@example.com',
       );

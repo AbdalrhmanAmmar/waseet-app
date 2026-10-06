@@ -1,13 +1,23 @@
-export const ROLES = ['Merchant', 'SalesEmployee', 'ManagementEmployee', 'DeliveryAgent'] as const;
+export const PUBLIC_ROLES = [
+  'Merchant',
+  'SalesEmployee',
+  'ManagementEmployee',
+  'DeliveryAgent',
+] as const;
+export const ROLES = [...PUBLIC_ROLES, 'MerchantEmployee'] as const;
+export type PublicRole = (typeof PUBLIC_ROLES)[number];
+export const isMerchantRole = (role: unknown) => role === 'Merchant' || role === 'MerchantEmployee';
 export type Role = (typeof ROLES)[number];
 export const roleLabels: Record<Role, string> = {
   Merchant: 'تاجر',
+  MerchantEmployee: 'موظف تاجر',
   SalesEmployee: 'موظف مبيعات',
   ManagementEmployee: 'موظف إدارة',
   DeliveryAgent: 'مندوب توصيل',
 };
 export const rolePaths: Record<Role, string> = {
   Merchant: '/merchant',
+  MerchantEmployee: '/merchant',
   SalesEmployee: '/sales-employee',
   ManagementEmployee: '/management-employee',
   DeliveryAgent: '/delivery-agent',

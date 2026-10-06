@@ -1,3 +1,4 @@
+import { isMerchantRole } from '@/auth/roles';
 import { deliveryMode } from '@/domain/order-workflow';
 import { primaryPhoneError } from '@/domain/order-phone';
 import { useEffect, useRef, useState } from 'react';
@@ -403,7 +404,7 @@ export default function CreateOrder({ navigation, route }: ScreenProps) {
                 row={row}
                 disabled={busy}
                 errors={errors}
-                merchant={role === 'Merchant'}
+                merchant={isMerchantRole(role)}
                 sales={isSales}
                 onChange={(patch) => {
                   setDraft((previous) => ({

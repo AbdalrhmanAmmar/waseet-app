@@ -1,3 +1,4 @@
+import { isMerchantRole } from '@/auth/roles';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { AppState } from 'react-native';
@@ -16,7 +17,7 @@ export function useProductDetails(id: string, initial?: Product) {
     { product_id: id, user_id: userData?.userId ?? '' },
     { skip: !id || !userData, refetchOnMountOrArgChange: true },
   );
-  const merchant = role === 'Merchant';
+  const merchant = isMerchantRole(role);
   const notFound = !!query.error && 'status' in query.error && query.error.status === 404;
   const product = notFound ? undefined : (query.currentData ?? initial);
   const busy = query.isFetching;
