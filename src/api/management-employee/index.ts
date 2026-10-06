@@ -1,3 +1,5 @@
+import type { RootState } from '@/store';
+import { actorFromUser } from '@/domain/internal-order-policy';
 import type { StatusInput } from '@/types/models';
 import { baseApi } from '../base-api';
 import { guardedStatusChange } from '../shared/order-guards';
@@ -6,8 +8,13 @@ export const managementApi = baseApi.injectEndpoints({
   overrideExisting: process.env.NODE_ENV === 'development',
   endpoints: (build) => ({
     managementOrderStatus: build.mutation<unknown, StatusInput>({
-      queryFn: (args, _api, _options, baseQuery) => guardedStatusChange(args, baseQuery),
-      invalidatesTags: ['Orders'],
+      queryFn: (args, _api, _options, baseQuery) =>
+        guardedStatusChange(
+          args,
+          baseQuery,
+          actorFromUser((_api.getState() as RootState).AuthSlice.userData),
+        ),
+      invalidatesTags: ['Orders', 'Products', 'Profile'],
     }),
   }),
 });

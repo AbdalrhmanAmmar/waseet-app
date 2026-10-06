@@ -43,10 +43,10 @@ test('sales order permits server-validated stock while enforcing quantity, price
     customerAddress: 'شارع النصر',
     items: [{ ...draftItem(salesOrderOptions([option])[0]), quantity: '30', color: ' أسود ' }],
   };
-  const areas = [{ deliveryAreaId: 1, city: 'دمشق', fee: 5 }];
+  const areas = [{ deliveryAreaId: 1, isInternalDelivery: false, city: 'دمشق', fee: 5 }];
   assert.deepEqual(validateOrder(draft, areas, 'server'), {});
   assert.ok(validateOrder(draft, areas)['items.185208.quantity']);
-  assert.deepEqual(orderPayload(draft).items, [
+  assert.deepEqual(orderPayload(draft, 'external').items, [
     { productCode: 185208, quantity: 30, actualSellPriceUSD: 65, color: 'أسود' },
   ]);
   for (const qty of ['0', '-1', '1.2', 'NaN']) {

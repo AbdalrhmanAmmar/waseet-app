@@ -12,8 +12,15 @@ async function setup(page: Page, role: Role, external = false) {
   const state = {
     failSave: false,
     failAreas: false,
+    failStatuses: false,
     invalidDetail: false,
     order: {
+      deliveryMode: null as string | null,
+      orderType: 'Normal',
+      oliveryOrderId: external ? 888 : null,
+      userId: 7,
+      assignedToEmployeeId: 7,
+      assignedToDeliveryAgentId: 7,
       orderId: 21,
       customerName: 'محمد أحمد',
       customerMobile: '0991234567',
@@ -55,18 +62,20 @@ async function setup(page: Page, role: Role, external = false) {
             { deliveryAreaId: 2, city: 'حلب', fee: 7, isInternalDelivery: false },
           ]);
     if (path === 'orders/statuses')
-      return reply(
-        [
-          'Pending',
-          'Processing',
-          'Confirmed',
-          'Out for Delivery',
-          'Delivered',
-          'Stuck',
-          'Cancelled',
-          'Closed',
-        ].map((status) => ({ status, isTerminal: ['Closed', 'Cancelled'].includes(status) })),
-      );
+      return state.failStatuses
+        ? route.fulfill({ status: 403, json: { message: 'catalog forbidden' } })
+        : reply(
+            [
+              'Pending',
+              'Processing',
+              'Confirmed',
+              'Out for Delivery',
+              'Delivered',
+              'Stuck',
+              'Cancelled',
+              'Closed',
+            ].map((status) => ({ status, isTerminal: ['Closed', 'Cancelled'].includes(status) })),
+          );
     if (path === 'orders/21/history') return reply(state.history);
     if (path === 'orders/21/status' || (path === 'orders/21' && request.method() === 'PUT')) {
       const body = request.postDataJSON();
@@ -117,9 +126,19 @@ for (const role of Object.keys(paths) as Role[]) {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     const api = await setup(page, role);
+    if (role !== 'ManagementEmployee') {
+      await expect(page.getByRole('button', { name: 'تعديل الطلب', exact: true })).toBeDisabled();
+      await page.getByRole('button', { name: 'تحديث حالة الطلب', exact: true }).click();
+      await expect(page.getByRole('radio')).toHaveCount(1);
+      await page.getByRole('radio', { name: 'ملغي', exact: true }).click();
+      await saveStatus(page);
+      await expect.poll(() => api.writes.length).toBe(1);
+      expect(api.writes[0].body).toEqual({ targetStatus: 'Cancelled' });
+      return;
+    }
     await expect(page.getByRole('button', { name: 'تعديل الطلب', exact: true })).toBeEnabled();
     await page.getByRole('button', { name: 'تحديث حالة الطلب', exact: true }).click();
-    await expect(page.getByRole('radio', { name: 'تم التسليم', exact: true })).toBeDisabled();
+    await expect(page.getByRole('radio', { name: 'تم التسليم', exact: true })).toHaveCount(0);
     await page.getByRole('radio', { name: 'مؤكد', exact: true }).click();
     await saveStatus(page);
     await expect(page.getByRole('button', { name: 'إغلاق تحديث الحالة', exact: true })).toHaveCount(
@@ -128,6 +147,7 @@ for (const role of Object.keys(paths) as Role[]) {
     expect(api.writes[0]).toEqual({ method: 'POST', body: { targetStatus: 'Confirmed' } });
     await page.getByRole('button', { name: 'تعديل الطلب', exact: true }).click();
     await expect(page).toHaveURL(/edit-order/);
+    await page.getByLabel('رقم هاتف إضافي (اختياري)', { exact: true }).fill('+20 (100) 123-4567');
     await page.getByRole('textbox', { name: 'كمية المنتج 1', exact: true }).fill('٣');
     await page.getByRole('textbox', { name: 'لون المنتج 1', exact: true }).fill('أبيض');
     await page
@@ -147,15 +167,12 @@ for (const role of Object.keys(paths) as Role[]) {
         customerMobile: '0991234567',
         customerArea: 'دمشق',
         customerAddress: 'شارع جديد، بناء 9',
+        secondCustomerPhone: '+20 (100) 123-4567',
         items: [{ productCode: 11, quantity: 3, actualSellPriceUSD: 15, color: 'أبيض' }],
       },
     });
     await page.getByRole('button', { name: 'العودة إلى تفاصيل الطلب', exact: true }).click();
     await expect(page.getByText('اللون: أبيض', { exact: true })).toBeVisible();
-    if (role === 'SalesEmployee') {
-      await expect(page.getByText(/سعر التاجر/)).toHaveCount(0);
-      expect(api.calls.some((p) => /^Product\/\d|Product\/all/.test(p))).toBe(false);
-    }
     expect(errors).toEqual([]);
   });
   test(`${role}: external order editing is locked and resolving stuck needs a note`, async ({
@@ -191,7 +208,7 @@ for (const role of Object.keys(paths) as Role[]) {
 test('permission rejection retains the edit draft and review; retry sends the same payload', async ({
   page,
 }) => {
-  const api = await setup(page, 'SalesEmployee');
+  const api = await setup(page, 'ManagementEmployee');
   api.state.failSave = true;
   await page.getByRole('button', { name: 'تعديل الطلب', exact: true }).click();
   await page.getByRole('textbox', { name: 'لون المنتج 1', exact: true }).fill('أزرق');
@@ -212,7 +229,7 @@ test('permission rejection retains the edit draft and review; retry sends the sa
 test('revalidation blocks an edit if the original area became external while reviewing', async ({
   page,
 }) => {
-  const api = await setup(page, 'Merchant');
+  const api = await setup(page, 'ManagementEmployee');
   await page.getByRole('button', { name: 'تعديل الطلب', exact: true }).click();
   await page.getByRole('textbox', { name: 'لون المنتج 1', exact: true }).fill('أزرق');
   await page.getByRole('button', { name: 'مراجعة التعديلات', exact: true }).click();
@@ -222,7 +239,7 @@ test('revalidation blocks an edit if the original area became external while rev
   expect(api.writes).toHaveLength(0);
 });
 test('a stale status selection cannot overwrite a new server status', async ({ page }) => {
-  const api = await setup(page, 'Merchant');
+  const api = await setup(page, 'ManagementEmployee');
   await page.getByRole('button', { name: 'تحديث حالة الطلب', exact: true }).click();
   await page.getByRole('radio', { name: 'مؤكد', exact: true }).click();
   await page.getByRole('button', { name: 'مراجعة التغيير', exact: true }).click();
@@ -246,7 +263,7 @@ test('unknown delivery metadata blocks actions until retry succeeds', async ({ p
 });
 test('details, history and waybill stay readable on a small phone', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 720 });
-  const api = await setup(page, 'Merchant');
+  const api = await setup(page, 'ManagementEmployee');
   api.state.history = [
     {
       changedAt: '2026-09-19T12:00:00Z',
@@ -316,4 +333,102 @@ test('confirmed external order cannot advance manually and malformed details ren
   await expect(page.getByText('تعذر التحقق من تفاصيل الطلب', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'تعديل الطلب', exact: true })).toBeDisabled();
   expect(api.writes).toHaveLength(0);
+});
+
+test('internal action sheet revalidates assignment after review', async ({ page }) => {
+  const api = await setup(page, 'ManagementEmployee');
+  await page.getByRole('button', { name: 'تحديث حالة الطلب', exact: true }).click();
+  await page.getByRole('radio', { name: 'مؤكد', exact: true }).click();
+  await page.getByRole('button', { name: 'مراجعة التغيير', exact: true }).click();
+  api.state.order.assignedToEmployeeId = 99;
+  await page.getByRole('button', { name: 'تأكيد وحفظ الحالة', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('الإجراء غير متاح');
+  expect(api.writes).toHaveLength(0);
+  await expect(page.getByRole('radio')).toHaveCount(1);
+});
+test('internal return stages and normal cancelled closure have distinct actions', async ({
+  page,
+}) => {
+  const api = await setup(page, 'ManagementEmployee');
+  api.state.order.orderType = 'Return';
+  api.state.order.status = 'Confirmed';
+  await page.getByRole('button', { name: 'تحديث حالة الطلب', exact: true }).click();
+  await expect(page.getByRole('radio')).toHaveCount(1);
+  await expect(page.getByText('بدء نقل المرتجع', { exact: true })).toBeVisible();
+  await page.getByRole('radio').click();
+  await saveStatus(page);
+  await expect.poll(() => api.writes.length).toBe(1);
+  expect(api.writes[0].body).toEqual({ targetStatus: 'returned_in_progress' });
+  await expect(page.getByRole('button', { name: 'إغلاق تحديث الحالة', exact: true })).toHaveCount(
+    0,
+  );
+  api.state.order.orderType = 'Normal';
+  api.state.order.status = 'Cancelled';
+  await page.getByRole('button', { name: 'تحديث حالة التوصيل', exact: true }).click();
+  await page.getByRole('button', { name: 'تحديث حالة الطلب', exact: true }).click();
+  await expect(page.getByText('إغلاق كراجع', { exact: true })).toBeVisible();
+  await page.getByRole('radio').click();
+  await saveStatus(page);
+  await expect.poll(() => api.writes.length).toBe(2);
+  expect(api.writes[1].body).toEqual({ targetStatus: 'Completed_return' });
+  await expect(page.getByRole('button', { name: 'إغلاق تحديث الحالة', exact: true })).toHaveCount(
+    0,
+  );
+  await expect(page.getByRole('button', { name: 'تعديل الطلب', exact: true })).toBeEnabled();
+});
+test('internal status sheet fits a small phone and requires stuck note', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 720 });
+  await setup(page, 'ManagementEmployee');
+  await page.getByRole('button', { name: 'تحديث حالة الطلب', exact: true }).click();
+  await page.getByRole('radio', { name: 'عالق', exact: true }).click();
+  await page.getByRole('button', { name: 'مراجعة التغيير', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('سبب تعثر');
+  await page
+    .getByRole('textbox', { name: 'ملاحظات تغيير الحالة' })
+    .fill('بانتظار تصحيح عنوان العميل');
+  await page.screenshot({ path: 'test-results/internal-actions-320.png', animations: 'disabled' });
+  await page.getByRole('button', { name: 'مراجعة التغيير', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'تأكيد وحفظ الحالة', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: 'test-results/internal-review-320.png', animations: 'disabled' });
+});
+
+test('merchant cancels from orders list using stored internal mode despite unavailable catalogs', async ({
+  page,
+}) => {
+  const api = await setup(page, 'Merchant');
+  api.state.order.deliveryMode = 'internal';
+  api.state.order.customerArea = 'منطقة داخلية باسم مختلف';
+  api.state.failAreas = true;
+  api.state.failStatuses = true;
+  await navigate(page, '/merchant/orders');
+  await page.getByRole('button', { name: 'تحديث حالة الطلب', exact: true }).click();
+  const sheet = page.getByTestId('merchant-status-sheet');
+  await expect(sheet.getByRole('radio')).toHaveCount(1);
+  await sheet.getByRole('radio', { name: 'ملغي', exact: true }).click();
+  await saveStatus(page);
+  await expect(sheet).toHaveCount(0);
+  expect(api.writes).toEqual([{ method: 'POST', body: { targetStatus: 'Cancelled' } }]);
+  await expect(page.getByRole('button', { name: 'فتح طلب #21', exact: true })).toContainText(
+    'ملغي',
+  );
+});
+
+test('merchant cancels detail response with olivery envelope and no ownership fields', async ({
+  page,
+}) => {
+  const api = await setup(page, 'Merchant');
+  Reflect.deleteProperty(api.state.order, 'oliveryOrderId');
+  Reflect.deleteProperty(api.state.order, 'userId');
+  Reflect.deleteProperty(api.state.order, 'assignedToEmployeeId');
+  Reflect.deleteProperty(api.state.order, 'assignedToDeliveryAgentId');
+  Object.assign(api.state.order, { olivery: null });
+  await page.getByRole('button', { name: 'تحديث حالة الطلب', exact: true }).click();
+  const sheet = page.getByTestId('merchant-status-sheet');
+  await expect(sheet.getByRole('radio')).toHaveCount(1);
+  await sheet.getByRole('radio', { name: 'ملغي', exact: true }).click();
+  await saveStatus(page);
+  await expect(sheet).toHaveCount(0);
+  expect(api.writes).toEqual([{ method: 'POST', body: { targetStatus: 'Cancelled' } }]);
+  await expect(page.getByText('تم تحديث حالة الطلب.', { exact: true })).toBeVisible();
 });

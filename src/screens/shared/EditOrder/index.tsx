@@ -1,3 +1,4 @@
+import { actorFromUser, canEditInternal } from '@/domain/internal-order-policy';
 import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, ScrollView, View } from 'react-native';
 import { useNavigation } from 'expo-router';
@@ -11,8 +12,6 @@ import { useScreenProps, type ScreenProps } from '@/navigation/use-screen-props'
 import {
   deliveryMode,
   orderVersion,
-  terminalStatus,
-  normalizeStatus,
   validateOrderUpdate,
   mutationError,
 } from '@/domain/order-workflow';
@@ -40,6 +39,7 @@ type EditRow = {
 const values = (order: Order) => ({
   customerName: order.customerName,
   customerMobile: order.customerMobile ?? '',
+  secondCustomerPhone: order.secondCustomerPhone ?? '',
   customerArea: order.customerArea ?? '',
   customerAddress: order.customerAddress ?? '',
 });
@@ -77,8 +77,8 @@ function OrderEditor({
   detailError,
   detailLoading,
 }: ScreenProps & { order: Order; detailError: boolean; detailLoading: boolean }) {
-  const { can } = useSession();
-  const mode = useOrderDeliveryMode(order.customerArea);
+  const { can, userData } = useSession();
+  const mode = useOrderDeliveryMode(order);
   const statuses = useOrderStatusesQuery(undefined, { refetchOnMountOrArgChange: true });
   const [baseline] = useState(() => orderVersion(order));
   const [initial] = useState(() => values(order));
@@ -107,11 +107,9 @@ function OrderEditor({
   const reducedMotion = useReducedMotion();
   const allowed =
     can('orders.edit') &&
-    mode.mode === 'internal' &&
+    canEditInternal(order, actorFromUser(userData), mode.mode) &&
     !mode.isError &&
-    !statuses.error &&
-    !!statuses.data?.some((d) => normalizeStatus(d.status) === normalizeStatus(order.status)) &&
-    !terminalStatus(order.status, statuses.data);
+    !statuses.error;
   const pending = detailLoading || mode.isFetching || statuses.isFetching;
   usePreventRemove(!saved && (dirty || result.isLoading), ({ data }) => {
     if (!lock.current) setLeave(data.action);
@@ -128,7 +126,8 @@ function OrderEditor({
   const input: OrderInput = {
     ...form,
     customerName: form.customerName.trim(),
-    customerMobile: normalizeNumber(form.customerMobile).trim(),
+    customerMobile: form.customerMobile.trim(),
+    secondCustomerPhone: form.secondCustomerPhone.trim(),
     customerAddress: form.customerAddress.trim(),
     items: rows.map((r) => ({
       productCode: Number(normalizeNumber(r.code)),
@@ -157,7 +156,7 @@ function OrderEditor({
       return 'تعذر تأكيد صلاحية تعديل الطلب. حدّث التفاصيل وجهة التوصيل.';
     if (deliveryMode(form.customerArea, mode.currentData ?? []) !== 'internal')
       return 'اختر منطقة توصيل داخلي مؤكدة.';
-    return validateOrderUpdate(input);
+    return validateOrderUpdate(input, 'internal');
   };
   const submit = async () => {
     if (lock.current || !review) return;
@@ -214,7 +213,7 @@ function OrderEditor({
           )}
           {!allowed && !pending && (
             <Text accessibilityRole="alert" style={s.error}>
-              تعديل البيانات مقفل لهذا الطلب. الطلب الخارجي أو النهائي للعرض فقط.
+              التعديل متاح لموظف الإدارة المسند إليه الطلب الداخلي فقط، بعد التحقق من بياناته.
             </Text>
           )}
           <View
@@ -229,10 +228,15 @@ function OrderEditor({
                 onChangeText={(v) => change('customerName', v)}
               />
               <Field
-                label="رقم الهاتف السوري *"
+                label="رقم هاتف العميل *"
                 value={form.customerMobile}
                 keyboardType="phone-pad"
-                onChangeText={(v) => change('customerMobile', normalizeNumber(v))}
+                onChangeText={(v) => change('customerMobile', v)}
+              />
+              <Field
+                label="رقم هاتف إضافي (اختياري)"
+                value={form.secondCustomerPhone}
+                onChangeText={(v) => change('secondCustomerPhone', v)}
               />
               <Text style={ui.caption}>منطقة التوصيل: {form.customerArea}</Text>
               <Button title="تغيير منطقة التوصيل" secondary onPress={() => setAreaPicker(true)} />
@@ -397,6 +401,7 @@ function OrderEditor({
                             {
                               customerName: 'اسم العميل',
                               customerMobile: 'رقم الهاتف',
+                              secondCustomerPhone: 'الهاتف الإضافي',
                               customerArea: 'منطقة التوصيل',
                               customerAddress: 'العنوان',
                             }[key]

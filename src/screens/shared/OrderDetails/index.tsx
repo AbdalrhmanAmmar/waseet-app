@@ -1,3 +1,4 @@
+import { actorFromUser, canEditInternal, internalTerminal } from '@/domain/internal-order-policy';
 import { useState } from 'react';
 import { Linking, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
@@ -15,7 +16,7 @@ import { OrderHistoryPanel, displayDate } from '@/components/shared/orders/Order
 import { OrderWaybill } from '@/components/shared/orders/OrderWaybill';
 import { useOrderDeliveryMode } from '@/hooks/shared/use-order-delivery-mode';
 import { useSession } from '@/hooks/shared/use-session';
-import { terminalStatus, normalizeStatus } from '@/domain/order-workflow';
+import { terminalStatus } from '@/domain/order-workflow';
 import { orderPhone } from '@/domain/order-workspace';
 import { formatMoney, optionalPrice } from '@/domain/product-details';
 import { palette as p, typography as t } from '@/theme/tokens';
@@ -59,23 +60,25 @@ function DetailsContent({
   refresh,
   profit: Profit,
 }: Props & { order: Order; refreshing: boolean; stale: boolean; refresh: () => void }) {
-  const { role, can } = useSession();
-  const mode = useOrderDeliveryMode(order.customerArea);
+  const { role, can, userData } = useSession();
+  const mode = useOrderDeliveryMode(order);
   const statuses = useOrderStatusesQuery();
   const [contactError, setContactError] = useState(''),
     [copied, setCopied] = useState(false);
-  const terminal = terminalStatus(order.status, statuses.data);
+  const terminal =
+    mode.mode === 'internal'
+      ? internalTerminal(order.status)
+      : terminalStatus(order.status, statuses.data);
   const canEdit =
     can('orders.edit') &&
-    mode.mode === 'internal' &&
+    canEditInternal(order, actorFromUser(userData), mode.mode) &&
     !mode.isFetching &&
     !statuses.isFetching &&
     !statuses.error &&
-    !!statuses.data?.some((d) => normalizeStatus(d.status) === normalizeStatus(order.status)) &&
-    !terminal &&
     !stale &&
     !refreshing;
   const phone = orderPhone(order.customerMobile);
+  const secondPhone = orderPhone(order.secondCustomerPhone ?? undefined);
   const itemsTotal = order.items.reduce(
     (sum, i) =>
       sum +
@@ -122,9 +125,7 @@ function DetailsContent({
         />
         {!canEdit && (
           <Text style={ui.caption}>
-            {terminal
-              ? 'هذا الطلب في حالة نهائية'
-              : 'التعديل متاح بعد التحقق من بيانات طلب داخلي غير نهائي.'}
+            {'التعديل متاح لموظف الإدارة المسند إليه الطلب الداخلي فقط.'}
           </Text>
         )}
         {statuses.error && (
@@ -138,6 +139,9 @@ function DetailsContent({
         <Text style={ui.title}>بيانات العميل</Text>
         <Text>العميل: {order.customerName}</Text>
         <Text selectable>الهاتف: {order.customerMobile || 'غير متوفر'}</Text>
+        {!!order.secondCustomerPhone && (
+          <Text selectable>الهاتف الإضافي: {order.secondCustomerPhone}</Text>
+        )}
         <Text>المنطقة: {order.customerArea || 'غير متوفرة'}</Text>
         <Text>العنوان: {order.customerAddress || 'غير متوفر'}</Text>
         <Button
@@ -150,6 +154,17 @@ function DetailsContent({
             if (phone) void Linking.openURL(phone).catch(() => setContactError('تعذر فتح الاتصال'));
           }}
         />
+        {!!secondPhone && (
+          <Button
+            title="اتصال بالرقم الإضافي"
+            icon="phone-outline"
+            secondary
+            onPress={() => {
+              setContactError('');
+              void Linking.openURL(secondPhone).catch(() => setContactError('تعذر فتح الاتصال'));
+            }}
+          />
+        )}
         <Button
           title={copied ? 'تم نسخ الرقم' : 'نسخ رقم الهاتف'}
           secondary

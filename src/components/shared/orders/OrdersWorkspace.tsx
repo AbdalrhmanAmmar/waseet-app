@@ -1,3 +1,4 @@
+import { internalTerminal } from '@/domain/internal-order-policy';
 import { OrderDeliveryFilters } from './OrderDeliveryFilters';
 import { useOrderDeliveryFilters } from '@/hooks/shared/use-order-delivery-filters';
 import { resolveDeliveryMode } from '@/domain/order-delivery-list';
@@ -46,11 +47,26 @@ export function OrdersWorkspace({
   const [selected, setSelected] = useState<Id | null>(null);
   const [saved, setSaved] = useState(false);
   const attention = controller.orders.filter(
-    (order) => !isOrderTerminal(order.status, statuses.data),
+    (order) =>
+      !(resolveDeliveryMode(order, delivery.areas) === 'internal'
+        ? internalTerminal(order.status)
+        : isOrderTerminal(order.status, statuses.data)),
   ).length;
   const filtered = useMemo(
-    () => filterOrders(delivery.orders, search, filter, statuses.data),
-    [delivery.orders, search, filter, statuses.data],
+    () =>
+      filterOrders(
+        delivery.orders.filter(
+          (order) =>
+            filter !== 'attention' ||
+            !(resolveDeliveryMode(order, delivery.areas) === 'internal'
+              ? internalTerminal(order.status)
+              : isOrderTerminal(order.status, statuses.data)),
+        ),
+        search,
+        filter === 'attention' ? '' : filter,
+        statuses.data,
+      ),
+    [delivery.orders, delivery.areas, search, filter, statuses.data],
   );
   const filters = [
     { value: 'attention', label: `تحتاج متابعة ${attention}` },
@@ -209,7 +225,11 @@ export function OrdersWorkspace({
             variant={variant}
             order={item}
             mode={resolveDeliveryMode(item, delivery.areas)}
-            terminal={isOrderTerminal(item.status, statuses.data)}
+            terminal={
+              resolveDeliveryMode(item, delivery.areas) === 'internal'
+                ? internalTerminal(item.status)
+                : isOrderTerminal(item.status, statuses.data)
+            }
             onOpen={() => navigation.navigate('OrderDetails', { orderId: item.orderId })}
             onUpdate={() => {
               setSaved(false);

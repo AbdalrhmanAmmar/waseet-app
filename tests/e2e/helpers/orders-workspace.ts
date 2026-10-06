@@ -8,18 +8,24 @@ export async function setup(
     failSave?: boolean;
     failAll?: boolean;
     empty?: boolean;
+    initialStatus?: string;
   } = {},
 ) {
   const management = options.role === 'ManagementEmployee';
   const calls: string[] = [];
   const orders = [
     {
+      orderType: 'Normal',
+      oliveryOrderId: null,
+      userId: 7,
+      assignedToEmployeeId: 7,
+      assignedToDeliveryAgentId: 7,
       orderId: 1048,
       customerName: 'محمد أحمد',
       customerMobile: '+963944123456',
       customerArea: 'المزة، دمشق',
       customerAddress: 'شارع الفيلات، بناء 12، الطابق الثاني',
-      status: 'Confirmed',
+      status: options.initialStatus ?? (management ? 'Confirmed' : 'Out for Delivery'),
       orderTotalUSD: 35,
       items: [],
     },
@@ -110,7 +116,7 @@ export async function setup(
     }
     if (order)
       return route.fulfill({
-        json: { data: options.terminalDetail ? { ...order, status: 'Delivered' } : order },
+        json: { data: options.terminalDetail ? { ...order, status: 'Completed' } : order },
       });
     return route.fulfill({ json: { data: [] } });
   });

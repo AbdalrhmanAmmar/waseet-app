@@ -70,8 +70,25 @@ export function product(item: Raw): Product {
 export function order(item: Raw): Order {
   return {
     ...item,
+    userId: item.userId ?? item.UserId,
+    orderType: item.orderType ?? item.OrderType,
+    // Detail responses may expose only the nullable routing envelope.
+    // Missing routing data stays unknown; an explicit ID always takes precedence.
+    oliveryOrderId:
+      item.oliveryOrderId !== undefined
+        ? item.oliveryOrderId
+        : item.OliveryOrderId !== undefined
+          ? item.OliveryOrderId
+          : item.olivery === null
+            ? null
+            : undefined,
+    assignedToEmployeeId: item.assignedToEmployeeId ?? item.AssignedToEmployeeId,
+    assignedToDeliveryAgentId: item.assignedToDeliveryAgentId ?? item.AssignedToDeliveryAgentId,
+    isReturnFinalized: item.isReturnFinalized ?? item.IsReturnFinalized,
     orderId: item.orderId ?? item.id ?? item.order_id,
     customerName: item.customerName ?? item.customer ?? '',
+    secondCustomerPhone:
+      item.secondCustomerPhone ?? item.second_customer_phone ?? item.secondPhone ?? null,
     status: item.status ?? item.orderStatus ?? '',
     orderTotalUSD: Number(item.orderTotalUSD ?? item.totalPrice ?? item.totalAmount ?? 0),
     deliveryFee: Number(item.deliveryFee ?? item.fee ?? 0),

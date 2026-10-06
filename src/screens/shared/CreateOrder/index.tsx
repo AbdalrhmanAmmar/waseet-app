@@ -1,3 +1,5 @@
+import { deliveryMode } from '@/domain/order-workflow';
+import { primaryPhoneError } from '@/domain/order-phone';
 import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useNavigation } from 'expo-router';
@@ -26,7 +28,6 @@ import { formatMoney, suggestedPrice } from '@/domain/product-details';
 import { salesApi } from '@/api/sales-employee';
 import { salesOrderOptions } from '@/domain/sales-order-options';
 import { catalogErrorMessage } from '@/domain/catalog-error';
-import { normalizeNumber } from '@/components/shared/catalog/catalog-model';
 import { catalogApi, refreshProductDetails, useDeliveryAreasQuery } from '@/api/shared/catalog';
 import { useCreateOrderMutation } from '@/api/shared/orders';
 import { errorMessage } from '@/api/normalizers';
@@ -81,10 +82,12 @@ export default function CreateOrder({ navigation, route }: ScreenProps) {
   const dirty = !!(
     draft.customerName ||
     draft.customerMobile ||
+    draft.secondCustomerPhone ||
     draft.customerArea ||
     draft.customerAddress ||
     draft.items.length
   );
+  const phoneMode = deliveryMode(draft.customerArea, areas.data ?? []);
   const selectedArea = areas.data?.find((area) => area.city === draft.customerArea);
   const fee =
     selectedArea?.fee != null && Number.isFinite(selectedArea.fee) && selectedArea.fee >= 0
@@ -114,7 +117,11 @@ export default function CreateOrder({ navigation, route }: ScreenProps) {
   }, [picker, catalog]);
   const field = (key: keyof Omit<OrderDraft, 'items'>, value: string) => {
     setDraft((previous) => ({ ...previous, [key]: value }));
-    setErrors((previous) => ({ ...previous, [key]: '' }));
+    setErrors((previous) => ({
+      ...previous,
+      [key]: '',
+      ...(key === 'customerArea' ? { customerMobile: '' } : {}),
+    }));
     setError('');
   };
   const showErrors = (next: DraftErrors) => {
@@ -201,7 +208,7 @@ export default function CreateOrder({ navigation, route }: ScreenProps) {
     setSending(true);
     setError('');
     try {
-      const result = await createOrder(orderPayload(draft)).unwrap();
+      const result = await createOrder(orderPayload(draft, phoneMode)).unwrap();
       if (mounted.current) {
         setSuccess(result ?? {});
         setReview(false);
@@ -319,18 +326,6 @@ export default function CreateOrder({ navigation, route }: ScreenProps) {
               error={errors.customerName}
               placeholder="الاسم الكامل"
             />
-            <Field
-              editable={!busy}
-              label="رقم الهاتف السوري *"
-              value={draft.customerMobile}
-              onChangeText={(value) =>
-                field('customerMobile', normalizeNumber(value).replace(/[^0-9]/g, ''))
-              }
-              error={errors.customerMobile}
-              placeholder="09XXXXXXXX"
-              keyboardType="phone-pad"
-              maxLength={10}
-            />
             <View style={s.field}>
               <Text style={s.label}>منطقة التوصيل *</Text>
               <Pressable
@@ -352,6 +347,34 @@ export default function CreateOrder({ navigation, route }: ScreenProps) {
                 <Text style={s.error}>تعذر تحميل المناطق. افتح الاختيار لإعادة المحاولة.</Text>
               )}
             </View>
+            <Text style={s.label}>
+              {phoneMode === 'internal'
+                ? 'توصيل داخلي · يقبل أي صيغة للهاتف'
+                : phoneMode === 'external'
+                  ? 'توصيل خارجي · رقم سوري يبدأ بـ 09 من 10 أرقام'
+                  : 'اختر المنطقة لتحديد شروط الهاتف'}
+            </Text>
+            <Field
+              editable={!busy}
+              label={phoneMode === 'external' ? 'رقم الهاتف السوري *' : 'رقم هاتف العميل *'}
+              value={draft.customerMobile}
+              onChangeText={(value) => field('customerMobile', value)}
+              error={
+                errors.customerMobile ||
+                (draft.customerMobile && phoneMode !== 'unknown'
+                  ? (primaryPhoneError(draft.customerMobile, phoneMode) ?? undefined)
+                  : undefined)
+              }
+              placeholder={phoneMode === 'external' ? '09XXXXXXXX' : 'رقم هاتف العميل'}
+              keyboardType="phone-pad"
+            />
+            <Field
+              editable={!busy}
+              label="رقم هاتف إضافي (اختياري)"
+              value={draft.secondCustomerPhone ?? ''}
+              onChangeText={(value) => field('secondCustomerPhone', value)}
+              placeholder="اختياري — أي صيغة"
+            />
             <Field
               editable={!busy}
               label="العنوان التفصيلي *"
@@ -532,7 +555,10 @@ export default function CreateOrder({ navigation, route }: ScreenProps) {
                   <Text style={s.subtitle}>بيانات العميل</Text>
                   {[
                     draft.customerName,
-                    draft.customerMobile,
+                    `الهاتف الأساسي: ${draft.customerMobile}`,
+                    ...(draft.secondCustomerPhone?.trim()
+                      ? [`الهاتف الإضافي: ${draft.secondCustomerPhone}`]
+                      : []),
                     draft.customerArea,
                     draft.customerAddress,
                   ].map((value, index) => (

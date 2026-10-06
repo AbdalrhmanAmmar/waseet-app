@@ -55,8 +55,14 @@ async function setup(page: Page, role = 'Merchant') {
     else if (path === 'Product/9') data = products[1];
     else if (path === 'delivery-areas')
       data = [
-        { deliveryAreaId: 1, city: 'دمشق', fee: state.missingFee ? null : 5 },
+        {
+          deliveryAreaId: 1,
+          isInternalDelivery: false,
+          city: 'دمشق',
+          fee: state.missingFee ? null : 5,
+        },
         { deliveryAreaId: 2, city: 'حلب', fee: null },
+        { deliveryAreaId: 3, city: 'داخلي', fee: 2, isInternalDelivery: true },
       ];
     else if (path === 'orders' && request.method() === 'POST') {
       expect(request.headers().authorization).toBe('Bearer test-session');
@@ -96,10 +102,10 @@ async function setup(page: Page, role = 'Merchant') {
 }
 async function fill(page: Page, sales = false) {
   await page.getByLabel('اسم العميل *', { exact: true }).fill('سارة أحمد');
-  await page.getByLabel('رقم الهاتف السوري *', { exact: true }).fill('٠٩١٢٣٤٥٦٧٨');
   await page.getByRole('button', { name: 'اختيار منطقة التوصيل', exact: true }).click();
   await expect(page.getByRole('button', { name: 'اختيار حلب', exact: true })).toBeDisabled();
   await page.getByRole('button', { name: 'اختيار دمشق', exact: true }).click();
+  await page.getByLabel('رقم الهاتف السوري *', { exact: true }).fill('٠٩١٢٣٤٥٦٧٨');
   await page.getByLabel('العنوان التفصيلي *', { exact: true }).fill('شارع النصر، بجوار المكتبة');
   await page.getByRole('button', { name: 'إضافة منتج', exact: true }).click();
   if (!sales)
@@ -253,4 +259,34 @@ test('multiple products retain separate colors and a double tap submits only onc
   await page.getByRole('button', { name: 'إنشاء طلب آخر', exact: true }).click();
   await expect(page.getByLabel('اسم العميل *', { exact: true })).toHaveValue('');
   await expect(page.getByTestId('order-item-8')).toHaveCount(0);
+});
+
+test('internal phone preserves format, external switch validates, second phone uses wire key', async ({
+  page,
+}) => {
+  const state = await setup(page);
+  await fill(page);
+  await page.getByRole('button', { name: 'اختيار منطقة التوصيل', exact: true }).click();
+  await page.getByRole('button', { name: 'اختيار داخلي', exact: true }).click();
+  await page.getByLabel('رقم هاتف العميل *', { exact: true }).fill('+20 (100) 123-4567');
+  await page.getByLabel('رقم هاتف إضافي (اختياري)', { exact: true }).fill('أي قيمة / 123');
+  await page.getByRole('button', { name: 'اختيار منطقة التوصيل', exact: true }).click();
+  await page.getByRole('button', { name: 'اختيار دمشق', exact: true }).click();
+  await expect(page.getByLabel('رقم الهاتف السوري *', { exact: true })).toHaveValue(
+    '+20 (100) 123-4567',
+  );
+  await expect(
+    page.getByText('الطلب الخارجي يتطلب رقمًا سوريًا يبدأ بـ 09 ويتكون من 10 أرقام', {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'اختيار منطقة التوصيل', exact: true }).click();
+  await page.getByRole('button', { name: 'اختيار داخلي', exact: true }).click();
+  await page.getByRole('button', { name: 'مراجعة الطلب', exact: true }).click();
+  await expect(page.getByText('الهاتف الإضافي: أي قيمة / 123', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'تأكيد وإنشاء الطلب', exact: true }).click();
+  await expect(page.getByText('تم إنشاء الطلب بنجاح', { exact: true })).toBeVisible();
+  expect(state.posts[0].customerMobile).toBe('+20 (100) 123-4567');
+  expect(state.posts[0].second_customer_phone).toBe('أي قيمة / 123');
+  expect(state.posts[0]).not.toHaveProperty('secondCustomerPhone');
 });

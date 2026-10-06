@@ -47,7 +47,7 @@ test('status change requires explicit review, sends the API contract and refresh
   const api = await setup(page);
   await page.getByRole('button', { name: 'تحديث حالة الطلب 1048', exact: true }).click();
   const sheet = page.getByTestId('delivery-status-sheet');
-  await sheet.getByRole('radio', { name: 'خرج الى التوصيل', exact: true }).click();
+  await sheet.getByRole('radio', { name: 'تم التسليم', exact: true }).click();
   await sheet.getByRole('button', { name: 'مراجعة التغيير', exact: true }).click();
   await expect(
     sheet.getByRole('heading', { name: 'تأكيد تحديث الحالة', exact: true }),
@@ -56,11 +56,11 @@ test('status change requires explicit review, sends the API contract and refresh
   await page.screenshot({ path: 'test-results/delivery-confirm.png', fullPage: true });
   await sheet.getByRole('button', { name: 'تأكيد وحفظ الحالة', exact: true }).click();
   await expect(sheet).toHaveCount(0);
-  expect(api.mutations).toEqual([{ targetStatus: 'Out for Delivery' }]);
-  await expect(page.getByTestId('delivery-order-1048')).toContainText('خرج الى التوصيل');
+  expect(api.mutations).toEqual([{ targetStatus: 'Delivered' }]);
+  await expect(page.getByTestId('delivery-order-1048')).toContainText('تم التسليم');
 });
 
-test('stuck reason is required; server rejection preserves the choice and notes on a small phone', async ({
+test('stuck reason is required; server rejection preserves notes and requires a new selection on a small phone', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 640 });
@@ -75,7 +75,7 @@ test('stuck reason is required; server rejection preserves the choice and notes 
   await sheet.getByRole('button', { name: 'مراجعة التغيير', exact: true }).click();
   await sheet.getByRole('button', { name: 'تأكيد وحفظ الحالة', exact: true }).click();
   await expect(sheet.getByRole('alert')).toContainText('الخادم لا يسمح لحسابك');
-  await sheet.getByRole('button', { name: 'تعديل الاختيار', exact: true }).click();
+  await sheet.getByRole('radio', { name: 'عالق', exact: true }).click();
   await expect(sheet.getByRole('textbox', { name: 'ملاحظات تغيير الحالة' })).toHaveValue(
     'العميل لا يرد',
   );

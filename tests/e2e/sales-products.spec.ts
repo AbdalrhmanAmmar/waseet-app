@@ -53,7 +53,8 @@ async function setup(page: Page, failure = 0) {
       data = state.malformed ? {} : state.removed ? state.options.slice(1) : state.options;
     } else if (path.startsWith('Product/'))
       return route.fulfill({ status: 403, json: { message: 'Forbidden catalog' } });
-    else if (path === 'delivery-areas') data = [{ deliveryAreaId: 1, city: 'دمشق', fee: 5 }];
+    else if (path === 'delivery-areas')
+      data = [{ deliveryAreaId: 1, isInternalDelivery: false, city: 'دمشق', fee: 5 }];
     else if (path === 'orders' && request.method() === 'POST') {
       state.posts.push(request.postDataJSON());
       if (state.reject)
@@ -72,9 +73,9 @@ async function setup(page: Page, failure = 0) {
 }
 async function customer(page: Page) {
   await page.getByLabel('اسم العميل *', { exact: true }).fill('عميل مبيعات');
-  await page.getByLabel('رقم الهاتف السوري *', { exact: true }).fill('0912345678');
   await page.getByRole('button', { name: 'اختيار منطقة التوصيل', exact: true }).click();
   await page.getByRole('button', { name: 'اختيار دمشق', exact: true }).click();
+  await page.getByLabel('رقم الهاتف السوري *', { exact: true }).fill('٠٩١٢٣٤٥٦٧٨');
   await page.getByLabel('العنوان التفصيلي *', { exact: true }).fill('شارع النصر');
 }
 function onlySalesProducts(calls: string[]) {

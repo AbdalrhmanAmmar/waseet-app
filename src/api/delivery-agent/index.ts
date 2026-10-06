@@ -1,3 +1,5 @@
+import type { RootState } from '@/store';
+import { actorFromUser } from '@/domain/internal-order-policy';
 import type { Order, Page, StatusInput } from '@/types/models';
 import { baseApi } from '../base-api';
 import { order, page } from '../normalizers';
@@ -20,8 +22,13 @@ export const deliveryApi = baseApi.injectEndpoints({
       providesTags: ['Orders'],
     }),
     deliveryOrderStatus: build.mutation<unknown, StatusInput>({
-      queryFn: (args, _api, _options, baseQuery) => guardedStatusChange(args, baseQuery),
-      invalidatesTags: ['Orders'],
+      queryFn: (args, _api, _options, baseQuery) =>
+        guardedStatusChange(
+          args,
+          baseQuery,
+          actorFromUser((_api.getState() as RootState).AuthSlice.userData),
+        ),
+      invalidatesTags: ['Orders', 'Products', 'Profile'],
     }),
   }),
 });

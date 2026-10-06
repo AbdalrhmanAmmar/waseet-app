@@ -1,3 +1,5 @@
+import type { RootState } from '@/store';
+import { actorFromUser } from '@/domain/internal-order-policy';
 import { guardedStatusChange, guardedOrderUpdate, type UpdateOrderArgs } from './order-guards';
 import type { Id, Order, OrderInput, Page, PageParams, StatusInput } from '@/types/models';
 import { baseApi } from '../base-api';
@@ -56,15 +58,34 @@ export const ordersApi = baseApi.injectEndpoints({
       providesTags: ['Orders'],
     }),
     changeOrderStatus: build.mutation<unknown, StatusInput>({
-      queryFn: (args, _api, _options, baseQuery) => guardedStatusChange(args, baseQuery),
-      invalidatesTags: ['Orders'],
+      queryFn: (args, _api, _options, baseQuery) =>
+        guardedStatusChange(
+          args,
+          baseQuery,
+          actorFromUser((_api.getState() as RootState).AuthSlice.userData),
+        ),
+      invalidatesTags: ['Orders', 'Products', 'Profile'],
     }),
     updateOrder: build.mutation<unknown, UpdateOrderArgs>({
-      queryFn: (args, _api, _options, baseQuery) => guardedOrderUpdate(args, baseQuery),
+      queryFn: (args, _api, _options, baseQuery) =>
+        guardedOrderUpdate(
+          args,
+          baseQuery,
+          actorFromUser((_api.getState() as RootState).AuthSlice.userData),
+        ),
       invalidatesTags: ['Orders', 'Products'],
     }),
     createOrder: build.mutation<{ orderId?: Id }, OrderInput>({
-      query: (data) => ({ url: 'orders', method: 'POST', data }),
+      query: ({ secondCustomerPhone, ...data }) => ({
+        url: 'orders',
+        method: 'POST',
+        data: {
+          ...data,
+          ...(secondCustomerPhone?.trim()
+            ? { second_customer_phone: secondCustomerPhone.trim() }
+            : {}),
+        },
+      }),
       transformResponse: (data) => unwrap(data),
       invalidatesTags: ['Orders', 'Products'],
     }),

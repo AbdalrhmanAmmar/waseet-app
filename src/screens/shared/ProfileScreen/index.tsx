@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { CustomText as Text, HeaderComponent, ScreenContainer } from '@/components/shared';
 import { Button, Card, ui } from '@/components/shared/ui';
 import { BalanceCard } from '@/components/shared/home/BalanceCard';
@@ -12,7 +12,8 @@ import { roleLabels } from '@/auth/roles';
 import type { ScreenProps } from '@/navigation/use-screen-props';
 import { palette as p, typography as t } from '@/theme/tokens';
 export default function ProfileScreen({ navigation }: ScreenProps) {
-  const { userData, role } = useSession();
+  const { userData, role, restricted } = useSession();
+  const router = useRouter();
   const dispatch = useAppDispatch();
   const [refreshing, setRefreshing] = useState(false);
   const userId = userData?.userId;
@@ -75,6 +76,14 @@ export default function ProfileScreen({ navigation }: ScreenProps) {
           onPress={() => navigation.navigate('EditProfileScreen')}
         />
         {role === 'Merchant' && <BalanceCard key={String(userId)} />}
+        {role === 'Merchant' && !restricted && (
+          <Button
+            title="إضافة موظف"
+            secondary
+            icon="account-plus-outline"
+            onPress={() => router.push('/merchant/create-employee')}
+          />
+        )}
         <Card>
           <Text style={ui.title}>بيانات الحساب</Text>
           {details.map(([label, value]) => (

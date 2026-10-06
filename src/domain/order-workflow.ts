@@ -1,3 +1,4 @@
+import { primaryPhoneError } from './order-phone';
 import type { DeliveryArea, Order, OrderInput } from '@/types/models';
 export type DeliveryMode = 'internal' | 'external' | 'unknown';
 export type StatusDefinition = { status: string; isTerminal: boolean };
@@ -96,6 +97,7 @@ export const orderVersion = (order: Order) =>
     order.status,
     order.customerName,
     order.customerMobile,
+    order.secondCustomerPhone ?? '',
     order.customerArea,
     order.customerAddress,
     order.deliveryFee,
@@ -103,10 +105,10 @@ export const orderVersion = (order: Order) =>
     order.updatedAt,
     order.items.map((i) => [i.productCode, i.quantity, i.actualSellPriceUSD, i.color]),
   ]);
-export function validateOrderUpdate(input: OrderInput) {
+export function validateOrderUpdate(input: OrderInput, mode: DeliveryMode = 'external') {
   if (input.customerName.trim().length < 2) return 'اسم العميل مطلوب.';
-  if (!/^09\d{8}$/.test(input.customerMobile))
-    return 'رقم الهاتف السوري يبدأ بـ 09 ويتكون من 10 أرقام.';
+  const phoneError = primaryPhoneError(input.customerMobile, mode);
+  if (phoneError) return phoneError;
   if (input.customerAddress.trim().length < 4) return 'أدخل عنوانًا تفصيليًا.';
   if (!input.customerArea.trim()) return 'اختر منطقة التوصيل.';
   if (!input.items.length) return 'أضف منتجًا واحدًا على الأقل.';

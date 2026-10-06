@@ -1,3 +1,10 @@
+import { resolveDeliveryMode } from '@/domain/order-delivery-list';
+import {
+  internalTargets,
+  canEditInternal,
+  internalRequiresNote,
+  type OrderActor,
+} from '@/domain/internal-order-policy';
 import type { AxiosRequestConfig } from 'axios';
 import type { ApiError, StatusInput, OrderInput, Id } from '@/types/models';
 import { deliveryAreas, orderDetails, orderStatuses } from '../normalizers';
@@ -6,7 +13,6 @@ import {
   normalizeStatus,
   orderVersion,
   requiresStatusNote,
-  terminalStatus,
   transitionReason,
   validateOrderUpdate,
   type StatusDefinition,
@@ -19,21 +25,38 @@ export async function freshOrderContext(id: Id, query: Query) {
   if (detail.error) throw detail.error;
   const current = orderDetails(detail.data, id);
   const areaResult = await query({ url: 'delivery-areas' });
-  if (areaResult.error) throw areaResult.error;
-  const statusResult = await query({ url: 'orders/statuses' });
-  if (statusResult.error) throw statusResult.error;
-  const definitions = orderStatuses(statusResult.data);
-  if (!definitions.some((d) => normalizeStatus(d.status) === normalizeStatus(current.status)))
+  const areas = areaResult.error ? [] : deliveryAreas(areaResult.data);
+  const mode = resolveDeliveryMode(current, areas);
+  if (mode === 'unknown')
+    throw areaResult.error ?? { status: 'INVALID_RESPONSE', message: 'تعذر تحديد جهة توصيل الطلب' };
+  let definitions: StatusDefinition[] = [];
+  if (mode === 'external') {
+    const statusResult = await query({ url: 'orders/statuses' });
+    if (statusResult.error) throw statusResult.error;
+    definitions = orderStatuses(statusResult.data);
+  }
+  if (
+    mode !== 'internal' &&
+    !definitions.some((d) => normalizeStatus(d.status) === normalizeStatus(current.status))
+  )
     throw { status: 'INVALID_RESPONSE', message: 'تعذر التحقق من حالة الطلب الحالية' };
-  const areas = deliveryAreas(areaResult.data);
   return {
     current,
     areas,
     definitions: definitions as StatusDefinition[],
-    mode: deliveryMode(current.customerArea, areas),
+    mode,
   };
 }
-export async function guardedStatusChange(input: StatusInput, query: Query) {
+const pendingOrders = new Set<string>();
+export async function guardedStatusChange(
+  input: StatusInput,
+  query: Query,
+  actor?: OrderActor | null,
+) {
+  const key = String(input.orderId);
+  if (pendingOrders.has(key)) return fail('يوجد إجراء قيد التنفيذ لهذا الطلب.');
+  pendingOrders.add(key);
+  let submitted = false;
   try {
     const { current, mode, definitions } = await freshOrderContext(input.orderId, query);
     if (
@@ -41,12 +64,25 @@ export async function guardedStatusChange(input: StatusInput, query: Query) {
       normalizeStatus(input.expectedStatus) !== normalizeStatus(current.status)
     )
       return fail('تغيرت حالة الطلب. أغلق النافذة وأعد فتحها لمراجعة الحالة الجديدة.');
-    const reason = transitionReason(mode, current.status, input.status, definitions);
+    const reason =
+      mode === 'internal'
+        ? internalTargets(current, actor, mode).some(
+            (value) => normalizeStatus(value) === normalizeStatus(input.status),
+          )
+          ? null
+          : 'الإجراء غير متاح لدورك أو إسناد الطلب أو ملكيته أو نوعه.'
+        : transitionReason(mode, current.status, input.status, definitions);
     if (reason) return fail(reason);
-    if (requiresStatusNote(current.status, input.status) && !input.notes?.trim())
+    if (
+      (mode === 'internal'
+        ? internalRequiresNote(current.status, input.status)
+        : requiresStatusNote(current.status, input.status)) &&
+      !input.notes?.trim()
+    )
       return fail('اكتب ملاحظة التعثر أو الحل قبل الحفظ.');
     if ((input.notes?.trim().length ?? 0) > 500) return fail('الملاحظة لا تتجاوز 500 حرف.');
-    return await query({
+    submitted = true;
+    const result = await query({
       url: `orders/${encodeURIComponent(input.orderId)}/status`,
       method: 'POST',
       data: {
@@ -54,19 +90,53 @@ export async function guardedStatusChange(input: StatusInput, query: Query) {
         ...(input.notes?.trim() ? { note: input.notes.trim() } : {}),
       },
     });
+    if (mode !== 'internal') return result;
+    const confirmed = await query({ url: `orders/${encodeURIComponent(input.orderId)}` });
+    if (!confirmed.error) {
+      const refreshed = orderDetails(confirmed.data, input.orderId);
+      if (normalizeStatus(refreshed.status) === normalizeStatus(input.status))
+        return { data: refreshed };
+    }
+    if (
+      result.error &&
+      typeof result.error.status === 'number' &&
+      result.error.status < 500 &&
+      result.error.status !== 408
+    )
+      return result;
+    return {
+      error: {
+        status: 'STATUS_UNCERTAIN',
+        message: 'تعذر تأكيد الحالة النهائية. حدّث تفاصيل الطلب قبل تنفيذ إجراء آخر.',
+      },
+    };
   } catch (error) {
-    return { error: normalizeGuardError(error) };
+    return {
+      error: submitted
+        ? {
+            status: 'STATUS_UNCERTAIN',
+            message: 'تعذر تأكيد نتيجة الإجراء. حدّث الطلب للتحقق من حالته قبل إعادة المحاولة.',
+          }
+        : normalizeGuardError(error),
+    };
+  } finally {
+    pendingOrders.delete(key);
   }
 }
 export type UpdateOrderArgs = { orderId: Id; input: OrderInput; expectedVersion: string };
-export async function guardedOrderUpdate(args: UpdateOrderArgs, query: Query) {
+export async function guardedOrderUpdate(
+  args: UpdateOrderArgs,
+  query: Query,
+  actor?: OrderActor | null,
+) {
   try {
-    const invalid = validateOrderUpdate(args.input);
+    const invalid = validateOrderUpdate(args.input, 'internal');
     if (invalid) return fail(invalid);
-    const { current, mode, areas, definitions } = await freshOrderContext(args.orderId, query);
+    const { current, mode, areas } = await freshOrderContext(args.orderId, query);
     if (mode !== 'internal' || deliveryMode(args.input.customerArea, areas) !== 'internal')
       return fail('تعديل الطلب يتطلب أن تكون المنطقة الأصلية والجديدة بتوصيل داخلي مؤكد.');
-    if (terminalStatus(current.status, definitions)) return fail('هذا الطلب في حالة نهائية');
+    if (!canEditInternal(current, actor, mode))
+      return fail('تعديل الطلب الداخلي متاح لموظف الإدارة المسند إليه الطلب فقط.');
     if (orderVersion(current) !== args.expectedVersion)
       return fail(
         'تغيرت بيانات الطلب منذ فتح التعديل. ارجع للتفاصيل وأعد فتح التعديل لمراجعة التغييرات.',

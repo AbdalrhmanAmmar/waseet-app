@@ -52,6 +52,7 @@ export interface Order {
   status: string;
   createdAt?: string;
   customerMobile?: string;
+  secondCustomerPhone?: string | null;
   customerArea?: string;
   customerAddress?: string;
   orderTotalUSD: number;
@@ -87,6 +88,7 @@ export interface DeliveryArea {
 export interface OrderInput {
   customerName: string;
   customerMobile: string;
+  secondCustomerPhone?: string;
   customerArea: string;
   customerAddress: string;
   items: { productCode: number; quantity: number; actualSellPriceUSD: number; color: string }[];

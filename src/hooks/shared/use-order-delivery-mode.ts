@@ -1,9 +1,10 @@
 import { useDeliveryAreasQuery } from '@/api/shared/catalog';
-import { deliveryMode } from '@/domain/order-workflow';
-export function useOrderDeliveryMode(area?: string) {
+import { resolveDeliveryMode } from '@/domain/order-delivery-list';
+import type { Order } from '@/types/models';
+export function useOrderDeliveryMode(order: Order) {
   const query = useDeliveryAreasQuery(undefined, { refetchOnMountOrArgChange: true });
   return {
     ...query,
-    mode: query.isError ? ('unknown' as const) : deliveryMode(area, query.currentData ?? []),
+    mode: resolveDeliveryMode(order, query.isError ? [] : (query.currentData ?? [])),
   };
 }

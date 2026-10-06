@@ -1,3 +1,12 @@
+import { resolveDeliveryMode } from '@/domain/order-delivery-list';
+import { useSession } from '@/hooks/shared/use-session';
+import {
+  actorFromUser,
+  internalTargets,
+  internalTerminal,
+  internalRequiresNote,
+  internalActionCopy,
+} from '@/domain/internal-order-policy';
 import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -17,7 +26,6 @@ import { useOrderQuery, useOrderStatusesQuery } from '@/api/shared/orders';
 import { statusLabel } from '@/components/shared/orders/statuses';
 import { isOrderTerminal } from '@/domain/order-workspace';
 import {
-  deliveryMode,
   normalizeStatus,
   transitionOptions,
   requiresStatusNote,
@@ -40,6 +48,7 @@ export function OrderStatusSheet({
   saving: boolean;
   variant: 'delivery' | 'management' | 'merchant' | 'sales';
 }) {
+  const { userData } = useSession();
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
   const query = useOrderQuery(orderId, { refetchOnMountOrArgChange: true });
@@ -53,31 +62,39 @@ export function OrderStatusSheet({
   const [review, setReview] = useState(false);
   const [error, setError] = useState('');
   const order = query.currentData;
-  const mode = !areas.error
-    ? deliveryMode(order?.customerArea, areas.currentData ?? [])
+  const mode = order
+    ? resolveDeliveryMode(order, areas.error ? [] : (areas.currentData ?? []))
     : 'unknown';
+  const contextError = mode === 'unknown' || (mode === 'external' && !!statuses.error);
   const resolvingStuck = normalizeStatus(order?.status) === 'stuck';
   const loading = query.isFetching || statuses.isFetching || areas.isFetching;
   const validOrder = order && String(order.orderId) === String(orderId);
-  const terminal = order && isOrderTerminal(order.status, statuses.data);
+  const terminal =
+    order &&
+    (mode === 'internal'
+      ? internalTerminal(order.status)
+      : isOrderTerminal(order.status, statuses.data));
   const options = !terminal
-    ? transitionOptions(mode, order?.status ?? '', statuses.data ?? [])
+    ? mode === 'internal' && order
+      ? internalTargets(order, actorFromUser(userData), mode).map((value) => ({
+          status: value,
+          isTerminal: internalTerminal(value),
+          reason: null,
+        }))
+      : transitionOptions(mode, order?.status ?? '', statuses.data ?? [])
     : [];
   const selected = options.find((item) => item.status === status && !item.reason);
-  const ready =
-    !loading &&
-    !query.error &&
-    !statuses.error &&
-    !areas.error &&
-    mode !== 'unknown' &&
-    validOrder &&
-    !!selected;
+  const ready = !loading && !query.error && !contextError && validOrder && !!selected;
+  const needsNote =
+    mode === 'internal'
+      ? internalRequiresNote(order?.status ?? '', status)
+      : requiresStatusNote(order?.status ?? '', status);
   const close = () => {
     if (!lock.current) onClose();
   };
   const confirm = async () => {
     if (!ready || busy || lock.current) return;
-    if (requiresStatusNote(order?.status ?? '', status) && !notes.trim()) {
+    if (needsNote && !notes.trim()) {
       setError(
         resolvingStuck
           ? 'اكتب ملاحظة حل التعثر قبل المتابعة.'
@@ -97,6 +114,9 @@ export function OrderStatusSheet({
       onSaved();
     } catch (err) {
       setError(mutationError(err));
+      setReview(false);
+      setStatus('');
+      void query.refetch();
     } finally {
       lock.current = false;
       setChecking(false);
@@ -127,13 +147,23 @@ export function OrderStatusSheet({
           accessibilityViewIsModal
           testID={`${variant}-status-sheet`}
         >
+          <View
+            style={{
+              width: 40,
+              height: 4,
+              borderRadius: 4,
+              backgroundColor: p.border,
+              alignSelf: 'center',
+              marginBottom: 4,
+            }}
+          />
           <View style={s.section}>
             <Text accessibilityRole="header" style={s.sectionTitle}>
               {review
                 ? 'تأكيد تحديث الحالة'
                 : resolvingStuck
                   ? 'حل الطلب المتعثر'
-                  : 'تحديث حالة الطلب'}
+                  : 'إجراءات الطلب'}
             </Text>
             <Pressable
               accessibilityRole="button"
@@ -152,11 +182,7 @@ export function OrderStatusSheet({
             </Text>
             {loading ? (
               <ActivityIndicator color={p.primary} />
-            ) : query.error ||
-              statuses.error ||
-              areas.error ||
-              mode === 'unknown' ||
-              !validOrder ? (
+            ) : query.error || contextError || !validOrder ? (
               <View style={s.notice}>
                 <Text accessibilityRole="alert" style={s.error}>
                   تعذر التحقق من الطلب وجهة التوصيل والحالات المتاحة.
@@ -180,7 +206,11 @@ export function OrderStatusSheet({
                 <Text style={s.name}>
                   {statusLabel(order.status)} ← {statusLabel(selected.status)}
                 </Text>
-                <Text style={s.hint}>تأكد أن الحالة الجديدة تطابق ما حدث لهذا الطلب.</Text>
+                <Text style={s.hint}>
+                  {mode === 'internal'
+                    ? internalActionCopy[normalizeStatus(selected.status)]?.effect
+                    : 'تأكد أن الحالة الجديدة تطابق ما حدث لهذا الطلب.'}
+                </Text>
                 {selected.isTerminal && (
                   <Text style={s.hint}>هذه حالة نهائية؛ تأكد من اختيارك قبل الحفظ.</Text>
                 )}
@@ -191,10 +221,29 @@ export function OrderStatusSheet({
                 <Text style={s.hint}>
                   {mode === 'external'
                     ? 'توصيل خارجي: التأكيد أو التعثر أثناء التجهيز، وحل التعثر فقط.'
-                    : 'توصيل داخلي: اختر الخطوة التالية المتاحة.'}
+                    : `توصيل داخلي · ${String(order.orderType).toLowerCase() === 'return' ? 'طلب مرتجع' : 'طلب عادي'}`}
                 </Text>
-                <Text style={s.hint}>الحالة الحالية: {statusLabel(order.status)}</Text>
-                {!options.length && <Text style={s.hint}>لا توجد حالات متاحة للتحديث.</Text>}
+                <View style={[s.notice, { flexDirection: 'row-reverse', alignItems: 'center' }]}>
+                  <Icon
+                    name={
+                      String(order.orderType).toLowerCase() === 'return'
+                        ? 'package-variant-closed'
+                        : 'clipboard-check-outline'
+                    }
+                    size={26}
+                    color={p.primary}
+                  />
+                  <View style={{ flex: 1, gap: 4 }}>
+                    <Text style={s.hint}>الحالة الحالية</Text>
+                    <Text style={[s.name, { fontSize: 18 }]}>{statusLabel(order.status)}</Text>
+                  </View>
+                </View>
+                {!options.length && (
+                  <Text style={s.hint}>
+                    لا توجد إجراءات متاحة لحسابك. يجب اكتمال بيانات نوع الطلب والملكية والإسناد
+                    للتحقق من الصلاحيات.
+                  </Text>
+                )}
                 {options.map((item) => (
                   <Pressable
                     key={item.status}
@@ -208,40 +257,70 @@ export function OrderStatusSheet({
                     }}
                     style={[
                       s.option,
+                      mode === 'internal' &&
+                        normalizeStatus(item.status) === 'cancelled' && {
+                          borderColor: '#EBC9C6',
+                          backgroundColor: '#FFF8F7',
+                        },
                       !!item.reason && s.disabled,
                       status === item.status && { borderColor: p.primary, backgroundColor: p.soft },
                     ]}
                   >
                     <Icon
-                      name={status === item.status ? 'radiobox-marked' : 'radiobox-blank'}
+                      name={
+                        status === item.status
+                          ? 'radiobox-marked'
+                          : mode === 'internal'
+                            ? (internalActionCopy[normalizeStatus(item.status)]?.icon ??
+                              'radiobox-blank')
+                            : 'radiobox-blank'
+                      }
                       size={22}
-                      color={p.primary}
+                      color={normalizeStatus(item.status) === 'cancelled' ? p.danger : p.primary}
                     />
                     <View style={{ flex: 1 }}>
-                      <Text style={s.buttonText}>{statusLabel(item.status)}</Text>
+                      <Text style={s.buttonText}>
+                        {mode === 'internal'
+                          ? (internalActionCopy[normalizeStatus(item.status)]?.label ??
+                            statusLabel(item.status))
+                          : statusLabel(item.status)}
+                      </Text>
+                      {mode === 'internal' && (
+                        <Text style={s.hint}>
+                          {internalActionCopy[normalizeStatus(item.status)]?.effect}
+                        </Text>
+                      )}
                       {!!item.reason && <Text style={s.hint}>{item.reason}</Text>}
                     </View>
                   </Pressable>
                 ))}
-                <TextInput
-                  accessibilityLabel="ملاحظات تغيير الحالة"
-                  placeholder={
-                    resolvingStuck
-                      ? 'ملاحظة الحل (مطلوبة)'
-                      : normalizeStatus(status) === 'stuck'
-                        ? 'سبب التعثر (مطلوب)'
-                        : 'ملاحظات تغيير الحالة (اختياري)'
-                  }
-                  value={notes}
-                  onChangeText={(text) => {
-                    setNotes(text);
-                    setError('');
-                  }}
-                  multiline
-                  maxLength={500}
-                  editable={!busy}
-                  style={s.notes}
-                />
+                {!!options.length && (
+                  <Text style={s.hint}>
+                    {needsNote ? 'ملاحظة مطلوبة لإتمام الإجراء' : 'ملاحظة للمتابعة (اختياري)'} ·{' '}
+                    {notes.length}/500
+                  </Text>
+                )}
+                {!!options.length && (
+                  <TextInput
+                    accessibilityLabel="ملاحظات تغيير الحالة"
+                    placeholder={
+                      resolvingStuck && needsNote
+                        ? 'ملاحظة الحل (مطلوبة)'
+                        : normalizeStatus(status) === 'stuck'
+                          ? 'سبب التعثر (مطلوب)'
+                          : 'ملاحظات تغيير الحالة (اختياري)'
+                    }
+                    value={notes}
+                    onChangeText={(text) => {
+                      setNotes(text);
+                      setError('');
+                    }}
+                    multiline
+                    maxLength={500}
+                    editable={!busy}
+                    style={s.notes}
+                  />
+                )}
               </>
             )}
             {!!error && (

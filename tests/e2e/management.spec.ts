@@ -48,11 +48,15 @@ test('status change requires explicit review, sends the API contract and refresh
   await expect(page.getByTestId('management-order-1048')).toContainText('خرج الى التوصيل');
 });
 
-test('stuck reason is required; server rejection preserves the choice and notes on a small phone', async ({
+test('stuck reason is required; server rejection preserves notes and requires a new selection on a small phone', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 640 });
-  const api = await setup(page, { role: 'ManagementEmployee', failSave: true });
+  const api = await setup(page, {
+    role: 'ManagementEmployee',
+    failSave: true,
+    initialStatus: 'Processing',
+  });
   await page.screenshot({ path: 'test-results/management-320.png', fullPage: true });
   await page.getByRole('button', { name: 'تحديث حالة الطلب 1048', exact: true }).click();
   const sheet = page.getByTestId('management-status-sheet');
@@ -63,7 +67,7 @@ test('stuck reason is required; server rejection preserves the choice and notes 
   await sheet.getByRole('button', { name: 'مراجعة التغيير', exact: true }).click();
   await sheet.getByRole('button', { name: 'تأكيد وحفظ الحالة', exact: true }).click();
   await expect(sheet.getByRole('alert')).toContainText('الخادم لا يسمح لحسابك');
-  await sheet.getByRole('button', { name: 'تعديل الاختيار', exact: true }).click();
+  await sheet.getByRole('radio', { name: 'عالق', exact: true }).click();
   await expect(sheet.getByRole('textbox', { name: 'ملاحظات تغيير الحالة' })).toHaveValue(
     'العميل لا يرد',
   );

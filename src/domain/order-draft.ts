@@ -1,3 +1,5 @@
+import { deliveryMode, type DeliveryMode } from './order-workflow';
+import { primaryPhoneError, primaryPhonePayload } from './order-phone';
 import type { DeliveryArea, OrderInput, Product } from '@/types/models';
 import { normalizeNumber } from '@/components/shared/catalog/catalog-model';
 import { optionalPrice, suggestedPrice } from './product-details';
@@ -12,6 +14,7 @@ export interface DraftItem {
 export interface OrderDraft {
   customerName: string;
   customerMobile: string;
+  secondCustomerPhone?: string;
   customerArea: string;
   customerAddress: string;
   items: DraftItem[];
@@ -20,6 +23,7 @@ export type DraftErrors = Record<string, string>;
 export const emptyOrder = (): OrderDraft => ({
   customerName: '',
   customerMobile: '',
+  secondCustomerPhone: '',
   customerArea: '',
   customerAddress: '',
   items: [],
@@ -46,8 +50,10 @@ export function validateOrder(
   const errors: DraftErrors = {};
   if (draft.customerName.trim().length < 2)
     errors.customerName = 'اسم العميل يجب أن يكون حرفين على الأقل';
-  if (!/^09\d{8}$/.test(normalizeNumber(draft.customerMobile)))
-    errors.customerMobile = 'أدخل رقمًا سوريًا يبدأ بـ 09 ويتكون من 10 أرقام';
+  const mode = deliveryMode(draft.customerArea, areas);
+  const phoneError = primaryPhoneError(draft.customerMobile, mode);
+  if (phoneError) errors.customerMobile = phoneError;
+  if (mode === 'unknown') errors.customerArea = 'اختر منطقة توصيل محددة النوع';
   if (!areas.some((area) => area.city === draft.customerArea))
     errors.customerArea = 'اختر منطقة توصيل متاحة';
   else if (
@@ -90,9 +96,12 @@ export function validateOrder(
   });
   return errors;
 }
-export const orderPayload = (draft: OrderDraft): OrderInput => ({
+export const orderPayload = (draft: OrderDraft, mode: DeliveryMode = 'internal'): OrderInput => ({
   customerName: draft.customerName.trim(),
-  customerMobile: normalizeNumber(draft.customerMobile),
+  customerMobile: primaryPhonePayload(draft.customerMobile, mode),
+  ...(draft.secondCustomerPhone?.trim()
+    ? { secondCustomerPhone: draft.secondCustomerPhone.trim() }
+    : {}),
   customerArea: draft.customerArea,
   customerAddress: draft.customerAddress.trim(),
   items: draft.items.map((row) => ({

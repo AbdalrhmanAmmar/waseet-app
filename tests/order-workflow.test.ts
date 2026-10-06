@@ -31,7 +31,17 @@ const input: OrderInput = {
   customerAddress: 'شارع النصر 12',
   items: [{ productCode: 11, quantity: 2, actualSellPriceUSD: 15, color: 'أسود' }],
 };
-const original = { ...input, orderId: 21, status: 'Processing', deliveryFee: 5, orderTotalUSD: 35 };
+const actor = { role: 'ManagementEmployee', userId: 7 };
+const original = {
+  oliveryOrderId: null,
+  orderType: 'Normal',
+  assignedToEmployeeId: 7,
+  ...input,
+  orderId: 21,
+  status: 'Processing',
+  deliveryFee: 5,
+  orderTotalUSD: 35,
+};
 const areas = [
   { deliveryAreaId: 1, city: 'دمشق', isInternalDelivery: true, fee: 5 },
   { deliveryAreaId: 2, city: 'حلب', isInternalDelivery: false, fee: 7 },
@@ -50,7 +60,10 @@ function mock(
   ): Promise<{ data: unknown; error?: undefined } | { error: ApiError; data?: undefined }> => {
     requests.push(args);
     if (args.url === overrides.deny) return { error: { status: 403, message: 'Denied' } };
-    if (args.method) return { data: { isSuccess: true } };
+    if (args.method) {
+      if (args.method === 'POST') current.status = args.data.targetStatus;
+      return { data: { isSuccess: true } };
+    }
     return {
       data: {
         data:
@@ -126,12 +139,16 @@ test('status mutation verifies current status, delivery mode and mandatory note 
   await guardedStatusChange(
     { orderId: 21, status: 'Confirmed', expectedStatus: 'Processing' },
     allowed.query,
+    actor,
   );
-  assert.deepEqual(allowed.requests.at(-1), {
-    url: 'orders/21/status',
-    method: 'POST',
-    data: { targetStatus: 'Confirmed' },
-  });
+  assert.deepEqual(
+    allowed.requests.find((r) => r.method === 'POST'),
+    {
+      url: 'orders/21/status',
+      method: 'POST',
+      data: { targetStatus: 'Confirmed' },
+    },
+  );
   for (const options of [{ status: 'Delivered' }, { area: 'حلب' }, { invalidDetail: true }]) {
     const api = mock(options);
     const response = await guardedStatusChange(
@@ -158,6 +175,7 @@ test('editing sends all rows and colors, rejects concurrent changes and original
       await guardedOrderUpdate(
         { orderId: 21, input: updated, expectedVersion: baseline },
         api.query,
+        actor,
       )
     ).error,
     undefined,

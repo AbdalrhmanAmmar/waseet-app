@@ -8,7 +8,7 @@ import {
   validateOrder,
 } from '../src/domain/order-draft';
 import { product } from '../src/api/normalizers';
-const areas = [{ deliveryAreaId: 1, city: 'دمشق', fee: 3 }];
+const areas = [{ deliveryAreaId: 1, isInternalDelivery: false, city: 'دمشق', fee: 3 }];
 const good = () => ({
   ...emptyOrder(),
   customerName: ' عميل جديد ',
@@ -36,7 +36,7 @@ test('order payload includes trimmed required color, normalized Arabic numbers a
   const draft = good();
   assert.deepEqual(validateOrder(draft, areas), {});
   assert.equal(orderSubtotal(draft), 35);
-  assert.deepEqual(orderPayload(draft), {
+  assert.deepEqual(orderPayload(draft, 'external'), {
     customerName: 'عميل جديد',
     customerMobile: '0912345678',
     customerArea: 'دمشق',

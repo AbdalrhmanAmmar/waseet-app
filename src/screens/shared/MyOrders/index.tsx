@@ -1,3 +1,4 @@
+import { OrderActions } from '@/components/shared/orders/OrderActions';
 import { CustomText, HeaderComponent, ScreenContainer, OrderCard } from '@/components/shared';
 import { Button } from '@/components/shared/ui';
 import { useSession } from '@/hooks/shared/use-session';
@@ -9,7 +10,7 @@ import { resolveDeliveryMode } from '@/domain/order-delivery-list';
 import type { useOrderList } from '@/hooks/shared/use-order-list';
 import type { ScreenProps } from '@/navigation/use-screen-props';
 import { useMemo, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, TextInput } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, TextInput, View } from 'react-native';
 type Props = ScreenProps & {
   title: string;
   controller: ReturnType<typeof useOrderList>;
@@ -86,11 +87,16 @@ export default function OrdersScreen({ navigation, title, controller, summary }:
           ) : null
         }
         renderItem={({ item }) => (
-          <OrderCard
-            order={item}
-            mode={resolveDeliveryMode(item, delivery.areas)}
-            onPress={() => navigation.navigate('OrderDetails', { orderId: item.orderId })}
-          />
+          <View style={{ marginBottom: 16 }}>
+            <OrderCard
+              order={item}
+              mode={resolveDeliveryMode(item, delivery.areas)}
+              onPress={() => navigation.navigate('OrderDetails', { orderId: item.orderId })}
+            />
+            {can(role, 'orders.status') && (
+              <OrderActions order={item} disabled={controller.fetching} />
+            )}
+          </View>
         )}
       />
     </ScreenContainer>
