@@ -1,3 +1,7 @@
+import { z } from 'zod';
+
+export const WITHDRAWAL_NOTE_REQUIRED = 'ملاحظة طلب السحب مطلوبة';
+
 export function amountCents(value: string): number | null {
   const normalized = value
     .trim()
@@ -24,4 +28,26 @@ export function withdrawalError(amount: string, balance: unknown): string | null
   if (available === null) return 'تعذر التأكد من الرصيد. حدّث بيانات الحساب أولًا';
   if (cents > available) return 'المبلغ المطلوب أكبر من رصيد حسابك';
   return null;
+}
+
+export const withdrawalRequestSchema = z.object({
+  amount: z.number().finite().positive('يجب أن يكون المبلغ أكبر من صفر'),
+  note: z.string().trim().min(1, WITHDRAWAL_NOTE_REQUIRED),
+});
+
+export function withdrawalFormErrors(
+  amount: string,
+  balance: unknown,
+  note: string,
+): { amount?: string; note?: string } {
+  const amountMessage = withdrawalError(amount, balance);
+  const parsed = withdrawalRequestSchema.safeParse({
+    amount: amountCents(amount) === null ? Number.NaN : amountCents(amount)! / 100,
+    note,
+  });
+  const fields = parsed.success ? {} : parsed.error.flatten().fieldErrors;
+  return {
+    ...(amountMessage ? { amount: amountMessage } : {}),
+    ...(fields.note?.[0] ? { note: fields.note[0] } : {}),
+  };
 }

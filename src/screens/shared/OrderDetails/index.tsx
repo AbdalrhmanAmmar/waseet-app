@@ -20,6 +20,7 @@ import { DeliveryModeCard } from '@/components/shared/orders/DeliveryModeCard';
 import { OrderActions } from '@/components/shared/orders/OrderActions';
 import { OrderHistoryPanel, displayDate } from '@/components/shared/orders/OrderHistoryPanel';
 import { OrderWaybill } from '@/components/shared/orders/OrderWaybill';
+import { OrderIssuesPanel } from '@/components/shared/orders/OrderIssuesPanel';
 import { useOrderDeliveryMode } from '@/hooks/shared/use-order-delivery-mode';
 import { useSession } from '@/hooks/shared/use-session';
 import { orderPhone } from '@/domain/order-workspace';
@@ -277,6 +278,7 @@ function DetailsContent({
           <Button title="تحديث حالة التوصيل" secondary disabled={refreshing} onPress={refresh} />
         </Card>
       )}
+      {can('orders.issues.read') && <OrderIssuesPanel order={order} mode={mode.mode} />}
       <OrderHistoryPanel id={order.orderId} />
       <OrderWaybill order={order} />
     </ScrollView>

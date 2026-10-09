@@ -1,6 +1,10 @@
 import { baseApi } from '../base-api';
 import { unwrap } from '../normalizers';
-import { withdrawalError } from '@/domain/withdrawal';
+import {
+  WITHDRAWAL_NOTE_REQUIRED,
+  withdrawalError,
+  withdrawalRequestSchema,
+} from '@/domain/withdrawal';
 import { isAccountRestricted } from '@/auth/permissions';
 import type { RootState } from '@/store';
 
@@ -23,10 +27,19 @@ export const withdrawalsApi = baseApi.injectEndpoints({
         const current = (api.getState() as RootState).AuthSlice.userData;
         if (!current || current.token !== user.token || current.userId !== user.userId)
           return reject('تغيرت جلسة الحساب. أعد تسجيل الدخول');
-        const error = withdrawalError(String(body.amount), latest?.dollarBalance);
+        const parsed = withdrawalRequestSchema.safeParse(body);
+        if (!parsed.success)
+          return reject(parsed.error.issues[0]?.message ?? 'بيانات طلب السحب غير صالحة');
+        const error = withdrawalError(String(parsed.data.amount), latest?.dollarBalance);
         if (error) return reject(error);
-        const result = await baseQuery({ url: 'withdrawl-requests', method: 'POST', data: body });
+        const result = await baseQuery({
+          url: 'withdrawal-requests',
+          method: 'POST',
+          data: parsed.data,
+        });
         if (result.error) {
+          if (/note.*requi?red/i.test(result.error.message))
+            return reject(WITHDRAWAL_NOTE_REQUIRED);
           const status = result.error.status;
           if (typeof status !== 'number' || status >= 500 || status === 408)
             return {

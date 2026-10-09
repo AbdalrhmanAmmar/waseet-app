@@ -1,11 +1,44 @@
 import type { Role } from './roles';
 export type Permission =
-  'catalog.read' | 'orders.create' | 'orders.status' | 'orders.edit' | 'profit.read';
+  | 'catalog.read'
+  | 'orders.create'
+  | 'orders.status'
+  | 'orders.edit'
+  | 'orders.issues.read'
+  | 'orders.issues.create'
+  | 'orders.issues.resolve'
+  | 'profit.read';
 const permissions: Record<Role, readonly Permission[]> = {
-  MerchantEmployee: ['catalog.read', 'orders.create', 'orders.status', 'profit.read'],
-  Merchant: ['catalog.read', 'orders.create', 'orders.status', 'profit.read'],
-  SalesEmployee: ['catalog.read', 'orders.create', 'orders.status'],
-  ManagementEmployee: ['orders.status', 'orders.edit'],
+  MerchantEmployee: [
+    'catalog.read',
+    'orders.create',
+    'orders.status',
+    'orders.issues.read',
+    'orders.issues.create',
+    'profit.read',
+  ],
+  Merchant: [
+    'catalog.read',
+    'orders.create',
+    'orders.status',
+    'orders.issues.read',
+    'orders.issues.create',
+    'profit.read',
+  ],
+  SalesEmployee: [
+    'catalog.read',
+    'orders.create',
+    'orders.status',
+    'orders.issues.read',
+    'orders.issues.create',
+  ],
+  ManagementEmployee: [
+    'orders.status',
+    'orders.edit',
+    'orders.issues.read',
+    'orders.issues.create',
+    'orders.issues.resolve',
+  ],
   DeliveryAgent: ['orders.status'],
 };
 export function can(role: Role | null | undefined, permission: Permission): boolean {

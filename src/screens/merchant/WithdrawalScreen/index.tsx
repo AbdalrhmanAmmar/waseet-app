@@ -22,7 +22,7 @@ import { Button, Card } from '@/components/shared/ui';
 import { useBalance } from '@/hooks/shared/use-balance';
 import { useSession } from '@/hooks/shared/use-session';
 import { useMerchantWithdrawalRequestMutation } from '@/api/merchant/withdrawals';
-import { amountCents, balanceCents, withdrawalError } from '@/domain/withdrawal';
+import { amountCents, balanceCents, withdrawalFormErrors } from '@/domain/withdrawal';
 import { formatBalance } from '@/domain/balance';
 import { palette as p, typography as t } from '@/theme/tokens';
 import type { ApiError } from '@/types/models';
@@ -37,6 +37,7 @@ export default function WithdrawalScreen() {
   const [review, setReview] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
   const [touched, setTouched] = useState(false);
+  const [noteTouched, setNoteTouched] = useState(false);
   const lock = useRef(false);
   const scroll = useRef<ScrollView>(null);
   const [send, result] = useMerchantWithdrawalRequestMutation({
@@ -44,7 +45,7 @@ export default function WithdrawalScreen() {
   });
   const cents = balanceCents(user?.dollarBalance);
   const verified = !busy && !failed && !user?.balanceStale && cents !== null;
-  const validation = withdrawalError(amount, verified ? user?.dollarBalance : null);
+  const validation = withdrawalFormErrors(amount, verified ? user?.dollarBalance : null, note);
   const error = result.error as ApiError | undefined;
   const uncertain = error?.status === 'WITHDRAWAL_UNCERTAIN';
   const blocked = result.isLoading || uncertain || result.isSuccess;
@@ -55,7 +56,7 @@ export default function WithdrawalScreen() {
     }
   };
   async function confirm() {
-    if (lock.current || blocked || validation) return;
+    if (lock.current || blocked || validation.amount || validation.note) return;
     lock.current = true;
     try {
       await send({ amount: amountCents(amount)! / 100, note: note.trim() }).unwrap();
@@ -144,7 +145,12 @@ export default function WithdrawalScreen() {
             </LinearGradient>
             <Card style={s.card}>
               <Text style={s.label}>كم تريد أن تسحب؟</Text>
-              <View style={[s.amountBox, touched && validation ? { borderColor: p.danger } : null]}>
+              <View
+                style={[
+                  s.amountBox,
+                  touched && validation.amount ? { borderColor: p.danger } : null,
+                ]}
+              >
                 <Text style={s.currency}>USD</Text>
                 <TextInput
                   testID="withdrawal-amount"
@@ -163,9 +169,9 @@ export default function WithdrawalScreen() {
                   style={s.input}
                 />
               </View>
-              {touched && validation && (
+              {touched && validation.amount && (
                 <Text accessibilityLiveRegion="polite" style={s.error}>
-                  {validation}
+                  {validation.amount}
                 </Text>
               )}
               <View style={s.shortcuts}>
@@ -190,18 +196,27 @@ export default function WithdrawalScreen() {
             <Card style={s.card}>
               <View style={s.row}>
                 <Text style={s.label}>ملاحظة</Text>
-                <Text style={s.caption}>اختياري</Text>
+                <Text style={s.caption}>مطلوب</Text>
               </View>
               <TextInput
                 accessibilityLabel="ملاحظة طلب السحب"
                 value={note}
-                onChangeText={setNote}
+                onChangeText={(value) => {
+                  setNote(value);
+                  setNoteTouched(true);
+                }}
+                onBlur={() => setNoteTouched(true)}
                 editable={!blocked}
                 placeholder="أضف ملاحظة تخص طلبك…"
                 placeholderTextColor={p.muted}
                 multiline
-                style={s.note}
+                style={[s.note, noteTouched && validation.note ? { borderColor: p.danger } : null]}
               />
+              {noteTouched && validation.note && (
+                <Text accessibilityLiveRegion="polite" style={s.error}>
+                  {validation.note}
+                </Text>
+              )}
             </Card>
             <View style={s.info}>
               <Icon name="information-outline" size={21} color={p.primary} />
@@ -231,7 +246,7 @@ export default function WithdrawalScreen() {
               <Button
                 title="مراجعة طلب السحب"
                 icon="arrow-left"
-                disabled={!!validation || !verified || !!blocked}
+                disabled={!!validation.amount || !!validation.note || !verified || !!blocked}
                 loading={result.isLoading}
                 onPress={() => {
                   Keyboard.dismiss();
@@ -272,7 +287,7 @@ export default function WithdrawalScreen() {
                   <Button
                     title="تأكيد وإرسال الطلب"
                     loading={result.isLoading}
-                    disabled={!!validation || !!uncertain}
+                    disabled={!!validation.amount || !!validation.note || !!uncertain}
                     onPress={() => void confirm()}
                   />
                   <Button

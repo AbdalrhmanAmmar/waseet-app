@@ -12,7 +12,7 @@ async function setup(page: Page, failure = 0) {
     const path = new URL(route.request().url()).pathname.split('/api/')[1];
     if (path === 'Auth/login') return route.fulfill({ json: { data: { user, token: 'test' } } });
     if (path === 'User/7') return route.fulfill({ json: { data: user } });
-    if (path === 'withdrawl-requests') {
+    if (path === 'withdrawal-requests') {
       expect(route.request().headers().authorization).toBe('Bearer test');
       posts.push(route.request().postDataJSON());
       await new Promise((resolve) => setTimeout(resolve, 300));
@@ -58,6 +58,7 @@ test('merchant withdrawal validates, reviews Arabic amount and sends only reques
 test('latest balance prevents POST after balance changes during review', async ({ page }) => {
   const { user, posts } = await setup(page);
   await page.getByRole('button', { name: 'سحب كامل الرصيد' }).click();
+  await page.getByLabel('ملاحظة طلب السحب').fill('سحب الرصيد');
   await page.getByRole('button', { name: 'مراجعة طلب السحب' }).click();
   user.dollarBalance = 10;
   await page.getByRole('button', { name: 'تأكيد وإرسال الطلب' }).click();
@@ -67,6 +68,7 @@ test('latest balance prevents POST after balance changes during review', async (
 test('uncertain submission blocks a repeated request across navigation', async ({ page }) => {
   const { posts } = await setup(page, 503);
   await page.getByLabel('مبلغ السحب').fill('20');
+  await page.getByLabel('ملاحظة طلب السحب').fill('طلب سحب');
   await page.getByRole('button', { name: 'مراجعة طلب السحب' }).click();
   await page.getByRole('button', { name: 'تأكيد وإرسال الطلب' }).click();
   await expect(page.getByRole('button', { name: 'التواصل مع الدعم' })).toBeVisible();
@@ -75,6 +77,17 @@ test('uncertain submission blocks a repeated request across navigation', async (
   await page.getByRole('button', { name: 'طلب سحب', exact: true }).click();
   await expect(page.getByRole('button', { name: 'التواصل مع الدعم' })).toBeVisible();
   expect(posts).toHaveLength(1);
+});
+
+test('withdrawal requires a note and shows the validation message in Arabic', async ({ page }) => {
+  const { posts } = await setup(page);
+  await page.getByLabel('مبلغ السحب').fill('20');
+  const note = page.getByLabel('ملاحظة طلب السحب');
+  await note.fill(' ');
+  await note.blur();
+  await expect(page.getByText('ملاحظة طلب السحب مطلوبة', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'مراجعة طلب السحب' })).toBeDisabled();
+  expect(posts).toEqual([]);
 });
 test('server rejection preserves form at narrow width', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 700 });

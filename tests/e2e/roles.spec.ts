@@ -180,6 +180,6 @@ test('merchant employee sees catalog and profile but cannot open owner-only acti
     await expect(page).toHaveURL(/\/merchant$/);
   }
   expect(
-    calls.some((p) => p.includes('withdrawl-requests') || p.includes('merchant-employees')),
+    calls.some((p) => p.includes('withdrawal-requests') || p.includes('merchant-employees')),
   ).toBe(false);
 });

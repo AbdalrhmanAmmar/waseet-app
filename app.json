@@ -28,7 +28,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png",
         "backgroundColor": "#F8FAF7"
       },
-      "versionCode": 4
+      "versionCode": 6
     },
     "web": {
       "output": "single",

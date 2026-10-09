@@ -100,3 +100,20 @@ export interface StatusInput {
   expectedStatus?: string;
   expectedReturnSettlement?: string;
 }
+export interface OrderIssue {
+  orderId: Id | null;
+  assignedToEmployeeId: Id | null;
+  assignedToEmployeeName: string | null;
+  canResolve: boolean | null;
+  orderIssueId: Id | null;
+  note: string;
+  createdAt: string | null;
+  createdById: Id | null;
+  createdByName: string | null;
+  createdByRole: string | null;
+  createdByActorType: string | null;
+  status: string | null;
+  resolutionNote: string | null;
+  resolvedAt: string | null;
+  resolvedByName: string | null;
+}

@@ -9,6 +9,7 @@ type Role = keyof typeof paths;
 async function setup(page: Page, role: Role, external = false) {
   const calls: string[] = [];
   const writes: { method: string; body: Record<string, unknown> }[] = [];
+  const issueWrites: { path: string; body: Record<string, unknown> }[] = [];
   const state = {
     failSave: false,
     failReturn: false,
@@ -46,6 +47,7 @@ async function setup(page: Page, role: Role, external = false) {
       ],
     },
     history: [] as Record<string, unknown>[],
+    issues: [] as Record<string, unknown>[],
   };
   const user = { userId: 7, role, accountStatus: 'Approved', firstName: 'أحمد' };
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -80,6 +82,37 @@ async function setup(page: Page, role: Role, external = false) {
             ].map((status) => ({ status, isTerminal: ['Closed', 'Cancelled'].includes(status) })),
           );
     if (path === 'orders/21/history') return reply(state.history);
+    if (path === 'orders/21/issues') {
+      if (request.method() === 'POST') {
+        const body = request.postDataJSON();
+        issueWrites.push({ path, body });
+        state.issues.unshift({
+          orderIssueId: state.issues.length + 1,
+          orderId: 21,
+          note: body.note,
+          status: 'Open',
+          canResolve: true,
+          createdAt: '2026-10-09T08:00:00Z',
+          createdByName: 'أحمد',
+        });
+      }
+      return reply(state.issues);
+    }
+    if (/^orders\/issues\/\d+\/resolve$/.test(path)) {
+      const body = request.postDataJSON();
+      issueWrites.push({ path, body });
+      const issueId = Number(path.split('/')[2]);
+      const issue = state.issues.find((item) => Number(item.orderIssueId) === issueId);
+      if (issue)
+        Object.assign(issue, {
+          status: 'Resolved',
+          canResolve: false,
+          resolutionNote: body.resolutionNote,
+          resolvedAt: '2026-10-09T09:00:00Z',
+          resolvedByName: 'موظف الإدارة',
+        });
+      return reply(issue ?? null);
+    }
     if (path === 'orders/21/delivery-status') {
       if (state.syncStatus) Object.assign(state.order, { oliveryStatus: state.syncStatus });
       return reply({ deliveryStatus: null });
@@ -133,7 +166,7 @@ async function setup(page: Page, role: Role, external = false) {
   await expect(page).toHaveURL(new RegExp(`/${paths[role]}$`));
   await navigate(page, `/${paths[role]}/order?id=21`);
   await expect(page.getByText('العميل: محمد أحمد', { exact: true })).toBeVisible();
-  return { state, calls, writes };
+  return { state, calls, writes, issueWrites };
 }
 async function navigate(page: Page, path: string) {
   await page.evaluate((url) => {
@@ -145,6 +178,73 @@ async function saveStatus(page: Page) {
   await page.getByRole('button', { name: 'مراجعة التغيير', exact: true }).click();
   await page.getByRole('button', { name: 'تأكيد وحفظ الحالة', exact: true }).click();
 }
+
+for (const role of Object.keys(paths) as Role[]) {
+  test(`${role}: order issues are visible to every role except delivery`, async ({ page }) => {
+    const api = await setup(page, role);
+    if (role === 'DeliveryAgent') {
+      await expect(page.getByText('مشكلات الطلب', { exact: true })).toHaveCount(0);
+      expect(api.calls).not.toContain('orders/21/issues');
+    } else {
+      await expect(page.getByText('مشكلات الطلب', { exact: true })).toBeVisible();
+      await expect(
+        page.getByText('لا توجد مشكلات مسجلة لهذا الطلب', { exact: true }),
+      ).toBeVisible();
+      expect(api.calls).toContain('orders/21/issues');
+
+      api.state.issues.push({
+        orderIssueId: 91,
+        orderId: 21,
+        note: 'مشكلة مفتوحة لاختبار صلاحية الحل',
+        status: 'Open',
+        canResolve: true,
+        createdAt: '2026-10-09T08:00:00Z',
+        createdByName: 'أحمد',
+      });
+      await page.getByRole('button', { name: 'تحديث مشكلات الطلب', exact: true }).click();
+      await expect(page.getByText('مشكلة مفتوحة لاختبار صلاحية الحل', { exact: true })).toBeVisible();
+      if (role === 'ManagementEmployee')
+        await expect(page.getByRole('button', { name: 'حل المشكلة', exact: true })).toBeVisible();
+      else
+        await expect(page.getByRole('button', { name: 'حل المشكلة', exact: true })).toHaveCount(0);
+      expect(api.issueWrites).toHaveLength(0);
+    }
+  });
+}
+
+test('delivered order supports issue creation and resolution like the dashboard', async ({
+  page,
+}) => {
+  const api = await setup(page, 'ManagementEmployee');
+  api.state.order.deliveryStatus = 'Delivered';
+  await page.getByRole('button', { name: 'تحديث حالة التوصيل', exact: true }).click();
+  const create = page.getByRole('button', { name: 'تسجيل مشكلة', exact: true });
+  await expect(create).toBeEnabled();
+  await create.click();
+  await page
+    .getByRole('textbox', { name: 'وصف مشكلة الطلب', exact: true })
+    .fill('العميل أبلغ عن منتج ناقص');
+  await page.getByRole('button', { name: 'حفظ المشكلة', exact: true }).click();
+  await expect(page.getByText('تم تسجيل المشكلة وربطها بالطلب.', { exact: true })).toBeVisible();
+  await expect(page.getByText('العميل أبلغ عن منتج ناقص', { exact: true })).toBeVisible();
+  expect(api.issueWrites[0]).toEqual({
+    path: 'orders/21/issues',
+    body: { note: 'العميل أبلغ عن منتج ناقص' },
+  });
+
+  await page.getByRole('button', { name: 'حل المشكلة', exact: true }).click();
+  await page
+    .getByRole('textbox', { name: 'ملاحظة حل المشكلة', exact: true })
+    .fill('تم التواصل وإرسال المنتج الناقص');
+  await page.getByRole('button', { name: 'تأكيد الحل', exact: true }).click();
+  await expect(page.getByText('تم حل المشكلة وحفظ ملاحظة الحل.', { exact: true })).toBeVisible();
+  await expect(page.getByText('تم التواصل وإرسال المنتج الناقص', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'حل المشكلة', exact: true })).toHaveCount(0);
+  expect(api.issueWrites[1]).toEqual({
+    path: 'orders/issues/1/resolve',
+    body: { resolutionNote: 'تم التواصل وإرسال المنتج الناقص' },
+  });
+});
 for (const role of Object.keys(paths) as Role[]) {
   test(`${role}: internal status and complete editing use guarded endpoints`, async ({ page }) => {
     const errors: string[] = [];
