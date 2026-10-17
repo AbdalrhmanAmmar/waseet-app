@@ -7,6 +7,7 @@ import {
   internalRequiresNote,
 } from '../src/domain/internal-order-policy';
 import { orderDetails } from '../src/api/normalizers';
+import { resolveDeliveryMode } from '../src/domain/order-delivery-list';
 import { guardedStatusChange, uncertainStatuses } from '../src/api/shared/order-guards';
 const order = orderDetails(
   {
@@ -128,11 +129,7 @@ test('stuck resolution follows the visible-order role without requiring ownershi
     'Processing',
     'Cancelled',
   ]);
-  for (const patch of [
-    { orderType: undefined },
-    { oliveryOrderId: undefined },
-    { oliveryOrderId: 22 },
-  ])
+  for (const patch of [{ orderType: undefined }])
     assert.deepEqual(
       internalTargets(
         { ...order, ...patch },
@@ -154,6 +151,42 @@ test('stuck resolution follows the visible-order role without requiring ownershi
     [],
   );
   assert.deepEqual(internalTargets(order, null, 'internal'), []);
+});
+test('delivery can update an internal order when the API omits Olivery fields', () => {
+  const current = orderDetails(
+    {
+      orderId: 395656,
+      status: 'Out for Delivery',
+      orderType: 'Normal',
+      customerArea: 'دمشق',
+      items: [],
+    },
+    395656,
+  );
+  const areas = [{ deliveryAreaId: 1, city: 'دمشق', fee: 3, isInternalDelivery: true }];
+  const mode = resolveDeliveryMode(current, areas);
+  assert.equal(mode, 'internal');
+  assert.deepEqual(
+    internalTargets(
+      current,
+      {
+        role: 'DeliveryAgent',
+        userId: 7,
+        accountStatus: 'Approved',
+      },
+      mode,
+    ),
+    ['Delivered', 'Refused on Delivery', 'Postponed', 'Stuck', 'Cancelled'],
+  );
+  const external = { ...current, oliveryOrderId: 22 };
+  assert.deepEqual(
+    internalTargets(
+      external,
+      { role: 'DeliveryAgent', userId: 7 },
+      resolveDeliveryMode(external, areas),
+    ),
+    [],
+  );
 });
 test('assigned management may edit closed internal orders; cancellation is not terminal', () => {
   for (const role of roles)
@@ -268,13 +301,13 @@ test('merchant detail contract with olivery null permits cancellation without ow
     { oliveryOrderId: 55 },
     { OliveryOrderId: 55 },
   ]) {
+    const current = orderDetails({ ...raw, ...patch }, 657173);
+    const mode = resolveDeliveryMode(current, [
+      { deliveryAreaId: 1, city: 'دمشق', fee: 3, isInternalDelivery: true },
+    ]);
     assert.deepEqual(
-      internalTargets(
-        orderDetails({ ...raw, ...patch }, 657173),
-        { role: 'Merchant', userId: 7 },
-        'internal',
-      ),
-      [],
+      internalTargets(current, { role: 'Merchant', userId: 7 }, mode),
+      mode === 'internal' ? ['Cancelled'] : [],
     );
   }
 });

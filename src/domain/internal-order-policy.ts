@@ -28,9 +28,7 @@ const returns: Record<string, string[]> = {
 };
 export function internalContextValid(order: Order, mode: DeliveryMode) {
   return (
-    mode === 'internal' &&
-    order.oliveryOrderId === null &&
-    ['normal', 'return'].includes(String(order.orderType).toLowerCase())
+    mode === 'internal' && ['normal', 'return'].includes(String(order.orderType).toLowerCase())
   );
 }
 export function isManagement(actor: OrderActor | null | undefined) {
