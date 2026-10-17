@@ -20,6 +20,7 @@ export const C = {
   soft: '#EDF6F1',
   warm: '#FFF1E2',
   mint: '#C6E7DB',
+  danger: '#B83D3D',
 };
 
 export const FONT = 'Tajawal';

@@ -1,9 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { BackHandler, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { BackHandler, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useReducedMotion } from '@/hooks/shared/use-reduced-motion';
-import { Picker } from '@react-native-picker/picker';
 import { useForm, useWatch, type FieldPath } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import type { InferType } from 'yup';
@@ -15,7 +12,6 @@ import { AsyncState } from '@/components/shared/AsyncState';
 import { palette as p, typography as t } from '@/theme/tokens';
 import { PUBLIC_ROLES as ROLES, roleLabels, type PublicRole as Role } from '@/auth/roles';
 import { signUpSchema } from '@/schemas/auth';
-import { birthDateFromParts } from '@/schemas/birth-date';
 import { useAppDispatch } from '@/hooks/shared/use-store';
 import { useDeliveryAreasQuery } from '@/api/shared/catalog';
 import { errorMessage } from '@/api/normalizers';
@@ -36,27 +32,18 @@ const roleInfo: Record<
   DeliveryAgent: { icon: 'truck-delivery-outline', description: 'استلام مهام التوصيل وتنفيذها' },
 };
 const stepFields: FieldPath<Values>[][] = [
-  ['firstName', 'secondName', 'lastName', 'birthDate'],
+  ['firstName', 'secondName', 'lastName'],
   ['email', 'phoneNumber', 'country', 'address'],
   ['password', 'confirmPassword'],
 ];
 export default function SignUpScreen({ navigation }: ScreenProps) {
   const dispatch = useAppDispatch();
-  const insets = useSafeAreaInsets();
-  const reducedMotion = useReducedMotion();
   const [step, setStep] = useState(0);
   const [role, setRole] = useState<Role>('Merchant');
   const [countryCode, setCountryCode] = useState('SY');
   const [callingCode, setCallingCode] = useState('963');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [dateOpen, setDateOpen] = useState(false);
-  const [dateParts, setDateParts] = useState({
-    day: 1,
-    month: 1,
-    year: new Date().getFullYear() - 20,
-  });
-  const [dateError, setDateError] = useState('');
   const [serverError, setServerError] = useState('');
   const [complete, setComplete] = useState(false);
   const scroll = useRef<ScrollView>(null);
@@ -69,7 +56,7 @@ export default function SignUpScreen({ navigation }: ScreenProps) {
     setValue,
     setError,
     clearErrors,
-    formState: { errors, isSubmitting },
+    formState: { isSubmitting },
   } = useForm<Values>({
     resolver: yupResolver(signUpSchema),
     mode: 'onTouched',
@@ -85,7 +72,6 @@ export default function SignUpScreen({ navigation }: ScreenProps) {
       address: '',
       password: '',
       confirmPassword: '',
-      birthDate: '',
     },
   });
   const values = useWatch({ control });
@@ -109,7 +95,6 @@ export default function SignUpScreen({ navigation }: ScreenProps) {
       return;
     }
     if (valid) go(step + 1);
-    else if (step === 0 && !values.birthDate) scroll.current?.scrollToEnd({ animated: false });
   };
   const submit = () =>
     handleSubmit(
@@ -144,16 +129,6 @@ export default function SignUpScreen({ navigation }: ScreenProps) {
         if (first >= 0) go(first);
       },
     )();
-  const confirmDate = () => {
-    const value = birthDateFromParts(dateParts.day, dateParts.month, dateParts.year);
-    if (!value) {
-      setDateError('التاريخ غير صحيح أو يقع في المستقبل. راجع اليوم والشهر والسنة.');
-      return;
-    }
-    setValue('birthDate', value, { shouldValidate: true, shouldDirty: true });
-    setDateOpen(false);
-    setDateError('');
-  };
   const eye = (visible: boolean, toggle: () => void, label: string) => (
     <Pressable
       accessibilityRole="button"
@@ -170,7 +145,7 @@ export default function SignUpScreen({ navigation }: ScreenProps) {
         <View style={s.successIcon}>
           <Icon name="check-decagram-outline" size={58} color={p.primary} />
         </View>
-        <Text style={s.title}>أهلًا بك في وسيط</Text>
+        <Text style={s.title}>أهلًا بك في الوسيط الذكي</Text>
         <Text style={s.description}>
           تم إنشاء حسابك بنجاح. سجّل الدخول للاطلاع على حالة الحساب وبدء استخدام التطبيق.
         </Text>
@@ -298,25 +273,6 @@ export default function SignUpScreen({ navigation }: ScreenProps) {
               placeholder="اسم العائلة"
               autoComplete="family-name"
             />
-            <Text style={s.fieldLabel}>تاريخ الميلاد</Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="اختيار تاريخ الميلاد"
-              onPress={() => setDateOpen(true)}
-              style={[s.dateField, !!errors.birthDate && { borderColor: p.danger }]}
-            >
-              <Text style={{ color: values.birthDate ? p.ink : p.muted }}>
-                {values.birthDate
-                  ? new Date(values.birthDate).toLocaleDateString('ar-EG', { timeZone: 'UTC' })
-                  : 'اختر تاريخ ميلادك'}
-              </Text>
-              <Icon name="calendar-outline" size={22} color={p.primary} />
-            </Pressable>
-            {errors.birthDate && (
-              <Text accessibilityRole="alert" style={s.error}>
-                {errors.birthDate.message}
-              </Text>
-            )}
           </Card>
         </>
       )}
@@ -465,58 +421,6 @@ export default function SignUpScreen({ navigation }: ScreenProps) {
           <Text style={ui.link}>تسجيل الدخول</Text>
         </Pressable>
       </View>
-      <Modal
-        visible={dateOpen}
-        animationType={reducedMotion ? 'none' : 'fade'}
-        transparent
-        onRequestClose={() => setDateOpen(false)}
-      >
-        <View style={s.modal}>
-          <View style={[s.sheet, { paddingBottom: Math.max(insets.bottom, 24) }]}>
-            <ScrollView contentContainerStyle={{ gap: 16 }}>
-              <Text style={s.sectionTitle}>تاريخ الميلاد</Text>
-              <Text style={ui.caption}>اختر اليوم والشهر والسنة</Text>
-              <View style={s.pickers}>
-                {(['day', 'month', 'year'] as const).map((part, index) => (
-                  <View key={part} style={{ flex: 1 }}>
-                    <Text style={{ textAlign: 'center' }}>
-                      {['اليوم', 'الشهر', 'السنة'][index]}
-                    </Text>
-                    <Picker
-                      accessibilityLabel={['اليوم', 'الشهر', 'السنة'][index]}
-                      selectedValue={dateParts[part]}
-                      onValueChange={(value) =>
-                        setDateParts((previous) => ({ ...previous, [part]: Number(value) }))
-                      }
-                    >
-                      {Array.from(
-                        {
-                          length:
-                            part === 'year'
-                              ? new Date().getFullYear() - 1899
-                              : part === 'month'
-                                ? 12
-                                : 31,
-                        },
-                        (_, i) => (part === 'year' ? new Date().getFullYear() - i : i + 1),
-                      ).map((value) => (
-                        <Picker.Item key={value} label={String(value)} value={value} />
-                      ))}
-                    </Picker>
-                  </View>
-                ))}
-              </View>
-              {!!dateError && (
-                <Text accessibilityRole="alert" style={s.error}>
-                  {dateError}
-                </Text>
-              )}
-              <Button title="تأكيد التاريخ" onPress={confirmDate} />
-              <Button title="إلغاء" secondary onPress={() => setDateOpen(false)} />
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
     </AuthLayout>
   );
 }
@@ -556,17 +460,6 @@ const s = StyleSheet.create({
   roleTitle: { fontSize: 16, fontFamily: t.bold },
   roleDescription: { fontSize: 12, lineHeight: 20, color: p.muted },
   footerRow: { flexDirection: 'row-reverse', gap: 10 },
-  fieldLabel: { fontSize: 14, fontFamily: t.medium },
-  dateField: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 14,
-    borderWidth: 1,
-    borderColor: p.border,
-    borderRadius: 14,
-    minHeight: 54,
-  },
   error: { color: p.danger, fontSize: 13 },
   serverError: { color: p.danger, backgroundColor: '#FFF1EF', padding: 16, borderRadius: 14 },
   eye: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
@@ -574,19 +467,6 @@ const s = StyleSheet.create({
   cities: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8 },
   city: { padding: 10, borderWidth: 1, borderColor: p.border, borderRadius: 10 },
   login: { flexDirection: 'row-reverse', justifyContent: 'center', flexWrap: 'wrap', gap: 8 },
-  modal: { flex: 1, backgroundColor: '#10291F88', justifyContent: 'flex-end' },
-  sheet: {
-    maxHeight: '90%',
-    backgroundColor: p.surface,
-    padding: 24,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    gap: 16,
-    width: '100%',
-    maxWidth: 600,
-    alignSelf: 'center',
-  },
-  pickers: { flexDirection: 'row-reverse', gap: 4 },
   successIcon: {
     alignSelf: 'center',
     padding: 32,

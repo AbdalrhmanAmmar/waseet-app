@@ -158,17 +158,30 @@ test('status mutation verifies current status, delivery mode and mandatory note 
     assert.ok(response.error);
     assert.ok(api.requests.every((r) => !r.method));
   }
-  const stuck = mock({ status: 'Stuck', area: 'حلب' });
-  assert.ok((await guardedStatusChange({ orderId: 21, status: 'Processing' }, stuck.query)).error);
-  await guardedStatusChange(
-    { orderId: 21, status: 'Processing', notes: '  تم التواصل  ' },
-    stuck.query,
-    actor,
-  );
-  assert.deepEqual(stuck.requests.find((r) => r.method === 'POST')?.data, {
-    targetStatus: 'Processing',
-    note: 'تم التواصل',
-  });
+  for (const role of ['Merchant', 'MerchantEmployee', 'SalesEmployee']) {
+    const stuck = mock({ status: 'Stuck' });
+    const visibleOrderActor = { role, userId: undefined, ownerMerchantId: undefined };
+    assert.ok(
+      (
+        await guardedStatusChange(
+          { orderId: 21, status: 'Processing' },
+          stuck.query,
+          visibleOrderActor,
+        )
+      ).error,
+    );
+    assert.ok(stuck.requests.every((request) => request.method !== 'POST'));
+    const result = await guardedStatusChange(
+      { orderId: 21, status: 'Processing', notes: '  تم التواصل  ' },
+      stuck.query,
+      visibleOrderActor,
+    );
+    assert.equal(result.error, undefined);
+    assert.deepEqual(stuck.requests.find((request) => request.method === 'POST')?.data, {
+      targetStatus: 'Processing',
+      note: 'تم التواصل',
+    });
+  }
 });
 test('editing sends all rows and colors, rejects concurrent changes and original or target external area', async () => {
   const baseline = orderVersion(orderDetails(original, 21));

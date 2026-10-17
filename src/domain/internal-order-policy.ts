@@ -7,12 +7,6 @@ export type OrderActor = {
   ownerMerchantId?: unknown;
   accountStatus?: string;
 };
-const same = (a: unknown, b: unknown) =>
-  (typeof a === 'string' || typeof a === 'number') &&
-  String(a).trim() !== '' &&
-  String(a) !== '0' &&
-  (typeof b === 'string' || typeof b === 'number') &&
-  String(a) === String(b);
 export const internalTerminal = (status: string) =>
   ['completed', 'completedreturn', 'completedreturned', 'closed'].includes(normalizeStatus(status));
 const normal: Record<string, string[]> = {
@@ -93,10 +87,7 @@ export function internalTargets(
     if (to === 'cancelled') return true;
     if (management) return true;
     if (from === 'stuck' && to === 'processing')
-      return (
-        ['Merchant', 'MerchantEmployee', 'SalesEmployee'].includes(role) &&
-        same(order.userId, role === 'MerchantEmployee' ? actor.ownerMerchantId : actor.userId)
-      );
+      return ['Merchant', 'MerchantEmployee', 'SalesEmployee'].includes(role);
     return (
       delivery &&
       from === 'outfordelivery' &&

@@ -105,9 +105,9 @@ export function OrdersWorkspace({
                   {pageTitle}
                 </Text>
               </View>
-              <View style={s.brand} accessible accessibilityLabel="وسيط">
+              <View style={s.brand} accessible accessibilityLabel="الوسيط الذكي">
                 <Image source={Images.brandLogo} style={s.logo} />
-                <Text style={s.brandName}>وسيط</Text>
+                <Text style={s.brandName}>الوسيط الذكي</Text>
               </View>
             </View>
             <Text style={s.subtitle}>

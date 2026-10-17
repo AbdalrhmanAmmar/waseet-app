@@ -45,7 +45,7 @@ export default function ContactUs() {
               resizeMode="contain"
             />
           </View>
-          <CustomText style={styles.heroTitle}>وسيط</CustomText>
+          <CustomText style={styles.heroTitle}>الوسيط الذكي</CustomText>
           <CustomText style={styles.heroSubtitle}>
             للاستفسارات والمساعدة، تواصل مع فريق الدعم.
           </CustomText>

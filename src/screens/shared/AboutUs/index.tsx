@@ -14,17 +14,17 @@ export default function AboutUs() {
             <Image
               source={Images.brandLogo}
               style={{ width: 80, height: 80 }}
-              accessibilityLabel="شعار وسيط"
+              accessibilityLabel="شعار الوسيط الذكي"
             />
           </View>
-          <CustomText style={styles.appName}>وسيط</CustomText>
+          <CustomText style={styles.appName}>الوسيط الذكي</CustomText>
           <CustomText style={styles.version}>الإصدار 1.0.0</CustomText>
         </View>
 
         <View style={styles.contentCard}>
           <CustomText style={styles.sectionTitle}>من نحن؟</CustomText>
           <CustomText style={styles.description}>
-            وسيط يجمع التجار وفرق المبيعات والإدارة ومندوبي التوصيل في تطبيق واحد. تصفح المنتجات،
+            الوسيط الذكي يجمع التجار وفرق المبيعات والإدارة ومندوبي التوصيل في تطبيق واحد. تصفح المنتجات،
             جهّز طلبات العملاء، وتابع حالتها حسب صلاحيات حسابك.
           </CustomText>
         </View>

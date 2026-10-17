@@ -21,7 +21,7 @@
 
 | الموضوع | المصدر في المشروع |
 | --- | --- |
-| بيانات التسجيل وتاريخ الميلاد والعنوان | `src/schemas/auth.ts`، `src/screens/auth/SignUp/index.tsx` |
+| بيانات التسجيل والعنوان | `src/schemas/auth.ts`، `src/screens/auth/SignUp/index.tsx` |
 | الحسابات والأرصدة وبيانات العميل والطلب | `src/types/models.ts` |
 | HTTPS وواجهة الخادم الحالية | `src/config/env.ts`، `src/api/client.ts` |
 | حفظ رمز الجلسة ونسخة الحساب وتسجيل الخروج | `src/services/storage.ts` |

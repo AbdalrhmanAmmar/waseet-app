@@ -439,18 +439,79 @@ const music = () => {
   return finish(out, 0.85, 1.5);
 };
 
+// Soft UI tick for typing / counters.
+const tick = (seed) => {
+  const b = stereo(0.12);
+  noiseBurst(b, { at: 0, dur: 0.012, amp: 0.5, seed, env: (p) => 1 - p, filter: { type: 'bp', at: () => [3200, 2.5] } });
+  sine(b, { at: 0, dur: 0.05, freq: 1800, amp: 0.25, decay: 0.012, attack: 0.0005 });
+  return finish(b, 0.5, 0.005);
+};
+
+// Friendly two-tone message ding (original, not any app's real notification).
+const ding = () => {
+  const b = stereo(1.6);
+  bell(b, { at: 0, freq: midi(88), amp: 0.4, decay: 0.35, partials: [[1, 1], [2, 0.25], [3, 0.08]] });
+  bell(b, { at: 0.11, freq: midi(95), amp: 0.5, decay: 0.6, partials: [[1, 1], [2, 0.25], [3, 0.08]] });
+  return finish(reverb(b, { wet: 0.3, room: 0.75, tail: 0.6 }), 0.65);
+};
+
+// Light background bed for the reel: warm pads, soft pulse and a sparse bell motif (96 BPM).
+const reelBed = (DUR = 76) => {
+  const b = stereo(DUR);
+  const beat = 60 / 96;
+  const bar = beat * 4;
+  const prog = [
+    { bass: 38, notes: [62, 66, 69, 73] }, // Dmaj7
+    { bass: 35, notes: [59, 62, 66, 69] }, // Bm7
+    { bass: 31, notes: [55, 59, 62, 66] }, // Gmaj7
+    { bass: 33, notes: [57, 61, 64, 69] }, // A
+  ];
+  const rnd = mulberry32(99);
+  for (let k = 0, t = 0; t < DUR; k++, t += bar * 2) {
+    const c = prog[k % prog.length];
+    c.notes.forEach((n, i) => padNote(b, { start: t, end: Math.min(DUR, t + bar * 2), note: n, amp: 0.2 * (1 - i * 0.08), attack: 0.8, release: 1.2, bright: () => 3.2, pan: i * 0.4 - 0.6 }));
+    sine(b, { at: t, dur: bar * 2, freq: midi(c.bass), amp: 0.16, decay: 6, attack: 0.05 });
+  }
+  const arp = stereo(DUR);
+  for (let i = 0, t = bar; t < DUR - 1; i++, t += beat / 2) {
+    if (i % 8 === 1 || i % 8 === 5 || i % 8 === 7) continue;
+    const c = prog[Math.floor(t / (bar * 2)) % prog.length];
+    bell(arp, { at: t, freq: midi(c.notes[[0, 2, 3, 1][i % 4]] + 12), amp: 0.05 * (0.8 + rnd() * 0.4), decay: 0.45, pan: Math.sin(i) * 0.5 });
+  }
+  pingPong(arp, { time: beat * 0.75, feedback: 0.3, mix: 0.35 });
+  mixInto(b, arp);
+  // soft pulse: muted kick on 1 & 3, airy shaker on off-beats
+  for (let t = bar * 2; t < DUR - bar; t += beat) {
+    const n = Math.round(t / beat);
+    if (n % 2 === 0) sine(b, { at: t, dur: 0.3, freq: (x) => 48 + 60 * Math.exp(-x * 40), amp: 0.35, decay: 0.12, attack: 0.002 });
+    noiseBurst(b, { at: t + beat / 2, dur: 0.06, amp: 0.05, seed: n, env: (p) => (1 - p) ** 2, filter: { type: 'hp', at: () => [7000, 0.7] } });
+  }
+  const out = reverb(b, { wet: 0.3, room: 0.82 });
+  out.n = DUR * SR;
+  return finish(out, 0.8, 3);
+};
+
+const SOUNDS = {
+  music,
+  'whoosh-1': () => whoosh(11),
+  'whoosh-2': () => whoosh(23, 0.8, false),
+  'whoosh-3': () => whoosh(37, 0.7),
+  impact: () => impact(7),
+  riser: () => riser(3),
+  shimmer: () => shimmer(3),
+  'shimmer-soft': () => shimmer(8, 1.2, 25),
+  ...Object.fromEntries([86, 90, 93, 98].map((n, i) => [`chime-${i + 1}`, () => chime(n)])),
+  pop,
+  coin,
+  swell,
+  'logo-hit': logoHit,
+  'tick-1': () => tick(3),
+  'tick-2': () => tick(9),
+  ding,
+  'reel-bed': () => reelBed(),
+};
+
 mkdirSync(OUT, { recursive: true });
+const only = process.argv.slice(2);
 console.log('Generating sfx →', OUT);
-writeWav('music', music());
-writeWav('whoosh-1', whoosh(11));
-writeWav('whoosh-2', whoosh(23, 0.8, false));
-writeWav('whoosh-3', whoosh(37, 0.7));
-writeWav('impact', impact(7));
-writeWav('riser', riser(3));
-writeWav('shimmer', shimmer(3));
-writeWav('shimmer-soft', shimmer(8, 1.2, 25));
-[86, 90, 93, 98].forEach((n, i) => writeWav(`chime-${i + 1}`, chime(n)));
-writeWav('pop', pop());
-writeWav('coin', coin());
-writeWav('swell', swell());
-writeWav('logo-hit', logoHit());
+for (const [name, make] of Object.entries(SOUNDS)) if (!only.length || only.includes(name)) writeWav(name, make());

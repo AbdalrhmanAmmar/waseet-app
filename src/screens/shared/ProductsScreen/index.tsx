@@ -150,9 +150,9 @@ export default function ProductsScreen({
             </Text>
           </View>
           <View style={s.headerControls}>
-            <View style={s.brand} accessibilityLabel="وسيط" accessible>
+            <View style={s.brand} accessibilityLabel="الوسيط الذكي" accessible>
               <Image source={Images.brandLogo} style={s.logo} />
-              <Text style={s.brandName}>وسيط</Text>
+              <Text style={s.brandName}>الوسيط الذكي</Text>
             </View>
             <View style={s.toggle}>
               {(['grid', 'list'] as const).map((mode) => (

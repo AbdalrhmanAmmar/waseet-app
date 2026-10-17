@@ -1,3 +1,4 @@
+import { DeleteAccount } from '@/components/shared/account/DeleteAccount';
 import type { LoginRestriction } from '@/auth/login-restriction';
 import { accountReview, type AccountReview } from '@/auth/account-review';
 import { RejectedAccountContent } from '@/components/shared/account/RejectedAccountContent';
@@ -49,6 +50,7 @@ export default function AccountStatusScreen({
             onRefresh={unauthenticated ? () => onRetryLogin?.() : refresh}
             onExit={unauthenticated ? () => onRetryLogin?.() : () => dispatch(logout())}
           />
+          {!unauthenticated && <DeleteAccount />}
         </ScrollView>
         <SupportSheet visible={supportOpen} onClose={() => setSupportOpen(false)} />
       </ScreenContainer>
@@ -58,9 +60,9 @@ export default function AccountStatusScreen({
     <ScreenContainer edges={['top', 'bottom']} backgroundColor={p.background}>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         <View style={s.content}>
-          <View style={s.brand} accessible accessibilityLabel="وسيط">
+          <View style={s.brand} accessible accessibilityLabel="الوسيط الذكي">
             <Image source={Images.brandLogo} style={s.logo} />
-            <Text style={s.wordmark}>وسيط</Text>
+            <Text style={s.wordmark}>الوسيط الذكي</Text>
           </View>
           {content.pending ? (
             <Image
@@ -145,6 +147,7 @@ export default function AccountStatusScreen({
               {unauthenticated ? 'العودة لتسجيل الدخول' : 'تسجيل الخروج'}
             </Text>
           </Pressable>
+          {!unauthenticated && <DeleteAccount />}
         </View>
       </ScrollView>
       <SupportSheet visible={supportOpen} onClose={() => setSupportOpen(false)} />

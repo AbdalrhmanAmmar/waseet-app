@@ -1,4 +1,3 @@
-import { isValidBirthDate } from './birth-date';
 import * as yup from 'yup';
 
 export const loginSchema = yup.object().shape({
@@ -19,10 +18,6 @@ export const signUpSchema = yup.object().shape({
   country: yup.string().trim().required('الدولة مطلوبة'),
   city: yup.string().notRequired(),
   address: yup.string().trim().required('العنوان مطلوب'),
-  birthDate: yup
-    .string()
-    .required('تاريخ الميلاد مطلوب')
-    .test('valid-birth-date', 'اختر تاريخ ميلاد صحيحًا غير مستقبلي', isValidBirthDate),
   password: yup
     .string()
     .required('كلمة المرور مطلوبة')

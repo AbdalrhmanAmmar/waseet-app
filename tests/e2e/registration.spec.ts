@@ -3,12 +3,6 @@ async function personal(page: Page) {
   await page.getByPlaceholder('الاسم الأول', { exact: true }).fill('أحمد');
   await page.getByPlaceholder('الاسم الثاني', { exact: true }).fill('محمد');
   await page.getByPlaceholder('اسم العائلة', { exact: true }).fill('علي');
-  await page.getByRole('button', { name: 'اختيار تاريخ الميلاد' }).click();
-  await page.getByLabel('السنة', { exact: true }).selectOption('2000');
-  await page.getByLabel('الشهر', { exact: true }).selectOption('2');
-  await page.getByLabel('اليوم', { exact: true }).selectOption('29');
-  await page.getByRole('button', { name: 'تأكيد التاريخ' }).click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('button', { name: 'متابعة', exact: true }).click();
 }
 async function contact(page: Page) {
@@ -32,7 +26,7 @@ test('registration validates steps, preserves fields, retries failure and submit
     });
   });
   await page.goto('/register');
-  await expect(page.getByText('اختر تاريخ ميلادك', { exact: true })).toBeVisible();
+  await expect(page.getByText('تاريخ الميلاد', { exact: false })).toHaveCount(0);
   await page.screenshot({
     path: 'test-results/signup-personal.png',
     fullPage: true,
@@ -40,7 +34,6 @@ test('registration validates steps, preserves fields, retries failure and submit
   });
   await page.getByRole('button', { name: 'متابعة', exact: true }).click();
   await expect(page.getByText('الاسم الأول مطلوب', { exact: true })).toBeVisible();
-  await expect(page.getByText('تاريخ الميلاد مطلوب', { exact: true })).toBeVisible();
   await personal(page);
   await contact(page);
   await expect(page.getByText(/أوليفر|Olivery/i)).toHaveCount(0);
@@ -79,12 +72,11 @@ test('registration validates steps, preserves fields, retries failure and submit
     phoneNumber: '+963912345678',
     country: 'سوريا',
     address: 'عنوان اختبار',
-    birthDate: '2000-02-29T00:00:00.000Z',
     password: 'test-password',
     role: 'Merchant',
   });
 });
-test('delivery signup requires city and refuses impossible calendar dates', async ({ page }) => {
+test('delivery signup requires city', async ({ page }) => {
   await page.route('**/api/**', (route) =>
     route.fulfill({
       json: { isSuccess: true, data: [{ deliveryAreaId: 1, city: 'دمشق', fee: 3 }] },
@@ -92,15 +84,6 @@ test('delivery signup requires city and refuses impossible calendar dates', asyn
   );
   await page.goto('/register');
   await page.getByRole('radio', { name: 'مندوب توصيل', exact: true }).click();
-  await page.getByRole('button', { name: 'اختيار تاريخ الميلاد' }).click();
-  await page.getByLabel('السنة', { exact: true }).selectOption('2001');
-  await page.getByLabel('الشهر', { exact: true }).selectOption('2');
-  await page.getByLabel('اليوم', { exact: true }).selectOption('31');
-  await page.getByRole('button', { name: 'تأكيد التاريخ' }).click();
-  await expect(
-    page.getByText('التاريخ غير صحيح أو يقع في المستقبل. راجع اليوم والشهر والسنة.'),
-  ).toBeVisible();
-  await page.getByRole('button', { name: 'إلغاء', exact: true }).click();
   await personal(page);
   await contact(page);
   await page.getByRole('button', { name: 'متابعة', exact: true }).click();

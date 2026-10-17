@@ -28,7 +28,7 @@ export function OrderDeliveryFilters({
     ...(controller.mode === 'external'
       ? [
           {
-            title: 'حالة الطلب داخل الوسيط',
+            title: 'حالة الطلب داخل الوسيط الذكي',
             catalog: INTERNAL_DELIVERY_STATUSES,
             selected: controller.localStatuses,
             update: controller.setLocalStatuses,

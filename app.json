@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "وسيط",
+    "name": "الوسيط الذكي",
     "slug": "waseet",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -18,7 +18,7 @@
         ],
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "2"
+      "buildNumber": "4"
     },
     "android": {
       "predictiveBackGestureEnabled": false,
@@ -28,7 +28,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png",
         "backgroundColor": "#F8FAF7"
       },
-      "versionCode": 6
+      "versionCode": 7
     },
     "web": {
       "output": "single",

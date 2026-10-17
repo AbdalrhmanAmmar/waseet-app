@@ -6,14 +6,21 @@
   "scripts": {
     "dev": "remotion studio",
     "sfx": "node scripts/generate-sfx.mjs",
+    "sfx:pro": "node scripts/generate-sfx-pro.mjs",
+    "transcribe": "node scripts/transcribe.mjs",
     "render": "remotion render WaseetFilm out/waseet.mp4",
+    "render:reel": "remotion render WaseetReel out/waseet-reel-4k.mp4 --crf=14 --audio-bitrate=320k --x264-preset=slow --image-format=png",
+    "render:pro": "remotion render WaseetPro out/waseet-pro-4k.mp4 --codec=h264 --crf=15 --x264-preset=slow --audio-codec=aac --audio-bitrate=320k",
     "still": "remotion still WaseetFilm out/frame.png",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@mdi/js": "7.4.47",
+    "@remotion/captions": "^4.0.534",
     "@remotion/cli": "4.0.534",
     "@remotion/fonts": "4.0.534",
+    "@remotion/google-fonts": "^4.0.534",
+    "@remotion/install-whisper-cpp": "^4.0.534",
     "@remotion/media": "4.0.534",
     "react": "19.2.3",
     "react-dom": "19.2.3",

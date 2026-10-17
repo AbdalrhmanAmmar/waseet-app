@@ -1,11 +1,20 @@
 import { test, expect, type Page } from '@playwright/test';
 const paths = {
   Merchant: 'merchant',
+  MerchantEmployee: 'merchant',
   SalesEmployee: 'sales-employee',
   ManagementEmployee: 'management-employee',
   DeliveryAgent: 'delivery-agent',
 } as const;
 type Role = keyof typeof paths;
+const roleVariant = (role: Role) =>
+  role === 'Merchant' || role === 'MerchantEmployee'
+    ? 'merchant'
+    : role === 'SalesEmployee'
+      ? 'sales'
+      : role === 'ManagementEmployee'
+        ? 'management'
+        : 'delivery';
 async function setup(page: Page, role: Role, external = false) {
   const calls: string[] = [];
   const writes: { method: string; body: Record<string, unknown> }[] = [];
@@ -49,7 +58,13 @@ async function setup(page: Page, role: Role, external = false) {
     history: [] as Record<string, unknown>[],
     issues: [] as Record<string, unknown>[],
   };
-  const user = { userId: 7, role, accountStatus: 'Approved', firstName: 'أحمد' };
+  const user = {
+    userId: 7,
+    role,
+    accountStatus: 'Approved',
+    firstName: 'أحمد',
+    ...(role === 'MerchantEmployee' ? { ownerMerchantId: 7 } : {}),
+  };
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.route('**/api/**', async (route) => {
     const request = route.request();
@@ -309,9 +324,7 @@ for (const role of Object.keys(paths) as Role[]) {
       await expect(page.getByRole('button', { name: 'تعديل الطلب', exact: true })).toHaveCount(0);
     api.state.order.status = 'Stuck';
     await page.getByRole('button', { name: 'تحديث حالة الطلب', exact: true }).click();
-    const sheet = page.getByTestId(
-      `${role === 'Merchant' ? 'merchant' : role === 'SalesEmployee' ? 'sales' : role === 'ManagementEmployee' ? 'management' : 'delivery'}-status-sheet`,
-    );
+    const sheet = page.getByTestId(`${roleVariant(role)}-status-sheet`);
     if (role === 'DeliveryAgent') {
       await expect(sheet.getByRole('radio')).toHaveCount(1);
       await sheet.getByRole('radio', { name: 'ملغي', exact: true }).click();
@@ -324,6 +337,32 @@ for (const role of Object.keys(paths) as Role[]) {
     await saveStatus(page);
     await expect(sheet).toHaveCount(0);
     expect(api.writes).toHaveLength(1);
+  });
+}
+
+for (const role of ['Merchant', 'MerchantEmployee', 'SalesEmployee'] as const) {
+  test(`${role}: visible internal stuck order can be resolved without ownership metadata`, async ({
+    page,
+  }) => {
+    const api = await setup(page, role);
+    api.state.order.status = 'Stuck';
+    Reflect.deleteProperty(api.state.order, 'userId');
+    Reflect.deleteProperty(api.state.order, 'assignedToEmployeeId');
+
+    await page.getByRole('button', { name: 'تحديث حالة الطلب', exact: true }).click();
+    const sheet = page.getByTestId(`${roleVariant(role)}-status-sheet`);
+    await sheet.getByRole('radio', { name: 'قيد المعالجة', exact: true }).click();
+    await sheet.getByRole('button', { name: 'مراجعة التغيير', exact: true }).click();
+    await expect(sheet.getByRole('alert')).toContainText('ملاحظة حل التعثر');
+    await sheet
+      .getByRole('textbox', { name: 'ملاحظات تغيير الحالة', exact: true })
+      .fill('تم حل سبب التعثر');
+    await saveStatus(page);
+
+    await expect(sheet).toHaveCount(0);
+    expect(api.writes).toEqual([
+      { method: 'POST', body: { targetStatus: 'Processing', note: 'تم حل سبب التعثر' } },
+    ]);
   });
 }
 
@@ -689,7 +728,7 @@ test('external provider rejection preserves local status and retained notes', as
   expect(api.writes).toHaveLength(1);
 });
 
-for (const role of ['Merchant', 'SalesEmployee', 'DeliveryAgent'] as const)
+for (const role of ['Merchant', 'MerchantEmployee', 'SalesEmployee', 'DeliveryAgent'] as const)
   test(`${role}: direct edit URL cannot open the editor`, async ({ page }) => {
     const api = await setup(page, role);
     await navigate(page, `/${paths[role]}/edit-order?id=21`);

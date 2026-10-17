@@ -61,8 +61,7 @@ test('all internal normal transition permissions match the four-role matrix', ()
       );
       assert.equal(
         internalTargets({ ...order, status: from }, { role, userId: 99 }, 'internal').includes(to),
-        to === 'Cancelled' ||
-          (['DeliveryAgent', 'ManagementEmployee'].includes(role) && allowed.includes(role)),
+        allowed.includes(role),
         `unassigned/non-owner ${role}: ${from} -> ${to}`,
       );
     }
@@ -106,8 +105,17 @@ test('return lifecycle never exposes normal delivery or cancellation', () => {
       );
     }
 });
-test('employee ownership uses ownerMerchantId; missing identity and external routing fail closed', () => {
+test('stuck resolution follows the visible-order role without requiring ownership metadata', () => {
   const stuck = { ...order, status: 'Stuck' };
+  for (const role of ['Merchant', 'MerchantEmployee', 'SalesEmployee'])
+    assert.deepEqual(
+      internalTargets(
+        { ...stuck, userId: undefined },
+        { role, userId: undefined, ownerMerchantId: undefined },
+        'internal',
+      ),
+      ['Processing', 'Cancelled'],
+    );
   assert.deepEqual(
     internalTargets(
       stuck,
@@ -117,6 +125,7 @@ test('employee ownership uses ownerMerchantId; missing identity and external rou
     ['Processing', 'Cancelled'],
   );
   assert.deepEqual(internalTargets(stuck, { role: 'MerchantEmployee', userId: 7 }, 'internal'), [
+    'Processing',
     'Cancelled',
   ]);
   for (const patch of [
@@ -250,7 +259,7 @@ test('merchant detail contract with olivery null permits cancellation without ow
   ]);
   assert.deepEqual(
     internalTargets({ ...detail, status: 'Stuck' }, { role: 'Merchant', userId: 7 }, 'internal'),
-    ['Cancelled'],
+    ['Processing', 'Cancelled'],
   );
   assert.equal(canEditInternal(detail, { role: 'Merchant', userId: 7 }, 'internal'), false);
   for (const patch of [

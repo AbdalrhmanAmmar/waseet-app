@@ -1,7 +1,7 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: config.name ?? 'وسيط',
+  name: config.name ?? 'الوسيط الذكي',
   slug: config.slug ?? 'waseet',
   plugins: [...(config.plugins ?? []), 'expo-video'],
   android: {

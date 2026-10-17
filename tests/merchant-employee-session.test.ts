@@ -31,7 +31,7 @@ test('employee login, hydration and profile refresh preserve employee identity a
   assert.equal(normalizeRole(' merchantemployee '), 'MerchantEmployee');
   assert.ok(!(PUBLIC_ROLES as readonly string[]).includes('MerchantEmployee'));
 });
-test('employee uses owner only for order ownership and does not gain management transitions', () => {
+test('employee can resolve a visible stuck order without gaining management transitions', () => {
   const user = normalizeUser({
     userId: 144,
     role: 'MerchantEmployee',
@@ -51,7 +51,7 @@ test('employee uses owner only for order ownership and does not gain management 
   );
   assert.ok(internalTargets(order, actorFromUser(user), 'internal').includes('Processing'));
   assert.ok(
-    !internalTargets({ ...order, userId: 999 }, actorFromUser(user), 'internal').includes(
+    internalTargets({ ...order, userId: 999 }, actorFromUser(user), 'internal').includes(
       'Processing',
     ),
   );

@@ -55,6 +55,8 @@ CLAUDE.local.md
 # Local artifacts are not inputs to the client APK
 /docs/
 /tests/
+/video/
+/video.mp4
 *.apk
 *.aab
 .env*

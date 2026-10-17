@@ -1,3 +1,4 @@
+import { DeleteAccount } from '@/components/shared/account/DeleteAccount';
 import { useCallback, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
@@ -41,9 +42,6 @@ export default function ProfileScreen({ navigation }: ScreenProps) {
     ['رقم الهاتف', userData?.phoneNumber],
     ['الدولة', userData?.country],
     ['العنوان', userData?.address],
-    ...(userData?.birthDate
-      ? [['تاريخ الميلاد', new Date(String(userData.birthDate)).toLocaleDateString('ar-EG')]]
-      : []),
     ...(userData?.oliveryContactMobile
       ? [['رقم تواصل التوصيل', userData.oliveryContactMobile]]
       : []),
@@ -109,10 +107,11 @@ export default function ProfileScreen({ navigation }: ScreenProps) {
             onPress={() => navigation.navigate('AboutUs')}
             style={ui.section}
           >
-            <Text style={s.value}>عن وسيط</Text>
+            <Text style={s.value}>عن الوسيط الذكي</Text>
             <Icon name="information-outline" size={24} color={p.primary} />
           </Pressable>
         </Card>
+        <DeleteAccount />
         <Pressable accessibilityRole="button" onPress={() => dispatch(logout())} style={s.logout}>
           <Icon name="logout" size={21} color={p.danger} />
           <Text style={{ color: p.danger, fontFamily: t.bold }}>تسجيل الخروج</Text>

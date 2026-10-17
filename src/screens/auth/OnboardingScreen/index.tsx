@@ -71,7 +71,7 @@ export default function OnboardingScreen({ navigation }: ScreenProps) {
       </View>
       <Text style={s.title}>{slide.title}</Text>
       <Text style={s.text}>{slide.text}</Text>
-      <Text style={[ui.caption, { textAlign: 'center' }]}>وسيط · تفاصيل أقل، إنجاز أكثر</Text>
+      <Text style={[ui.caption, { textAlign: 'center' }]}>الوسيط الذكي · تفاصيل أقل، إنجاز أكثر</Text>
     </AuthLayout>
   );
 }

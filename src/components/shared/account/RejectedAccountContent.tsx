@@ -43,9 +43,9 @@ export function RejectedAccountContent({
   };
   return (
     <View style={s.content} testID="rejected-account-screen">
-      <View style={s.brand} accessible accessibilityLabel="وسيط">
+      <View style={s.brand} accessible accessibilityLabel="الوسيط الذكي">
         <Image source={Images.brandLogo} style={s.logo} />
-        <Text style={s.wordmark}>وسيط</Text>
+        <Text style={s.wordmark}>الوسيط الذكي</Text>
       </View>
       <Image
         source={require('../../../../assets/images/account-rejected.png')}

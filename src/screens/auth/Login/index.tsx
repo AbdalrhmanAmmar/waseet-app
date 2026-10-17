@@ -120,15 +120,15 @@ export default function LoginScreen({ navigation }: ScreenProps) {
           contentContainerStyle={[s.scroll, { paddingBottom: Math.max(insets.bottom, 24) + 16 }]}
         >
           <View style={s.content}>
-            <View style={s.brand} accessible accessibilityLabel="وسيط">
+            <View style={s.brand} accessible accessibilityLabel="الوسيط الذكي">
               <Image source={Images.brandLogo} style={s.logo} resizeMode="contain" />
-              <Text style={s.brandName}>وسيط</Text>
+              <Text style={s.brandName}>الوسيط الذكي</Text>
             </View>
             <View style={s.intro}>
               <Text accessibilityRole="header" style={s.title}>
                 أهلًا بعودتك
               </Text>
-              <Text style={s.subtitle}>سجّل دخولك لمتابعة أعمالك مع وسيط.</Text>
+              <Text style={s.subtitle}>سجّل دخولك لمتابعة أعمالك مع الوسيط الذكي.</Text>
             </View>
             <View style={s.form}>
               <Controller

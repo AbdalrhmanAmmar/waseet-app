@@ -1,0 +1,1304 @@
+[
+ {
+  "text": "إذا",
+  "startMs": 50,
+  "endMs": 150,
+  "timestampMs": 80,
+  "confidence": 0.205851
+ },
+ {
+  "text": " كان",
+  "startMs": 150,
+  "endMs": 300,
+  "timestampMs": 280,
+  "confidence": 0.445281
+ },
+ {
+  "text": " لديك",
+  "startMs": 300,
+  "endMs": 500,
+  "timestampMs": 340,
+  "confidence": 0.644298
+ },
+ {
+  "text": " منتجات",
+  "startMs": 500,
+  "endMs": 800,
+  "timestampMs": 540,
+  "confidence": 0.444489
+ },
+ {
+  "text": " وحاولت",
+  "startMs": 800,
+  "endMs": 1120,
+  "timestampMs": 860,
+  "confidence": 0.413728
+ },
+ {
+  "text": " تبعها",
+  "startMs": 1120,
+  "endMs": 1360,
+  "timestampMs": 1120,
+  "confidence": 0.102559
+ },
+ {
+  "text": " من",
+  "startMs": 1360,
+  "endMs": 1470,
+  "timestampMs": 1380,
+  "confidence": 0.104804
+ },
+ {
+  "text": " غير",
+  "startMs": 1470,
+  "endMs": 1630,
+  "timestampMs": 1500,
+  "confidence": 0.701481
+ },
+ {
+  "text": " أن",
+  "startMs": 1630,
+  "endMs": 1730,
+  "timestampMs": 1700,
+  "confidence": 0.179305
+ },
+ {
+  "text": " تصرف",
+  "startMs": 1730,
+  "endMs": 1950,
+  "timestampMs": 1740,
+  "confidence": 0.921481
+ },
+ {
+  "text": " فلوسا",
+  "startMs": 1950,
+  "endMs": 2210,
+  "timestampMs": 2060,
+  "confidence": 0.361462
+ },
+ {
+  "text": " على",
+  "startMs": 2210,
+  "endMs": 2380,
+  "timestampMs": 2400,
+  "confidence": 0.473125
+ },
+ {
+  "text": " الإعلانات",
+  "startMs": 2380,
+  "endMs": 3000,
+  "timestampMs": 2520,
+  "confidence": 0.909186
+ },
+ {
+  "text": " فأخذ",
+  "startMs": 3000,
+  "endMs": 3280,
+  "timestampMs": 3040,
+  "confidence": 0.608525
+ },
+ {
+  "text": " تجارهم",
+  "startMs": 3280,
+  "endMs": 3700,
+  "timestampMs": 3380,
+  "confidence": 0.0806739
+ },
+ {
+  "text": " الذين",
+  "startMs": 3700,
+  "endMs": 4060,
+  "timestampMs": 4080,
+  "confidence": 0.366517
+ },
+ {
+  "text": " يبيعونها",
+  "startMs": 4060,
+  "endMs": 4720,
+  "timestampMs": 4120,
+  "confidence": 0.944662
+ },
+ {
+  "text": " لك",
+  "startMs": 4720,
+  "endMs": 4720,
+  "timestampMs": 4480,
+  "confidence": 0.703068
+ },
+ {
+  "text": " ودعونا",
+  "startMs": 4720,
+  "endMs": 5260,
+  "timestampMs": 4800,
+  "confidence": 0.539952
+ },
+ {
+  "text": " نشرح",
+  "startMs": 5260,
+  "endMs": 5620,
+  "timestampMs": 5080,
+  "confidence": 0.919534
+ },
+ {
+  "text": " لك",
+  "startMs": 5620,
+  "endMs": 5800,
+  "timestampMs": 5340,
+  "confidence": 0.828105
+ },
+ {
+  "text": " كيف",
+  "startMs": 5800,
+  "endMs": 5880,
+  "timestampMs": 5500,
+  "confidence": 0.694699
+ },
+ {
+  "text": " وهذا",
+  "startMs": 5880,
+  "endMs": 6200,
+  "timestampMs": 5940,
+  "confidence": 0.452556
+ },
+ {
+  "text": " بالضبط",
+  "startMs": 6200,
+  "endMs": 6780,
+  "timestampMs": 6280,
+  "confidence": 0.931476
+ },
+ {
+  "text": " ما",
+  "startMs": 6780,
+  "endMs": 6880,
+  "timestampMs": 6820,
+  "confidence": 0.551752
+ },
+ {
+  "text": " فعلناه",
+  "startMs": 6880,
+  "endMs": 7360,
+  "timestampMs": 6960,
+  "confidence": 0.265184
+ },
+ {
+  "text": " لعميل",
+  "startMs": 7360,
+  "endMs": 7760,
+  "timestampMs": 7440,
+  "confidence": 0.775498
+ },
+ {
+  "text": " من",
+  "startMs": 7760,
+  "endMs": 7920,
+  "timestampMs": 7920,
+  "confidence": 0.871456
+ },
+ {
+  "text": " سوريا",
+  "startMs": 7920,
+  "endMs": 8340,
+  "timestampMs": 8060,
+  "confidence": 0.96636
+ },
+ {
+  "text": " الأدمن",
+  "startMs": 8340,
+  "endMs": 8720,
+  "timestampMs": 8480,
+  "confidence": 0.739803
+ },
+ {
+  "text": " يرفع",
+  "startMs": 8720,
+  "endMs": 9000,
+  "timestampMs": 8780,
+  "confidence": 0.87733
+ },
+ {
+  "text": " المنتجات",
+  "startMs": 9000,
+  "endMs": 9560,
+  "timestampMs": 9120,
+  "confidence": 0.922498
+ },
+ {
+  "text": " ويحدد",
+  "startMs": 9560,
+  "endMs": 9870,
+  "timestampMs": 9600,
+  "confidence": 0.847893
+ },
+ {
+  "text": " ثلاث",
+  "startMs": 9870,
+  "endMs": 10150,
+  "timestampMs": 10020,
+  "confidence": 0.478411
+ },
+ {
+  "text": " أسعار",
+  "startMs": 10150,
+  "endMs": 10560,
+  "timestampMs": 10220,
+  "confidence": 0.913852
+ },
+ {
+  "text": " سعر",
+  "startMs": 10560,
+  "endMs": 10710,
+  "timestampMs": 10620,
+  "confidence": 0.948533
+ },
+ {
+  "text": " المنتج",
+  "startMs": 10710,
+  "endMs": 11020,
+  "timestampMs": 10840,
+  "confidence": 0.94886
+ },
+ {
+  "text": " الأصلي",
+  "startMs": 11020,
+  "endMs": 11320,
+  "timestampMs": 11180,
+  "confidence": 0.962497
+ },
+ {
+  "text": " والذي",
+  "startMs": 11320,
+  "endMs": 11620,
+  "timestampMs": 11640,
+  "confidence": 0.313172
+ },
+ {
+  "text": " يكون",
+  "startMs": 11620,
+  "endMs": 11810,
+  "timestampMs": 11800,
+  "confidence": 0.740005
+ },
+ {
+  "text": " 100",
+  "startMs": 11810,
+  "endMs": 12040,
+  "timestampMs": 11960,
+  "confidence": 0.754053
+ },
+ {
+  "text": " دولار",
+  "startMs": 12040,
+  "endMs": 12380,
+  "timestampMs": 12100,
+  "confidence": 0.625739
+ },
+ {
+  "text": " السعر",
+  "startMs": 12380,
+  "endMs": 12690,
+  "timestampMs": 12500,
+  "confidence": 0.816555
+ },
+ {
+  "text": " الذي",
+  "startMs": 12690,
+  "endMs": 12940,
+  "timestampMs": 12820,
+  "confidence": 0.905013
+ },
+ {
+  "text": " سيأخذه",
+  "startMs": 12940,
+  "endMs": 13340,
+  "timestampMs": 12960,
+  "confidence": 0.768563
+ },
+ {
+  "text": " التاجر",
+  "startMs": 13340,
+  "endMs": 13670,
+  "timestampMs": 13320,
+  "confidence": 0.939518
+ },
+ {
+  "text": " والذي",
+  "startMs": 13670,
+  "endMs": 13980,
+  "timestampMs": 13700,
+  "confidence": 0.937023
+ },
+ {
+  "text": " يكون",
+  "startMs": 13980,
+  "endMs": 14230,
+  "timestampMs": 13840,
+  "confidence": 0.970786
+ },
+ {
+  "text": " 120",
+  "startMs": 14230,
+  "endMs": 14520,
+  "timestampMs": 14180,
+  "confidence": 0.985555
+ },
+ {
+  "text": " دولار",
+  "startMs": 14520,
+  "endMs": 14940,
+  "timestampMs": 14540,
+  "confidence": 0.991053
+ },
+ {
+  "text": " والسعر",
+  "startMs": 14940,
+  "endMs": 15510,
+  "timestampMs": 15020,
+  "confidence": 0.885475
+ },
+ {
+  "text": " المقترح",
+  "startMs": 15510,
+  "endMs": 16110,
+  "timestampMs": 15580,
+  "confidence": 0.966538
+ },
+ {
+  "text": " للتاجر",
+  "startMs": 16110,
+  "endMs": 16650,
+  "timestampMs": 16080,
+  "confidence": 0.974838
+ },
+ {
+  "text": " للبيع",
+  "startMs": 16650,
+  "endMs": 17140,
+  "timestampMs": 16680,
+  "confidence": 0.936042
+ },
+ {
+  "text": " ولكن",
+  "startMs": 17140,
+  "endMs": 17420,
+  "timestampMs": 17120,
+  "confidence": 0.388397
+ },
+ {
+  "text": " التاجر",
+  "startMs": 17420,
+  "endMs": 17850,
+  "timestampMs": 17460,
+  "confidence": 0.967056
+ },
+ {
+  "text": " هو",
+  "startMs": 17850,
+  "endMs": 17990,
+  "timestampMs": 17900,
+  "confidence": 0.987103
+ },
+ {
+  "text": " الذي",
+  "startMs": 17990,
+  "endMs": 18280,
+  "timestampMs": 18140,
+  "confidence": 0.814856
+ },
+ {
+  "text": " يحدد",
+  "startMs": 18280,
+  "endMs": 18560,
+  "timestampMs": 18220,
+  "confidence": 0.99597
+ },
+ {
+  "text": " سعر",
+  "startMs": 18560,
+  "endMs": 18770,
+  "timestampMs": 18700,
+  "confidence": 0.990121
+ },
+ {
+  "text": " البيع",
+  "startMs": 18770,
+  "endMs": 19120,
+  "timestampMs": 18920,
+  "confidence": 0.951326
+ },
+ {
+  "text": " للعميل",
+  "startMs": 19120,
+  "endMs": 19640,
+  "timestampMs": 19240,
+  "confidence": 0.947894
+ },
+ {
+  "text": " هو",
+  "startMs": 19640,
+  "endMs": 19820,
+  "timestampMs": 19700,
+  "confidence": 0.787984
+ },
+ {
+  "text": " يزود",
+  "startMs": 19820,
+  "endMs": 20160,
+  "timestampMs": 19900,
+  "confidence": 0.935832
+ },
+ {
+  "text": " كما",
+  "startMs": 20160,
+  "endMs": 20420,
+  "timestampMs": 20420,
+  "confidence": 0.386473
+ },
+ {
+  "text": " هو",
+  "startMs": 20420,
+  "endMs": 20600,
+  "timestampMs": 20740,
+  "confidence": 0.580381
+ },
+ {
+  "text": " حاول",
+  "startMs": 20600,
+  "endMs": 20940,
+  "timestampMs": 20940,
+  "confidence": 0.288043
+ },
+ {
+  "text": " ويأخذ",
+  "startMs": 20940,
+  "endMs": 21350,
+  "timestampMs": 21240,
+  "confidence": 0.587475
+ },
+ {
+  "text": " عمولته",
+  "startMs": 21350,
+  "endMs": 21980,
+  "timestampMs": 21620,
+  "confidence": 0.964464
+ },
+ {
+  "text": " النظام",
+  "startMs": 22060,
+  "endMs": 22350,
+  "timestampMs": 22060,
+  "confidence": 0.951851
+ },
+ {
+  "text": " فيه",
+  "startMs": 22350,
+  "endMs": 22540,
+  "timestampMs": 22420,
+  "confidence": 0.929152
+ },
+ {
+  "text": " أربع",
+  "startMs": 22540,
+  "endMs": 22770,
+  "timestampMs": 22520,
+  "confidence": 0.889782
+ },
+ {
+  "text": " أدوار",
+  "startMs": 22770,
+  "endMs": 23120,
+  "timestampMs": 22840,
+  "confidence": 0.71966
+ },
+ {
+  "text": " التاجر",
+  "startMs": 23120,
+  "endMs": 23710,
+  "timestampMs": 23300,
+  "confidence": 0.613854
+ },
+ {
+  "text": " ووظف",
+  "startMs": 23710,
+  "endMs": 23950,
+  "timestampMs": 23660,
+  "confidence": 0.249233
+ },
+ {
+  "text": " مبيعات",
+  "startMs": 23950,
+  "endMs": 24520,
+  "timestampMs": 24020,
+  "confidence": 0.998782
+ },
+ {
+  "text": " إدارة",
+  "startMs": 24520,
+  "endMs": 24930,
+  "timestampMs": 24580,
+  "confidence": 0.405881
+ },
+ {
+  "text": " ومندوب",
+  "startMs": 24930,
+  "endMs": 25430,
+  "timestampMs": 25000,
+  "confidence": 0.996077
+ },
+ {
+  "text": " توصيل",
+  "startMs": 25430,
+  "endMs": 25940,
+  "timestampMs": 25620,
+  "confidence": 0.999668
+ },
+ {
+  "text": " وكل",
+  "startMs": 25940,
+  "endMs": 26160,
+  "timestampMs": 26060,
+  "confidence": 0.998586
+ },
+ {
+  "text": " حساب",
+  "startMs": 26160,
+  "endMs": 26380,
+  "timestampMs": 26320,
+  "confidence": 0.99612
+ },
+ {
+  "text": " جديد",
+  "startMs": 26380,
+  "endMs": 26630,
+  "timestampMs": 26600,
+  "confidence": 0.999327
+ },
+ {
+  "text": " لازم",
+  "startMs": 26630,
+  "endMs": 26880,
+  "timestampMs": 26860,
+  "confidence": 0.977995
+ },
+ {
+  "text": " الإدارة",
+  "startMs": 26880,
+  "endMs": 27320,
+  "timestampMs": 27100,
+  "confidence": 0.997128
+ },
+ {
+  "text": " توافق",
+  "startMs": 27320,
+  "endMs": 27620,
+  "timestampMs": 27400,
+  "confidence": 0.704906
+ },
+ {
+  "text": " عليه",
+  "startMs": 27620,
+  "endMs": 28000,
+  "timestampMs": 27820,
+  "confidence": 0.999066
+ },
+ {
+  "text": " التاجر",
+  "startMs": 28000,
+  "endMs": 28430,
+  "timestampMs": 28120,
+  "confidence": 0.999586
+ },
+ {
+  "text": " بيفتح",
+  "startMs": 28430,
+  "endMs": 28780,
+  "timestampMs": 28460,
+  "confidence": 0.926618
+ },
+ {
+  "text": " التطبيق",
+  "startMs": 28780,
+  "endMs": 29350,
+  "timestampMs": 28880,
+  "confidence": 0.997286
+ },
+ {
+  "text": " وبيختار",
+  "startMs": 29350,
+  "endMs": 29770,
+  "timestampMs": 29300,
+  "confidence": 0.80163
+ },
+ {
+  "text": " المنتجات",
+  "startMs": 29770,
+  "endMs": 30340,
+  "timestampMs": 29800,
+  "confidence": 0.99931
+ },
+ {
+  "text": " وبيسجل",
+  "startMs": 30340,
+  "endMs": 30880,
+  "timestampMs": 30380,
+  "confidence": 0.997006
+ },
+ {
+  "text": " طلب",
+  "startMs": 30880,
+  "endMs": 31150,
+  "timestampMs": 30940,
+  "confidence": 0.999796
+ },
+ {
+  "text": " العميل",
+  "startMs": 31150,
+  "endMs": 31690,
+  "timestampMs": 31360,
+  "confidence": 0.998489
+ },
+ {
+  "text": " في",
+  "startMs": 31690,
+  "endMs": 31870,
+  "timestampMs": 31800,
+  "confidence": 0.999861
+ },
+ {
+  "text": " ثواني",
+  "startMs": 31870,
+  "endMs": 32340,
+  "timestampMs": 31920,
+  "confidence": 0.999193
+ },
+ {
+  "text": " ومن",
+  "startMs": 32340,
+  "endMs": 32580,
+  "timestampMs": 32460,
+  "confidence": 0.999771
+ },
+ {
+  "text": " هنا",
+  "startMs": 32580,
+  "endMs": 32830,
+  "timestampMs": 32800,
+  "confidence": 0.999889
+ },
+ {
+  "text": " الإدارة",
+  "startMs": 32830,
+  "endMs": 33400,
+  "timestampMs": 33060,
+  "confidence": 0.995727
+ },
+ {
+  "text": " بتتابع",
+  "startMs": 33400,
+  "endMs": 33880,
+  "timestampMs": 33580,
+  "confidence": 0.830926
+ },
+ {
+  "text": " الطلب",
+  "startMs": 33880,
+  "endMs": 34360,
+  "timestampMs": 34120,
+  "confidence": 0.965114
+ },
+ {
+  "text": " لحد",
+  "startMs": 34360,
+  "endMs": 34590,
+  "timestampMs": 34400,
+  "confidence": 0.963372
+ },
+ {
+  "text": " التسليم",
+  "startMs": 34590,
+  "endMs": 35180,
+  "timestampMs": 34700,
+  "confidence": 0.98743
+ },
+ {
+  "text": " وكمان",
+  "startMs": 35180,
+  "endMs": 35560,
+  "timestampMs": 35320,
+  "confidence": 0.999542
+ },
+ {
+  "text": " ربطنا",
+  "startMs": 35560,
+  "endMs": 35930,
+  "timestampMs": 35700,
+  "confidence": 0.999218
+ },
+ {
+  "text": " النظام",
+  "startMs": 35930,
+  "endMs": 36460,
+  "timestampMs": 36060,
+  "confidence": 0.996563
+ },
+ {
+  "text": " بشركة",
+  "startMs": 36460,
+  "endMs": 36990,
+  "timestampMs": 36540,
+  "confidence": 0.96914
+ },
+ {
+  "text": " شحن",
+  "startMs": 36990,
+  "endMs": 37330,
+  "timestampMs": 36980,
+  "confidence": 0.999466
+ },
+ {
+  "text": " في",
+  "startMs": 37330,
+  "endMs": 37410,
+  "timestampMs": 37280,
+  "confidence": 0.979697
+ },
+ {
+  "text": " مناطق",
+  "startMs": 37410,
+  "endMs": 37830,
+  "timestampMs": 37420,
+  "confidence": 0.658179
+ },
+ {
+  "text": " معينة",
+  "startMs": 37830,
+  "endMs": 38280,
+  "timestampMs": 37840,
+  "confidence": 0.999792
+ },
+ {
+  "text": " يعني",
+  "startMs": 38280,
+  "endMs": 38540,
+  "timestampMs": 38420,
+  "confidence": 0.99815
+ },
+ {
+  "text": " في",
+  "startMs": 38540,
+  "endMs": 38680,
+  "timestampMs": 38660,
+  "confidence": 0.999962
+ },
+ {
+  "text": " مناطق",
+  "startMs": 38680,
+  "endMs": 38990,
+  "timestampMs": 38800,
+  "confidence": 0.995051
+ },
+ {
+  "text": " الأدمن",
+  "startMs": 38990,
+  "endMs": 39380,
+  "timestampMs": 39240,
+  "confidence": 0.989664
+ },
+ {
+  "text": " هو",
+  "startMs": 39380,
+  "endMs": 39510,
+  "timestampMs": 39560,
+  "confidence": 0.999569
+ },
+ {
+  "text": " اللي",
+  "startMs": 39510,
+  "endMs": 39770,
+  "timestampMs": 39760,
+  "confidence": 0.817932
+ },
+ {
+  "text": " هيبعت",
+  "startMs": 39770,
+  "endMs": 40090,
+  "timestampMs": 39900,
+  "confidence": 0.992362
+ },
+ {
+  "text": " مندوب",
+  "startMs": 40090,
+  "endMs": 40410,
+  "timestampMs": 40200,
+  "confidence": 0.997139
+ },
+ {
+  "text": " التوصيل",
+  "startMs": 40410,
+  "endMs": 41040,
+  "timestampMs": 40560,
+  "confidence": 0.994404
+ },
+ {
+  "text": " عشان",
+  "startMs": 41040,
+  "endMs": 41320,
+  "timestampMs": 41140,
+  "confidence": 0.981897
+ },
+ {
+  "text": " يوصل",
+  "startMs": 41320,
+  "endMs": 41600,
+  "timestampMs": 41360,
+  "confidence": 0.994224
+ },
+ {
+  "text": " الأردر",
+  "startMs": 41600,
+  "endMs": 42060,
+  "timestampMs": 41700,
+  "confidence": 0.739611
+ },
+ {
+  "text": " وفي",
+  "startMs": 42060,
+  "endMs": 42320,
+  "timestampMs": 42300,
+  "confidence": 0.999769
+ },
+ {
+  "text": " مناطق",
+  "startMs": 42320,
+  "endMs": 42650,
+  "timestampMs": 42540,
+  "confidence": 0.996905
+ },
+ {
+  "text": " تانية",
+  "startMs": 42650,
+  "endMs": 43020,
+  "timestampMs": 42920,
+  "confidence": 0.990936
+ },
+ {
+  "text": " شركة",
+  "startMs": 43020,
+  "endMs": 43300,
+  "timestampMs": 43240,
+  "confidence": 0.999032
+ },
+ {
+  "text": " التوصيل",
+  "startMs": 43300,
+  "endMs": 43830,
+  "timestampMs": 43540,
+  "confidence": 0.999947
+ },
+ {
+  "text": " هي",
+  "startMs": 43830,
+  "endMs": 43980,
+  "timestampMs": 44040,
+  "confidence": 0.99906
+ },
+ {
+  "text": " اللي",
+  "startMs": 43980,
+  "endMs": 44280,
+  "timestampMs": 44340,
+  "confidence": 0.987504
+ },
+ {
+  "text": " هتبعت",
+  "startMs": 44280,
+  "endMs": 44640,
+  "timestampMs": 44460,
+  "confidence": 0.914939
+ },
+ {
+  "text": " مندوب",
+  "startMs": 44640,
+  "endMs": 45140,
+  "timestampMs": 44820,
+  "confidence": 0.999889
+ },
+ {
+  "text": " والأهم",
+  "startMs": 45260,
+  "endMs": 45600,
+  "timestampMs": 45260,
+  "confidence": 0.955769
+ },
+ {
+  "text": " من",
+  "startMs": 45600,
+  "endMs": 45750,
+  "timestampMs": 45640,
+  "confidence": 0.992795
+ },
+ {
+  "text": " ده",
+  "startMs": 45750,
+  "endMs": 45930,
+  "timestampMs": 45780,
+  "confidence": 0.966781
+ },
+ {
+  "text": " كله",
+  "startMs": 45930,
+  "endMs": 46180,
+  "timestampMs": 45960,
+  "confidence": 0.999523
+ },
+ {
+  "text": " إن",
+  "startMs": 46180,
+  "endMs": 46330,
+  "timestampMs": 46260,
+  "confidence": 0.549853
+ },
+ {
+  "text": " الطلب",
+  "startMs": 46330,
+  "endMs": 46710,
+  "timestampMs": 46400,
+  "confidence": 0.951156
+ },
+ {
+  "text": " لما",
+  "startMs": 46710,
+  "endMs": 46930,
+  "timestampMs": 46680,
+  "confidence": 0.998065
+ },
+ {
+  "text": " يتأكد",
+  "startMs": 46930,
+  "endMs": 47310,
+  "timestampMs": 46880,
+  "confidence": 0.999142
+ },
+ {
+  "text": " تسليمه",
+  "startMs": 47310,
+  "endMs": 47800,
+  "timestampMs": 47300,
+  "confidence": 0.99881
+ },
+ {
+  "text": " مكسب",
+  "startMs": 47800,
+  "endMs": 48090,
+  "timestampMs": 47860,
+  "confidence": 0.965445
+ },
+ {
+  "text": " التاجر",
+  "startMs": 48090,
+  "endMs": 48540,
+  "timestampMs": 48240,
+  "confidence": 0.998136
+ },
+ {
+  "text": " بيتضاف",
+  "startMs": 48540,
+  "endMs": 48980,
+  "timestampMs": 48640,
+  "confidence": 0.995513
+ },
+ {
+  "text": " لمحفظته",
+  "startMs": 48980,
+  "endMs": 49620,
+  "timestampMs": 49100,
+  "confidence": 0.858092
+ },
+ {
+  "text": " وبيقدر",
+  "startMs": 49620,
+  "endMs": 50120,
+  "timestampMs": 49660,
+  "confidence": 0.994509
+ },
+ {
+  "text": " يطلب",
+  "startMs": 50120,
+  "endMs": 50530,
+  "timestampMs": 50120,
+  "confidence": 0.999855
+ },
+ {
+  "text": " سحب",
+  "startMs": 50530,
+  "endMs": 50690,
+  "timestampMs": 50480,
+  "confidence": 0.991673
+ },
+ {
+  "text": " أرباحه",
+  "startMs": 50690,
+  "endMs": 51240,
+  "timestampMs": 50760,
+  "confidence": 0.999784
+ },
+ {
+  "text": " والإدارة",
+  "startMs": 51240,
+  "endMs": 51740,
+  "timestampMs": 51300,
+  "confidence": 0.992453
+ },
+ {
+  "text": " بتراجع",
+  "startMs": 51740,
+  "endMs": 52220,
+  "timestampMs": 51720,
+  "confidence": 0.989074
+ },
+ {
+  "text": " الطلب",
+  "startMs": 52220,
+  "endMs": 52430,
+  "timestampMs": 52100,
+  "confidence": 0.97927
+ },
+ {
+  "text": " وبتوافق",
+  "startMs": 52430,
+  "endMs": 52870,
+  "timestampMs": 52500,
+  "confidence": 0.880305
+ },
+ {
+  "text": " عليه",
+  "startMs": 52870,
+  "endMs": 53200,
+  "timestampMs": 53100,
+  "confidence": 0.999605
+ },
+ {
+  "text": " يعني",
+  "startMs": 53200,
+  "endMs": 53520,
+  "timestampMs": 53300,
+  "confidence": 0.999834
+ },
+ {
+  "text": " المنتجات",
+  "startMs": 53520,
+  "endMs": 54170,
+  "timestampMs": 53480,
+  "confidence": 0.999089
+ },
+ {
+  "text": " والتجار",
+  "startMs": 54170,
+  "endMs": 54720,
+  "timestampMs": 54080,
+  "confidence": 0.989772
+ },
+ {
+  "text": " والطلبات",
+  "startMs": 54720,
+  "endMs": 55380,
+  "timestampMs": 54700,
+  "confidence": 0.966127
+ },
+ {
+  "text": " والتوصيل",
+  "startMs": 55380,
+  "endMs": 55890,
+  "timestampMs": 55520,
+  "confidence": 0.992687
+ },
+ {
+  "text": " والعمولة",
+  "startMs": 55890,
+  "endMs": 56410,
+  "timestampMs": 56100,
+  "confidence": 0.997088
+ },
+ {
+  "text": " في",
+  "startMs": 56410,
+  "endMs": 56530,
+  "timestampMs": 56560,
+  "confidence": 0.998555
+ },
+ {
+  "text": " مكان",
+  "startMs": 56530,
+  "endMs": 56800,
+  "timestampMs": 56600,
+  "confidence": 0.999733
+ },
+ {
+  "text": " واحد",
+  "startMs": 56800,
+  "endMs": 57180,
+  "timestampMs": 56920,
+  "confidence": 0.999346
+ },
+ {
+  "text": " وده",
+  "startMs": 57180,
+  "endMs": 57360,
+  "timestampMs": 57260,
+  "confidence": 0.998938
+ },
+ {
+  "text": " الفرق",
+  "startMs": 57360,
+  "endMs": 57660,
+  "timestampMs": 57460,
+  "confidence": 0.99891
+ },
+ {
+  "text": " بين",
+  "startMs": 57660,
+  "endMs": 57840,
+  "timestampMs": 57740,
+  "confidence": 0.590663
+ },
+ {
+  "text": " إنك",
+  "startMs": 57840,
+  "endMs": 58020,
+  "timestampMs": 57840,
+  "confidence": 0.934272
+ },
+ {
+  "text": " تعمل",
+  "startMs": 58020,
+  "endMs": 58260,
+  "timestampMs": 57960,
+  "confidence": 0.999281
+ },
+ {
+  "text": " متجر",
+  "startMs": 58260,
+  "endMs": 58500,
+  "timestampMs": 58300,
+  "confidence": 0.959113
+ },
+ {
+  "text": " إلكتروني",
+  "startMs": 58500,
+  "endMs": 59020,
+  "timestampMs": 58520,
+  "confidence": 0.995978
+ },
+ {
+  "text": " وإنك",
+  "startMs": 59020,
+  "endMs": 59340,
+  "timestampMs": 59180,
+  "confidence": 0.998586
+ },
+ {
+  "text": " تبني",
+  "startMs": 59340,
+  "endMs": 59660,
+  "timestampMs": 59460,
+  "confidence": 0.99544
+ },
+ {
+  "text": " منظومة",
+  "startMs": 59660,
+  "endMs": 60140,
+  "timestampMs": 59740,
+  "confidence": 0.999804
+ },
+ {
+  "text": " تساعدك",
+  "startMs": 60140,
+  "endMs": 60640,
+  "timestampMs": 60180,
+  "confidence": 0.981914
+ },
+ {
+  "text": " توسع",
+  "startMs": 60640,
+  "endMs": 60950,
+  "timestampMs": 60620,
+  "confidence": 0.977638
+ },
+ {
+  "text": " مبيعاتك",
+  "startMs": 60950,
+  "endMs": 61540,
+  "timestampMs": 61080,
+  "confidence": 0.998896
+ },
+ {
+  "text": " لو",
+  "startMs": 61540,
+  "endMs": 61680,
+  "timestampMs": 61560,
+  "confidence": 0.467455
+ },
+ {
+  "text": " أنت",
+  "startMs": 61680,
+  "endMs": 61890,
+  "timestampMs": 61680,
+  "confidence": 0.868364
+ },
+ {
+  "text": " عندك",
+  "startMs": 61890,
+  "endMs": 62170,
+  "timestampMs": 61860,
+  "confidence": 0.998803
+ },
+ {
+  "text": " منتجات",
+  "startMs": 62170,
+  "endMs": 62680,
+  "timestampMs": 62120,
+  "confidence": 0.999216
+ },
+ {
+  "text": " وعوز",
+  "startMs": 62680,
+  "endMs": 63010,
+  "timestampMs": 62660,
+  "confidence": 0.722381
+ },
+ {
+  "text": " تجار",
+  "startMs": 63010,
+  "endMs": 63420,
+  "timestampMs": 62980,
+  "confidence": 0.987909
+ },
+ {
+  "text": " تبيع",
+  "startMs": 63420,
+  "endMs": 63760,
+  "timestampMs": 63560,
+  "confidence": 0.961582
+ },
+ {
+  "text": " لك",
+  "startMs": 63760,
+  "endMs": 63930,
+  "timestampMs": 63860,
+  "confidence": 0.957888
+ },
+ {
+  "text": " وتزود",
+  "startMs": 63930,
+  "endMs": 64360,
+  "timestampMs": 64240,
+  "confidence": 0.99879
+ },
+ {
+  "text": " مبيعاتك",
+  "startMs": 64360,
+  "endMs": 65040,
+  "timestampMs": 64560,
+  "confidence": 0.999989
+ }
+]

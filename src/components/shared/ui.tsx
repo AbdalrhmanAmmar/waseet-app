@@ -60,10 +60,10 @@ export function Brand({ compact = false }: { compact?: boolean }) {
       <Image
         source={Images.brandLogo}
         style={{ width: compact ? 42 : 56, height: compact ? 42 : 56 }}
-        accessibilityLabel="شعار وسيط"
+        accessibilityLabel="شعار الوسيط الذكي"
       />
       <View>
-        <Text style={ui.brandName}>وسيط</Text>
+        <Text style={ui.brandName}>الوسيط الذكي</Text>
         {!compact && <Text style={ui.caption}>تجارتك، بخطوات أبسط</Text>}
       </View>
     </View>
