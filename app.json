@@ -18,7 +18,7 @@
         ],
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "4"
+      "buildNumber": "5"
     },
     "android": {
       "predictiveBackGestureEnabled": false,
@@ -28,7 +28,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png",
         "backgroundColor": "#F8FAF7"
       },
-      "versionCode": 7
+      "versionCode": 8
     },
     "web": {
       "output": "single",
