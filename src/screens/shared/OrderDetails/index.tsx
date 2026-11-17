@@ -274,7 +274,8 @@ function DetailsContent({
       ) : (
         <Card>
           <Text style={ui.title}>حالة التوصيل</Text>
-          <Text>{deliveryStatus ? statusLabel(deliveryStatus) : 'لم تُسجّل بعد'}</Text>
+          {/* DeliveryStatus is null by design outside Out for Delivery / Delivered / Refused. */}
+          <Text>{deliveryStatus ? statusLabel(deliveryStatus) : 'لا توجد حركة توصيل حاليًا'}</Text>
           <Button title="تحديث حالة التوصيل" secondary disabled={refreshing} onPress={refresh} />
         </Card>
       )}
