@@ -538,6 +538,25 @@ test('internal return stages and normal cancelled closure have distinct actions'
   );
   await expect(page.getByRole('button', { name: 'تعديل الطلب', exact: true })).toBeEnabled();
 });
+test('refused internal order can be delivered after all, with a required reason', async ({
+  page,
+}) => {
+  const api = await setup(page, 'ManagementEmployee');
+  api.state.order.status = 'Refused on Delivery';
+  await page.getByRole('button', { name: 'تحديث حالة الطلب', exact: true }).click();
+  await expect(page.getByRole('radio')).toHaveCount(3);
+  await expect(page.getByText('تسليم بعد الرفض', { exact: true })).toBeVisible();
+  await expect(page.getByText('إلغاء الطلب المرفوض', { exact: true })).toBeVisible();
+  await expect(page.getByText('إغلاق كراجع', { exact: true })).toBeVisible();
+  await page.getByRole('radio', { name: 'تم التسليم', exact: true }).click();
+  await page.getByRole('button', { name: 'مراجعة التغيير', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('سبب تغيير حالة الطلب المرفوض');
+  expect(api.writes).toHaveLength(0);
+  await page.getByLabel('ملاحظات تغيير الحالة', { exact: true }).fill('العميل رجع واستلم');
+  await saveStatus(page);
+  await expect.poll(() => api.writes.length).toBe(1);
+  expect(api.writes[0].body).toEqual({ targetStatus: 'Delivered', note: 'العميل رجع واستلم' });
+});
 test('internal status sheet fits a small phone and requires stuck note', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 720 });
   await setup(page, 'ManagementEmployee');
@@ -678,10 +697,10 @@ test('external partial return rechecks live eligibility and does not write after
   page,
 }) => {
   const api = await prepareReturn(page);
-  api.state.syncStatus = 'delivered';
+  api.state.syncStatus = 'picked_up';
   await page.getByRole('button', { name: 'مراجعة الكميات', exact: true }).click();
   await page.getByRole('button', { name: 'تأكيد معالجة المرتجع', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText('مرتجع جزئي');
+  await expect(page.getByRole('alert')).toContainText('تتاح المعالجة بعد التسليم');
   expect(api.writes).toHaveLength(0);
 });
 test('ambiguous external return blocks repeat POST until explicit negative verification', async ({

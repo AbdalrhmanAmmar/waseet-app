@@ -34,12 +34,8 @@ export function internalReturnDecision(
     return no(
       'سبق إنشاء أو تسجيل مرتجع لهذا الطلب، ولا يمكن إنشاء مرتجع آخر حتى لو كان الأول جزئيًا.',
     );
-  if (normalizeOrderStatus(order.status) !== 'delivered')
-    return no(
-      normalizeOrderStatus(order.status) === 'completed'
-        ? 'تم إكمال طلب البيع. إنشاء المرتجع متاح في حالة «تم التسليم» فقط.'
-        : 'إنشاء المرتجع متاح عندما تكون حالة الطلب «تم التسليم».',
-    );
+  if (!['delivered', 'completed'].includes(normalizeOrderStatus(order.status)))
+    return no('إنشاء المرتجع متاح عندما تكون حالة الطلب «تم التسليم» أو «مكتمل».');
   if (normalizeOrderStatus(order.orderType) !== 'normal')
     return no('إنشاء المرتجع متاح للطلبات من النوع Normal فقط.', !order.orderType);
   if (

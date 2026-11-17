@@ -24,6 +24,7 @@ export const INTERNAL_DELIVERY_STATUSES: Record<string, StatusPresentation> = {
   Completed: { label: 'مكتمل', tone: 'success' },
   Completed_return: { label: 'مكتمل راجع', tone: 'success' },
   'Printed Confirmed': { label: 'مطبوع مؤكد', tone: 'info' },
+  In_Company: { label: 'في الشركة', tone: 'info' },
   returned_in_progress: { label: 'جاري تسليم المرجع', tone: 'info' },
   returned_delivered: { label: 'تم تسليم المرجع', tone: 'success' },
   completed_returned: { label: 'تم إتمام الإرجاع', tone: 'success' },
@@ -88,8 +89,10 @@ export function orderStatusPresentation(
     return (
       (alias ? EXTERNAL_DELIVERY_STATUSES[alias] : undefined) ??
       lookup(normalizedCatalogs.external, normalizeStatus(text)) ??
-      Object.values(EXTERNAL_DELIVERY_STATUSES).find((status) => status.label === text) ??
-      { label: text, tone: 'neutral' }
+      Object.values(EXTERNAL_DELIVERY_STATUSES).find((status) => status.label === text) ?? {
+        label: text,
+        tone: 'neutral',
+      }
     );
   }
   const key = normalizeStatus(text);

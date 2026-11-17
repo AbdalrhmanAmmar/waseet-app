@@ -4,7 +4,7 @@ import {
   externalTerminal,
   externalTargets,
   externalActionReason,
-  externalActionCopy,
+  externalActionFor,
 } from '@/domain/external-order-policy';
 import { useRefreshExternalOrderMutation } from '@/api/shared/external-orders';
 import { resolveDeliveryMode } from '@/domain/order-delivery-list';
@@ -14,7 +14,8 @@ import {
   internalTargets,
   internalTerminal,
   internalRequiresNote,
-  internalActionCopy,
+  internalActionFor,
+  reversesRefusal,
 } from '@/domain/internal-order-policy';
 import { useRef, useState } from 'react';
 import {
@@ -74,8 +75,7 @@ export function OrderStatusSheet({
   const loading = query.isFetching || areas.isFetching;
   const validOrder = order && String(order.orderId) === String(orderId);
   const terminal =
-    order &&
-    (mode === 'internal' ? internalTerminal(order.status) : externalTerminal(order.status));
+    order && (mode === 'internal' ? internalTerminal(order.status) : externalTerminal(order));
   const options = !terminal
     ? mode === 'internal' && order
       ? internalTargets(order, actorFromUser(userData), mode).map((value) => ({
@@ -86,7 +86,7 @@ export function OrderStatusSheet({
       : order
         ? externalTargets(order, actorFromUser(userData), mode).map((value) => ({
             status: value,
-            isTerminal: value === 'Cancelled',
+            isTerminal: ['Cancelled', 'completed_returned'].includes(value),
             reason: externalActionReason(order, value),
           }))
         : []
@@ -94,9 +94,15 @@ export function OrderStatusSheet({
   const selected = options.find((item) => item.status === status && !item.reason);
   const ready = !loading && !query.error && !contextError && validOrder && !!selected;
   const needsNote = internalRequiresNote(order?.status ?? '', status);
+  const reversingRefusal = mode === 'internal' && reversesRefusal(order?.status ?? '', status);
   const [verify, verification] = useRefreshExternalOrderMutation();
   const [uncertain, setUncertain] = useState(false);
-  const copy = mode === 'external' ? externalActionCopy : internalActionCopy;
+  const copyFor = (target: string) =>
+    !order
+      ? undefined
+      : mode === 'external'
+        ? externalActionFor(order, target)
+        : internalActionFor(order.status, target);
   const close = () => {
     if (!lock.current) onClose();
   };
@@ -104,9 +110,11 @@ export function OrderStatusSheet({
     if (!ready || busy || uncertain || lock.current) return;
     if (needsNote && !notes.trim()) {
       setError(
-        resolvingStuck
-          ? 'اكتب ملاحظة حل التعثر قبل المتابعة.'
-          : 'اكتب سبب تعثر الطلب قبل المتابعة.',
+        reversingRefusal
+          ? 'اكتب سبب تغيير حالة الطلب المرفوض قبل المتابعة.'
+          : resolvingStuck
+            ? 'اكتب ملاحظة حل التعثر قبل المتابعة.'
+            : 'اكتب سبب تعثر الطلب قبل المتابعة.',
       );
       return;
     }
@@ -226,7 +234,7 @@ export function OrderStatusSheet({
                 <Text style={s.name}>
                   {statusLabel(order.status)} ← {statusLabel(selected.status)}
                 </Text>
-                <Text style={s.hint}>{copy[normalizeStatus(selected.status)]?.effect}</Text>
+                <Text style={s.hint}>{copyFor(selected.status)?.effect}</Text>
                 {selected.isTerminal && (
                   <Text style={s.hint}>هذه حالة نهائية؛ تأكد من اختيارك قبل الحفظ.</Text>
                 )}
@@ -309,7 +317,7 @@ export function OrderStatusSheet({
                         status === item.status
                           ? 'radiobox-marked'
                           : mode === 'internal'
-                            ? (internalActionCopy[normalizeStatus(item.status)]?.icon ??
+                            ? (internalActionFor(order.status, item.status)?.icon ??
                               'radiobox-blank')
                             : 'radiobox-blank'
                       }
@@ -318,9 +326,9 @@ export function OrderStatusSheet({
                     />
                     <View style={{ flex: 1 }}>
                       <Text style={s.buttonText}>
-                        {copy[normalizeStatus(item.status)]?.label ?? statusLabel(item.status)}
+                        {copyFor(item.status)?.label ?? statusLabel(item.status)}
                       </Text>
-                      <Text style={s.hint}>{copy[normalizeStatus(item.status)]?.effect}</Text>
+                      <Text style={s.hint}>{copyFor(item.status)?.effect}</Text>
                       {!!item.reason && <Text style={s.hint}>{item.reason}</Text>}
                     </View>
                   </Pressable>
@@ -337,11 +345,13 @@ export function OrderStatusSheet({
                   <TextInput
                     accessibilityLabel="ملاحظات تغيير الحالة"
                     placeholder={
-                      resolvingStuck && needsNote
-                        ? 'ملاحظة الحل (مطلوبة)'
-                        : normalizeStatus(status) === 'stuck'
-                          ? 'سبب التعثر (مطلوب)'
-                          : 'ملاحظات تغيير الحالة (اختياري)'
+                      reversingRefusal
+                        ? 'سبب تغيير حالة الطلب المرفوض (مطلوب)'
+                        : resolvingStuck && needsNote
+                          ? 'ملاحظة الحل (مطلوبة)'
+                          : normalizeStatus(status) === 'stuck'
+                            ? 'سبب التعثر (مطلوب)'
+                            : 'ملاحظات تغيير الحالة (اختياري)'
                     }
                     value={notes}
                     onChangeText={(text) => {

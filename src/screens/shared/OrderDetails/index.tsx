@@ -71,7 +71,7 @@ function DetailsContent({
   const [contactError, setContactError] = useState(''),
     [copied, setCopied] = useState(false);
   const terminal =
-    mode.mode === 'internal' ? internalTerminal(order.status) : externalTerminal(order.status);
+    mode.mode === 'internal' ? internalTerminal(order.status) : externalTerminal(order);
   const editDecision = orderEditDecision(order, actorFromUser(userData), mode.mode);
   const canEdit =
     can('orders.edit') && editDecision.allowed && !mode.isFetching && !stale && !refreshing;

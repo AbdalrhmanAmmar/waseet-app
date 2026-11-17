@@ -61,9 +61,13 @@ test('only active management can create on delivered normal internal originals',
     internalReturnDecision(original, 'internal', { ...actor, accountStatus: 'Suspended' }).allowed,
     false,
   );
+  assert.equal(
+    internalReturnDecision({ ...original, status: 'Completed' }, 'internal', actor).allowed,
+    true,
+  );
   for (const patch of [
-    { status: 'Completed' },
     { status: 'Processing' },
+    { status: 'Cancelled' },
     { orderType: 'Return' },
     { oliveryOrderId: 88 },
   ])

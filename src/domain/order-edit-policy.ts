@@ -1,6 +1,6 @@
 import type { Order } from '@/types/models';
 import { type OrderActor } from './internal-order-policy';
-import { actorActive, canEditExternal } from './external-order-policy';
+import { actorActive, canEditExternal, inCompany } from './external-order-policy';
 import { normalizeStatus, type DeliveryMode } from './order-workflow';
 export function orderEditDecision(order: Order, actor: OrderActor | null, mode: DeliveryMode) {
   const no = (reason: string) => ({ allowed: false, reason });
@@ -14,6 +14,7 @@ export function orderEditDecision(order: Order, actor: OrderActor | null, mode: 
       return no('بيانات نوع الطلب أو جهة التوصيل غير مكتملة. حدّث الطلب قبل التعديل.');
     return { allowed: true, reason: 'يمكن تعديل بيانات الطلب الداخلي في أي حالة.' };
   }
+  if (inCompany(order)) return no('الطلب موجود في الشركة (In_Company) — لا يمكن تعديل تفاصيله.');
   if (canEditExternal(order, actor, mode))
     return { allowed: true, reason: 'التعديل متاح وفق حالة الطلب أو حالة زحل الخام.' };
   return no(

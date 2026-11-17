@@ -28,6 +28,11 @@ export function shipmentCode(value: unknown) {
     )?.[0] ?? text
   );
 }
+// Olivery states the merchant can still close out by pushing completed_returned.
+export const RETURN_COMPLETION_SOURCES = ['canceled', 'branch_returned'] as const;
+export const awaitingReturnCompletion = (o: Pick<Order, 'oliveryStatus'>) =>
+  (RETURN_COMPLETION_SOURCES as readonly string[]).includes(shipmentCode(o.oliveryStatus));
+export const inCompany = (o: Pick<Order, 'status'>) => normalizeStatus(o.status) === 'incompany';
 export function externalTargets(
   o: Order,
   actor: OrderActor | null | undefined,
@@ -50,11 +55,16 @@ export function externalTargets(
   )
     targets.push('Processing');
   if (status === 'confirmed' && management) targets.push('Printed Confirmed');
+  if (status === 'printedconfirmed' && management) targets.push('In_Company');
+  // In_Company has no outgoing local transition, cancellation included.
   if (
     ['processing', 'stuck', 'confirmed'].includes(status) ||
     (status === 'printedconfirmed' && management)
   )
     targets.push('Cancelled');
+  // Provider-side close-out: bypasses the read-only guard, never changes Order.Status.
+  if (management && hasReference(o.oliveryOrderId) && awaitingReturnCompletion(o))
+    targets.push('completed_returned');
   return targets;
 }
 export function externalActionReason(o: Order, target: string) {
@@ -63,6 +73,8 @@ export function externalActionReason(o: Order, target: string) {
     return 'توجد شحنة مرتبطة بالفعل؛ حدّث التفاصيل قبل محاولة التأكيد.';
   if (key === 'printedconfirmed' && !hasReference(o.oliverySequence))
     return 'رقم تسلسل الشحنة غير متاح؛ حدّث التفاصيل قبل اعتماد الطباعة.';
+  if (key === 'completedreturned' && !hasReference(o.oliverySequence))
+    return 'رقم تسلسل الشحنة غير متاح؛ حدّث التفاصيل قبل إكمال المرتجع.';
   return null;
 }
 export function canEditExternal(
@@ -74,6 +86,7 @@ export function canEditExternal(
     mode === 'external' &&
     actorActive(actor) &&
     isManagement(actor) &&
+    !inCompany(o) &&
     (['processing', 'stuck', 'confirmed'].includes(normalizeStatus(o.status)) ||
       ['waiting', 'printing_waiting'].includes(shipmentCode(o.oliveryStatus)))
   );
@@ -95,7 +108,29 @@ export const externalActionCopy: Record<string, { label: string; effect: string 
     effect:
       'إذا أُرسلت الشحنة، يخضع الإلغاء لموافقة شركة التوصيل. سنعرض الحالة الفعلية بعد الاستجابة.',
   },
+  incompany: {
+    label: 'تسجيل الطلب في الشركة',
+    effect:
+      'تحديث داخلي فقط ولا يُرسل شيء لشركة التوصيل. بعده تُقفل بيانات الطلب للتعديل ولا يمكن إلغاؤه.',
+  },
+  completedreturned: {
+    label: 'إكمال المرتجع',
+    effect: 'يُرسل «تم إتمام الإرجاع» لشركة التوصيل لإغلاق الشحنة المرتجعة. هذه الخطوة نهائية.',
+  },
 };
+export function externalActionFor(o: Order, target: string) {
+  const key = normalizeStatus(target);
+  if (key !== 'completedreturned') return externalActionCopy[key];
+  const source = shipmentCode(o.oliveryStatus);
+  return {
+    label: 'إكمال المرتجع',
+    effect:
+      source === 'branch_returned'
+        ? 'يُرسل «تم إتمام الإرجاع» لشركة التوصيل وتُعاد للمخزون الكميات التي سبق خصمها. لا تتغير الأرصدة. هذه الخطوة نهائية.'
+        : 'يُرسل «تم إتمام الإرجاع» لشركة التوصيل لطلب ملغي. لا يتغير المخزون ولا الأرصدة. هذه الخطوة نهائية.',
+  };
+}
+const EXTERNAL_RETURN_SOURCES = ['delivered', 'delivered_with_return', 'completed'];
 export type ExternalReturnInput = { items: { orderItemId: number; quantity: number }[] };
 export const returnProcessed = (o: Order) =>
   o.isReturnProcessed === true ||
@@ -124,8 +159,8 @@ export function externalReturnReason(
   if (o.isCredited === false)
     return 'لم تُضف أرصدة الطلب بعد؛ لا يمكن معالجة المرتجع قبل تأكيد إضافة الرصيد.';
   if (o.canProcessReturn === false) return 'معالجة المرتجع غير متاحة لهذا الطلب حاليًا.';
-  if (shipmentCode(o.oliveryStatus) !== 'delivered_with_return')
-    return 'تتاح المعالجة عند التسليم مع مرتجع جزئي.';
+  if (!EXTERNAL_RETURN_SOURCES.includes(shipmentCode(o.oliveryStatus)))
+    return 'تتاح المعالجة بعد التسليم: «تم التسليم»، أو «تم التسليم مع إرجاع جزئي»، أو «مكتمل».';
   if (
     !o.items.length ||
     new Set(o.items.map((i) => i.orderItemId)).size !== o.items.length ||
@@ -185,4 +220,6 @@ export const externalReturnSnapshot = (o: Order) =>
     ]),
   ]);
 
-export const externalTerminal = (status: string) => normalizeStatus(status) === 'cancelled';
+// A cancelled shipment still waiting for its return close-out needs follow-up.
+export const externalTerminal = (o: Pick<Order, 'status' | 'oliveryStatus'>) =>
+  normalizeStatus(o.status) === 'cancelled' && !awaitingReturnCompletion(o);

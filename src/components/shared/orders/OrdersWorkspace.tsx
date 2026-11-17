@@ -52,7 +52,7 @@ export function OrdersWorkspace({
       !(resolveDeliveryMode(order, delivery.areas) === 'internal'
         ? internalTerminal(order.status)
         : resolveDeliveryMode(order, delivery.areas) === 'external'
-          ? externalTerminal(order.status)
+          ? externalTerminal(order)
           : isOrderTerminal(order.status, statuses.data)),
   ).length;
   const filtered = useMemo(
@@ -64,7 +64,7 @@ export function OrdersWorkspace({
             !(resolveDeliveryMode(order, delivery.areas) === 'internal'
               ? internalTerminal(order.status)
               : resolveDeliveryMode(order, delivery.areas) === 'external'
-                ? externalTerminal(order.status)
+                ? externalTerminal(order)
                 : isOrderTerminal(order.status, statuses.data)),
         ),
         search,
@@ -234,7 +234,7 @@ export function OrdersWorkspace({
               resolveDeliveryMode(item, delivery.areas) === 'internal'
                 ? internalTerminal(item.status)
                 : resolveDeliveryMode(item, delivery.areas) === 'external'
-                  ? externalTerminal(item.status)
+                  ? externalTerminal(item)
                   : isOrderTerminal(item.status, statuses.data)
             }
             onOpen={() => navigation.navigate('OrderDetails', { orderId: item.orderId })}

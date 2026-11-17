@@ -18,7 +18,8 @@ const normal: Record<string, string[]> = {
   stuck: ['Processing', 'Cancelled'],
   delivered: ['Completed'],
   cancelled: ['Completed_return'],
-  refusedondelivery: ['Completed_return'],
+  // Customer took it after all, or management cancels it; both refund a deducted delivery fee.
+  refusedondelivery: ['Delivered', 'Cancelled', 'Completed_return'],
 };
 const returns: Record<string, string[]> = {
   processing: ['Confirmed'],
@@ -82,14 +83,16 @@ export function internalTargets(
       if (order.isReturnFinalized === true) return false;
       return management || (delivery && ['returnedinprogress', 'returneddelivered'].includes(to));
     }
-    if (to === 'cancelled') return true;
     if (management) return true;
+    // Cancelling a refused order refunds the merchant's delivery fee: management only.
+    if (to === 'cancelled') return from !== 'refusedondelivery';
     if (from === 'stuck' && to === 'processing')
       return ['Merchant', 'MerchantEmployee', 'SalesEmployee'].includes(role);
     return (
       delivery &&
-      from === 'outfordelivery' &&
-      ['delivered', 'refusedondelivery', 'postponed', 'stuck'].includes(to)
+      ((from === 'outfordelivery' &&
+        ['delivered', 'refusedondelivery', 'postponed', 'stuck'].includes(to)) ||
+        (from === 'refusedondelivery' && to === 'delivered'))
     );
   });
 }
@@ -187,9 +190,36 @@ export const internalActionCopy: Record<
   },
 };
 
+type InternalActionCopy = (typeof internalActionCopy)[string];
+// Same target, different money movement: a refused order reverses its delivery-fee deduction.
+const fromRefused: Record<string, InternalActionCopy> = {
+  delivered: {
+    label: 'تسليم بعد الرفض',
+    effect:
+      'العميل استلم الطلب بعد رفضه. تُرد رسوم التوصيل المخصومة للتاجر، ثم تُحتسب أرباح التسليم.',
+    icon: 'check-circle-outline',
+  },
+  cancelled: {
+    label: 'إلغاء الطلب المرفوض',
+    effect:
+      'تُرد رسوم التوصيل المخصومة للتاجر. لا يعود المخزون الآن؛ تتم استعادته عند الإغلاق كراجع.',
+    icon: 'close-circle-outline',
+  },
+};
+export function internalActionFor(from: string, to: string): InternalActionCopy | undefined {
+  const target = normalizeStatus(to);
+  return (
+    (normalizeStatus(from) === 'refusedondelivery' ? fromRefused[target] : undefined) ??
+    internalActionCopy[target]
+  );
+}
+export const reversesRefusal = (from: string, to: string) =>
+  normalizeStatus(from) === 'refusedondelivery' &&
+  ['delivered', 'cancelled'].includes(normalizeStatus(to));
 export function internalRequiresNote(from: string, to: string) {
   return (
     normalizeStatus(to) === 'stuck' ||
-    (normalizeStatus(from) === 'stuck' && normalizeStatus(to) === 'processing')
+    (normalizeStatus(from) === 'stuck' && normalizeStatus(to) === 'processing') ||
+    reversesRefusal(from, to)
   );
 }

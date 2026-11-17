@@ -1,10 +1,15 @@
 import { orderEditDecision } from '@/domain/order-edit-policy';
 import { returnSettlementSnapshot } from '@/domain/internal-return';
-import { externalTargets, externalActionReason } from '@/domain/external-order-policy';
+import {
+  externalTargets,
+  externalActionReason,
+  shipmentCode,
+} from '@/domain/external-order-policy';
 import { resolveDeliveryMode } from '@/domain/order-delivery-list';
 import {
   internalTargets,
   internalRequiresNote,
+  reversesRefusal,
   type OrderActor,
 } from '@/domain/internal-order-policy';
 import type { AxiosRequestConfig } from 'axios';
@@ -82,7 +87,11 @@ export async function guardedStatusChange(
         'راجع الكميات والتسوية الحالية للمرتجع قبل الإكمال. تغير البيانات يستلزم مراجعة جديدة.',
       );
     if (internalRequiresNote(current.status, input.status) && !input.notes?.trim())
-      return fail('اكتب ملاحظة التعثر أو الحل قبل الحفظ.');
+      return fail(
+        reversesRefusal(current.status, input.status)
+          ? 'اكتب سبب تغيير حالة الطلب المرفوض قبل الحفظ.'
+          : 'اكتب ملاحظة التعثر أو الحل قبل الحفظ.',
+      );
     if ((input.notes?.trim().length ?? 0) > 500) return fail('الملاحظة لا تتجاوز 500 حرف.');
     submitted = true;
     const result = await query({
@@ -96,8 +105,12 @@ export async function guardedStatusChange(
     const confirmed = await query({ url: `orders/${encodeURIComponent(input.orderId)}` });
     if (!confirmed.error) {
       const refreshed = orderDetails(confirmed.data, input.orderId);
-      if (normalizeStatus(refreshed.status) === normalizeStatus(input.status))
-        return { data: refreshed };
+      // External return close-out only moves the Olivery state; Order.Status stays put.
+      const applied =
+        mode === 'external' && normalizeStatus(input.status) === 'completedreturned'
+          ? shipmentCode(refreshed.oliveryStatus) === 'completed_returned'
+          : normalizeStatus(refreshed.status) === normalizeStatus(input.status);
+      if (applied) return { data: refreshed };
     }
     if (
       result.error &&
