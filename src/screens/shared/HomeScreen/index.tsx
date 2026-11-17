@@ -7,12 +7,13 @@ import Text from '@/components/shared/CustomText';
 import { Button } from '@/components/shared/ui';
 import { BalanceCard } from '@/components/shared/home/BalanceCard';
 import { OrderActivity } from '@/components/shared/home/OrderActivity';
+import { OrderCounters } from '@/components/shared/home/OrderCounters';
 import { RecentOrder } from '@/components/shared/home/RecentOrder';
 import { s } from '@/components/shared/home/styles';
 import { useSession } from '@/hooks/shared/use-session';
 import { useAppDispatch } from '@/hooks/shared/use-store';
 import { GetUserProfile } from '@/store/slices/auth';
-import { useHomeTotalsQuery, useHomeActivityQuery, homeApi } from '@/api/shared/home';
+import { useHomeActivityQuery, homeApi } from '@/api/shared/home';
 import { useOrdersQuery, ordersApi } from '@/api/shared/orders';
 import { periodBounds } from '@/domain/home-orders';
 import { palette as p } from '@/theme/tokens';
@@ -24,7 +25,6 @@ export default function HomeScreen({ navigation }: ScreenProps) {
   const [bounds, setBounds] = useState(() => periodBounds(7));
   const [refreshing, setRefreshing] = useState(false);
   const userId = String(userData?.userId ?? '');
-  const totals = useHomeTotalsQuery(userId, { skip: !userData, refetchOnMountOrArgChange: 30 });
   const activityArgs = { userId, ...bounds, days };
   const activity = useHomeActivityQuery(activityArgs, {
     skip: !userData,
@@ -39,9 +39,6 @@ export default function HomeScreen({ navigation }: ScreenProps) {
     const next = periodBounds(days);
     setBounds(next);
     await Promise.all([
-      dispatch(
-        homeApi.endpoints.homeTotals.initiate(userId, { subscribe: false, forceRefetch: true }),
-      ),
       dispatch(
         homeApi.endpoints.homeActivity.initiate(
           { userId, ...next, days },
@@ -77,26 +74,6 @@ export default function HomeScreen({ navigation }: ScreenProps) {
     }
   };
   const greeting = new Date().getHours() < 12 ? 'صباح الخير' : 'مساء الخير';
-  const stats = [
-    {
-      title: 'إجمالي الطلبات',
-      value: totals.data?.total,
-      icon: 'clipboard-text-outline' as const,
-      color: p.deep,
-    },
-    {
-      title: 'قيد المعالجة',
-      value: totals.data?.processing,
-      icon: 'clock-outline' as const,
-      color: '#BC7B29',
-    },
-    {
-      title: 'تم التسليم',
-      value: totals.data?.delivered,
-      icon: 'check-circle-outline' as const,
-      color: p.primary,
-    },
-  ];
   return (
     <ScreenContainer>
       <ScrollView
@@ -154,32 +131,12 @@ export default function HomeScreen({ navigation }: ScreenProps) {
             style={{ borderRadius: 18, backgroundColor: '#fff' }}
           />
         </View>
-        <View style={s.stats}>
-          {stats.map((stat) => (
-            <Pressable
-              key={stat.title}
-              accessibilityRole="button"
-              accessibilityLabel={`${stat.title}: ${stat.value ?? 'غير متوفر'}`}
-              onPress={() => navigation.navigate('MyOrders')}
-              style={s.stat}
-            >
-              <Icon name={stat.icon} size={23} color={stat.color} />
-              <Text style={[s.caption, { textAlign: 'center', minHeight: 42 }]}>{stat.title}</Text>
-              {totals.isLoading ? (
-                <View style={[s.skeleton, { width: 35, height: 30 }]} />
-              ) : (
-                <Text style={s.statNumber}>{stat.value ?? '—'}</Text>
-              )}
-            </Pressable>
-          ))}
-        </View>
-        {!totals.isFetching &&
-          (!totals.data || Object.values(totals.data).some((value) => value == null)) && (
-            <View style={{ gap: 8 }}>
-              <Text style={s.caption}>بعض إحصائيات الطلبات غير متاحة حاليًا.</Text>
-              <Button title="تحديث الإحصائيات" secondary onPress={() => void refreshOrders()} />
-            </View>
-          )}
+        <OrderCounters
+          days={days}
+          orders={activity.error ? undefined : activity.currentData}
+          loading={activity.isFetching}
+          onOpenOrder={(order) => navigation.navigate('OrderDetails', { orderId: order.orderId })}
+        />
         <OrderActivity
           days={days}
           from={bounds.from}

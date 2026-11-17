@@ -5,31 +5,6 @@ import type { Order } from '@/types/models';
 export const homeApi = baseApi.injectEndpoints({
   overrideExisting: process.env.NODE_ENV === 'development',
   endpoints: (build) => ({
-    homeTotals: build.query<
-      { total: number | null; processing: number | null; delivered: number | null },
-      string
-    >({
-      async queryFn(_user, _api, _options, query) {
-        const counts = await Promise.all(
-          [undefined, 'Processing', 'Delivered'].map(async (Status) => {
-            const result = await query({
-              url: 'orders',
-              params: { page: 1, pageSize: 1, ...(Status ? { Status } : {}) },
-            });
-            if (result.error) return null;
-            try {
-              const body = orderPage(result.data);
-              if (Status && body.items.some((row) => row.status !== Status)) return null;
-              return body.totalCount;
-            } catch {
-              return null;
-            }
-          }),
-        );
-        return { data: { total: counts[0], processing: counts[1], delivered: counts[2] } };
-      },
-      providesTags: ['Orders'],
-    }),
     homeActivity: build.query<Order[], { userId: string; from: string; to: string; days: number }>({
       async queryFn({ from, to, days }, _api, _options, query) {
         const items: Order[] = [];
@@ -80,4 +55,4 @@ export const homeApi = baseApi.injectEndpoints({
     }),
   }),
 });
-export const { useHomeTotalsQuery, useHomeActivityQuery } = homeApi;
+export const { useHomeActivityQuery } = homeApi;

@@ -4,9 +4,19 @@ import { s } from './styles';
 import { statusLabel } from '../orders/statuses';
 import { formatBalance } from '@/domain/balance';
 import type { Order } from '@/types/models';
-export function RecentOrder({ order, onPress }: { order: Order; onPress: () => void }) {
-  const color =
-    order.status === 'Delivered'
+export function RecentOrder({
+  order,
+  onPress,
+  badge,
+}: {
+  order: Order;
+  onPress: () => void;
+  /** Overrides the local-status chip, e.g. with the outcome an external shipment reached. */
+  badge?: { label: string; colors: [string, string] };
+}) {
+  const color = badge
+    ? badge.colors
+    : order.status === 'Delivered'
       ? ['#E2F6EC', '#147D64']
       : order.status === 'Out for Delivery'
         ? ['#E7F4FC', '#217CAE']
@@ -40,7 +50,7 @@ export function RecentOrder({ order, onPress }: { order: Order; onPress: () => v
         </Text>
         <View style={[s.status, { backgroundColor: color[0] }]}>
           <Text style={{ color: color[1], fontSize: 11 }}>
-            {statusLabel(order.status) || 'الحالة غير متوفرة'}
+            {badge?.label ?? (statusLabel(order.status) || 'الحالة غير متوفرة')}
           </Text>
         </View>
       </View>

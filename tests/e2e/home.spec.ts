@@ -1,4 +1,22 @@
 import { test, expect, type Page } from '@playwright/test';
+// One of each outcome a merchant's orders can reach, internal (local status) and
+// external (Olivery state); repeated to fill the period.
+const OUTCOME_ROWS: Record<string, unknown>[] = [
+  { status: 'Processing' },
+  { status: 'Processing' },
+  { status: 'Delivered' },
+  { status: 'Completed' },
+  { status: 'Printed Confirmed', oliveryStatus: 'delivered' },
+  { status: 'In_Company', oliveryStatus: 'paid' },
+  { status: 'Refused on Delivery' },
+  { status: 'Printed Confirmed', oliveryStatus: 'rejected' },
+  { status: 'Stuck' },
+  { status: 'Cancelled' },
+  { status: 'Cancelled', oliveryStatus: 'canceled' },
+  { status: 'Postponed' },
+  { status: 'Printed Confirmed', oliveryStatus: 'reschedule' },
+  { status: 'Out for Delivery' },
+];
 async function setup(page: Page, role = 'Merchant') {
   const user = { userId: 7, role, firstName: 'أحمد', accountStatus: 'Approved' };
   const state = {
@@ -31,7 +49,8 @@ async function setup(page: Page, role = 'Merchant') {
         const records = Array.from({ length: state.empty ? 0 : 28 }, (_, i) => ({
           orderId: 1000 + i,
           customerName: 'عميل',
-          status: 'Processing',
+          orderType: 'Normal',
+          ...OUTCOME_ROWS[i % OUTCOME_ROWS.length],
           createdAt: new Date(
             new Date(from).getTime() + (i % 7) * 86400000 + 3600000,
           ).toISOString(),
@@ -95,9 +114,21 @@ async function setup(page: Page, role = 'Merchant') {
         },
       });
     }
-    if (path === 'orders/1048')
+    const detail = /^orders\/(\d+)$/.exec(path);
+    if (detail)
       return route.fulfill({
-        json: { data: { orderId: 1048, customerName: 'سارة أحمد', items: [], orderTotalUSD: 70 } },
+        json: {
+          data: {
+            orderId: Number(detail[1]),
+            customerName: detail[1] === '1048' ? 'سارة أحمد' : 'عميل',
+            status: 'Processing',
+            orderType: 'Normal',
+            customerArea: 'دمشق',
+            olivery: null,
+            items: [],
+            orderTotalUSD: 70,
+          },
+        },
       });
     return route.fulfill({ json: { data: [] } });
   });
@@ -142,11 +173,28 @@ test('home charts load all pages, switch periods, show exact counts and open ord
   state.balance = 1250;
   await page.getByRole('button', { name: 'تحديث الرصيد' }).click();
   await expect(page.getByTestId('period-total')).toHaveText('28 طلبًا');
-  await expect(
-    page.getByRole('button', { name: 'إجمالي الطلبات: 128', exact: true }),
-  ).toBeVisible();
-  await expect(page.getByRole('button', { name: 'قيد المعالجة: 24', exact: true })).toBeVisible();
+  for (const [title, count] of [
+    ['إجمالي الطلبات', 28],
+    ['قيد المعالجة', 4],
+    ['تم التسليم', 8],
+    ['مرفوض', 4],
+    ['عالق', 2],
+    ['ملغي', 4],
+    ['مؤجل', 4],
+  ] as const)
+    await expect(
+      page.getByRole('button', { name: `${title}: ${count}`, exact: true }),
+    ).toBeVisible();
   expect(state.calls.some((path) => path.includes('page=2'))).toBe(true);
+  // Counters come from the fully loaded period, never from Order.Status-only server filters.
+  expect(state.calls.some((path) => path.includes('Status='))).toBe(false);
+  await page.getByRole('button', { name: 'تم التسليم: 8', exact: true }).click();
+  const sheet = page.getByTestId('outcome-sheet');
+  await expect(sheet.getByRole('button', { name: /^فتح طلب #/ })).toHaveCount(8);
+  await expect(sheet.getByText('تم التسليم', { exact: true })).toHaveCount(8);
+  await page.screenshot({ path: 'test-results/home-delivered-sheet.png', animations: 'disabled' });
+  await page.getByRole('button', { name: 'إغلاق قائمة الطلبات', exact: true }).click();
+  await expect(sheet).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 1550 });
   await page.screenshot({
     path: 'test-results/home-dashboard.png',
@@ -157,6 +205,15 @@ test('home charts load all pages, switch periods, show exact counts and open ord
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
+  // All four secondary counters share one row even at 320px.
+  const tops = await Promise.all(
+    ['مرفوض', 'عالق', 'ملغي', 'مؤجل'].map(async (title) =>
+      Math.round(
+        (await page.getByRole('button', { name: new RegExp(`^${title}: `) }).boundingBox())!.y,
+      ),
+    ),
+  );
+  expect(new Set(tops).size).toBe(1);
   await page.screenshot({ path: 'test-results/home-merchant-320.png', fullPage: true });
   await page.getByRole('button', { name: 'آخر 30 أيام', exact: true }).click();
   await expect(page.getByTestId('period-total')).toHaveText('28 طلبًا');
