@@ -5,6 +5,7 @@ import {
   externalTargets,
   externalActionReason,
   externalActionFor,
+  inCompany,
 } from '@/domain/external-order-policy';
 import { useRefreshExternalOrderMutation } from '@/api/shared/external-orders';
 import { resolveDeliveryMode } from '@/domain/order-delivery-list';
@@ -286,8 +287,9 @@ export function OrderStatusSheet({
                 </View>
                 {!options.length && (
                   <Text style={s.hint}>
-                    لا توجد إجراءات متاحة لحسابك. يجب اكتمال بيانات نوع الطلب والملكية للتحقق من
-                    الصلاحيات.
+                    {mode === 'external' && inCompany(order)
+                      ? 'الطلب في الشركة؛ لا توجد خطوات بعد هذه المرحلة ولا يمكن إلغاؤه. حركة الشحنة تُحدّث من شركة التوصيل.'
+                      : 'لا توجد إجراءات متاحة لحسابك. يجب اكتمال بيانات نوع الطلب والملكية للتحقق من الصلاحيات.'}
                   </Text>
                 )}
                 {options.map((item) => (

@@ -164,7 +164,10 @@ async function setup(page: Page, role: Role, external = false) {
           changedById: 7,
           note: body.note,
         });
-        state.order.status = body.targetStatus;
+        // Olivery return close-out moves the provider state only; Order.Status stays put.
+        if (external && body.targetStatus === 'completed_returned')
+          Object.assign(state.order, { oliveryStatus: 'مكتمل راجع' });
+        else state.order.status = body.targetStatus;
       }
       return reply(state.order);
     }
@@ -217,7 +220,9 @@ for (const role of Object.keys(paths) as Role[]) {
         createdByName: 'أحمد',
       });
       await page.getByRole('button', { name: 'تحديث مشكلات الطلب', exact: true }).click();
-      await expect(page.getByText('مشكلة مفتوحة لاختبار صلاحية الحل', { exact: true })).toBeVisible();
+      await expect(
+        page.getByText('مشكلة مفتوحة لاختبار صلاحية الحل', { exact: true }),
+      ).toBeVisible();
       if (role === 'ManagementEmployee')
         await expect(page.getByRole('button', { name: 'حل المشكلة', exact: true })).toBeVisible();
       else
@@ -634,6 +639,56 @@ test('external management prints using local order ID and nested shipment sequen
   await page.getByRole('button', { name: /^تحديث حالة (التوصيل|زحل)$/ }).click();
   await expect(page.getByText('مرجع الشحنة: SHIP-333', { exact: true })).toBeVisible();
   await expect.poll(() => api.calls.includes('orders/21/delivery-status')).toBe(true);
+});
+test('external management marks a printed order In_Company, which then locks edits and actions', async ({
+  page,
+}) => {
+  const api = await setup(page, 'ManagementEmployee', true);
+  api.state.order.status = 'Printed Confirmed';
+  Object.assign(api.state.order, { oliverySequence: 'SHIP-333', oliveryStatus: 'waiting' });
+  await page.getByRole('button', { name: 'تحديث حالة الطلب', exact: true }).click();
+  await expect(page.getByText('تسجيل الطلب في الشركة', { exact: true })).toBeVisible();
+  await page.getByRole('radio', { name: 'في الشركة', exact: true }).click();
+  await saveStatus(page);
+  await expect(page.getByTestId('management-status-sheet')).toHaveCount(0);
+  expect(api.writes).toEqual([{ method: 'POST', body: { targetStatus: 'In_Company' } }]);
+  await expect(page.getByText('في الشركة', { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'تعديل الطلب', exact: true })).toBeDisabled();
+  await expect(page.getByText(/لا يمكن تعديل تفاصيله/)).toBeVisible();
+  await page.getByRole('button', { name: 'تحديث حالة الطلب', exact: true }).click();
+  await expect(page.getByTestId('management-status-sheet').getByRole('radio')).toHaveCount(0);
+  await expect(page.getByText(/لا توجد خطوات بعد هذه المرحلة/)).toBeVisible();
+  await page.screenshot({ path: 'test-results/external-in-company.png', animations: 'disabled' });
+});
+test('external management completes a branch-returned shipment without changing local status', async ({
+  page,
+}) => {
+  const api = await setup(page, 'ManagementEmployee', true);
+  api.state.order.status = 'Cancelled';
+  Object.assign(api.state.order, { oliverySequence: 'SHIP-333', oliveryStatus: 'branch_returned' });
+  await page.getByRole('button', { name: 'تحديث حالة الطلب', exact: true }).click();
+  await expect(page.getByText('إكمال المرتجع', { exact: true })).toBeVisible();
+  await expect(page.getByText(/تُعاد للمخزون/)).toBeVisible();
+  await page.screenshot({
+    path: 'test-results/external-return-close-out.png',
+    animations: 'disabled',
+  });
+  await page.getByRole('radio', { name: 'تم إتمام الإرجاع', exact: true }).click();
+  await saveStatus(page);
+  await expect(page.getByTestId('management-status-sheet')).toHaveCount(0);
+  expect(api.writes).toEqual([{ method: 'POST', body: { targetStatus: 'completed_returned' } }]);
+  expect(api.state.order.status).toBe('Cancelled');
+  await expect(page.getByText('تم تحديث حالة الطلب.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'تحديث حالة الطلب', exact: true })).toBeDisabled();
+});
+test('external merchant never sees In_Company or the return close-out', async ({ page }) => {
+  const api = await setup(page, 'Merchant', true);
+  api.state.order.status = 'Cancelled';
+  Object.assign(api.state.order, { oliverySequence: 'SHIP-333', oliveryStatus: 'canceled' });
+  await expect(page.getByRole('button', { name: 'تحديث حالة الطلب', exact: true })).toHaveCount(1);
+  await page.getByRole('button', { name: 'تحديث حالة الطلب', exact: true }).click();
+  await expect(page.getByTestId('merchant-status-sheet').getByRole('radio')).toHaveCount(0);
+  expect(api.writes).toHaveLength(0);
 });
 test('external merchant cannot cancel after printed confirmation', async ({ page }) => {
   const api = await setup(page, 'Merchant', true);
