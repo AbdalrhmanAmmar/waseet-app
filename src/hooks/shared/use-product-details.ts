@@ -1,4 +1,4 @@
-import { isMerchantRole } from '@/auth/roles';
+import { seesMerchantPrice } from '@/domain/product-visibility';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { AppState } from 'react-native';
@@ -17,7 +17,9 @@ export function useProductDetails(id: string, initial?: Product) {
     { product_id: id, user_id: userData?.userId ?? '' },
     { skip: !id || !userData, refetchOnMountOrArgChange: true },
   );
-  const merchant = isMerchantRole(role);
+  // Only the merchant sees their own price; employees and sales never do.
+  const merchant = seesMerchantPrice(role);
+  const sales = role === 'SalesEmployee';
   const notFound = !!query.error && 'status' in query.error && query.error.status === 404;
   const product = notFound ? undefined : (query.currentData ?? initial);
   const busy = query.isFetching;
@@ -33,7 +35,9 @@ export function useProductDetails(id: string, initial?: Product) {
   const quantity = stock == null ? desired : Math.min(desired, stock);
   const unitPrice = suggested ?? (merchant ? merchantPrice : null) ?? optionalPrice(product?.price);
   const ready = !!query.currentData && !query.error && !busy;
-  const canCreate = ready && stock != null && stock > 0 && quantity > 0;
+  // Sales orders are stock-checked by the server when the catalog omits stock.
+  const stockOpen = stock == null && sales;
+  const canCreate = ready && quantity > 0 && (stockOpen || (stock != null && stock > 0));
   const refresh = useCallback(async () => {
     if (!id || !userData) return;
     await dispatch(refreshProductDetails({ product_id: id, user_id: userData.userId }));
@@ -61,10 +65,13 @@ export function useProductDetails(id: string, initial?: Product) {
     });
     return () => listener.remove();
   }, [active, refresh]);
-  const change = (delta: number) => setDesired(Math.max(1, Math.min(stock ?? 1, quantity + delta)));
+  const change = (delta: number) =>
+    setDesired(Math.max(1, Math.min(stock ?? (stockOpen ? 999 : 1), quantity + delta)));
   return {
     product,
     merchant,
+    sales,
+    stockOpen,
     merchantPrice,
     suggested,
     unitPrice,

@@ -41,15 +41,6 @@ async function setup(page: Page, role = 'Merchant') {
     let data: unknown = [];
     if (path === 'Auth/login') data = { user, token: 'test-session' };
     else if (path === 'User/7') data = user;
-    else if (path === 'Product/order-options')
-      data = products.map(({ productCode, name, expectedSellPrice }) => ({
-        productCode,
-        name,
-        expectedSellPrice,
-        originalPrice: 12,
-        merchantSellPrice: 999,
-        effectiveExpectedSellPrice: null,
-      }));
     else if (path === 'Product/all')
       data = { items: products, page: 1, totalPages: 1, totalCount: products.length };
     else if (path === 'Product/8') data = { ...products[0], quantity: state.stock };
@@ -109,10 +100,9 @@ async function fill(page: Page, sales = false) {
   await page.getByLabel('رقم الهاتف السوري *', { exact: true }).fill('٠٩١٢٣٤٥٦٧٨');
   await page.getByLabel('العنوان التفصيلي *', { exact: true }).fill('شارع النصر، بجوار المكتبة');
   await page.getByRole('button', { name: 'إضافة منتج', exact: true }).click();
-  if (!sales)
-    await expect(
-      page.getByRole('button', { name: 'اختيار منتج نافد', exact: true }),
-    ).toBeDisabled();
+  // Known stock now reaches every role through Product/all, sales included.
+  void sales;
+  await expect(page.getByRole('button', { name: 'اختيار منتج نافد', exact: true })).toBeDisabled();
   await page.getByLabel('البحث في المنتجات', { exact: true }).fill('٨');
   await page.getByRole('button', { name: 'اختيار حقيبة يومية', exact: true }).click();
   await page.getByLabel('كمية حقيبة يومية', { exact: true }).fill('٢');
@@ -127,7 +117,9 @@ for (const role of ['Merchant', 'MerchantEmployee', 'SalesEmployee'])
     page.on('pageerror', (error) => errors.push(error.message));
     const state = await setup(page, role);
     await fill(page, role === 'SalesEmployee');
-    if (role === 'SalesEmployee') await expect(page.getByText(/فرق السعر المتوقع/)).toHaveCount(0);
+    // Only the merchant sees anything derived from their own price.
+    if (role !== 'Merchant')
+      await expect(page.getByText(/فرق السعر المتوقع|سعر التاجر|20\.00 USD/)).toHaveCount(0);
     await page.getByRole('button', { name: 'إضافة منتج', exact: true }).click();
     await expect(
       page.getByRole('button', { name: 'اختيار حقيبة يومية', exact: true }),
@@ -149,15 +141,9 @@ for (const role of ['Merchant', 'MerchantEmployee', 'SalesEmployee'])
     expect(
       state.calls.filter((p) => p.includes('merchant-price') || p.includes('price-lists')),
     ).toEqual([]);
-    if (role !== 'SalesEmployee') expect(state.calls).toContain('Product/8');
-    else {
-      expect(state.calls).toContain('Product/order-options');
-      expect(
-        state.calls.filter(
-          (path) => path.startsWith('Product/') && path !== 'Product/order-options',
-        ),
-      ).toEqual([]);
-    }
+    // Every role revalidates through Product/{id}; Product/order-options is no longer used.
+    expect(state.calls).toContain('Product/8');
+    expect(state.calls).not.toContain('Product/order-options');
     // Wait for the React Native modal entrance animation before capturing the preview.
     await page.waitForTimeout(400);
     await page.screenshot({ path: `test-results/${role}-order-review.png`, fullPage: true });

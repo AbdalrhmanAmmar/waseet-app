@@ -124,6 +124,16 @@ test('merchant catalog uses Product/all prices even when the account has a price
   await expect(page.getByRole('alert')).toHaveCount(0);
   expect(api.paths.some((path) => path.startsWith('price-lists'))).toBe(false);
 });
+test('merchant employee catalog never shows the merchant price, even if the API sends it', async ({
+  page,
+}) => {
+  await setup(page, 'MerchantEmployee');
+  await expect(page.getByText('4 نتيجة', { exact: true })).toBeVisible();
+  const card = page.getByTestId('catalog-product-WS-104');
+  await expect(card).toContainText('35.00 USD');
+  await expect(card).not.toContainText('25.00 USD');
+  await expect(page.getByText('سعر التاجر', { exact: true })).toHaveCount(0);
+});
 test('search finds later pages by code; filter draft validates, cancels and applies; list preference persists', async ({
   page,
 }) => {

@@ -15,11 +15,14 @@ export const styles = StyleSheet.create({
   },
   heading: { flex: 1 },
   title: { fontSize: 32, lineHeight: 46, fontFamily: t.bold, color: p.deep },
+  // Narrow phones: keep the title on one line instead of breaking the word.
+  titleCompact: { fontSize: 25, lineHeight: 38 },
   subtitle: { color: p.muted, fontSize: 13, lineHeight: 23, marginTop: 2 },
   headerControls: { alignItems: 'center', gap: 10 },
   brand: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
   logo: { width: 27, height: 27 },
   brandName: { fontSize: 22, lineHeight: 30, fontFamily: t.bold, color: p.deep },
+  brandNameCompact: { fontSize: 17, lineHeight: 26 },
   toggle: { flexDirection: 'row', gap: 6 },
   toggleButton: {
     minWidth: 44,

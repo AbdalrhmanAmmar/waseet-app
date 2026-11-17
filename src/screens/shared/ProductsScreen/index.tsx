@@ -1,4 +1,4 @@
-import { isMerchantRole } from '@/auth/roles';
+import { seesMerchantPrice } from '@/domain/product-visibility';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import {
@@ -138,7 +138,11 @@ export default function ProductsScreen({
       return (
         <View style={s.hero}>
           <View style={s.heading}>
-            <Text accessibilityRole="header" style={s.title}>
+            <Text
+              accessibilityRole="header"
+              numberOfLines={1}
+              style={[s.title, width < 360 && s.titleCompact]}
+            >
               المنتجات
             </Text>
             <Text style={s.subtitle}>
@@ -152,7 +156,7 @@ export default function ProductsScreen({
           <View style={s.headerControls}>
             <View style={s.brand} accessibilityLabel="الوسيط الذكي" accessible>
               <Image source={Images.brandLogo} style={s.logo} />
-              <Text style={s.brandName}>الوسيط الذكي</Text>
+              <Text style={[s.brandName, width < 360 && s.brandNameCompact]}>الوسيط الذكي</Text>
             </View>
             <View style={s.toggle}>
               {(['grid', 'list'] as const).map((mode) => (
@@ -382,7 +386,8 @@ export default function ProductsScreen({
               key={String(product.productCode)}
               item={product}
               list={listView}
-              merchant={isMerchantRole(role)}
+              merchant={seesMerchantPrice(role)}
+              sales={role === 'SalesEmployee'}
               onPress={() => navigation.navigate('ProductDetails', { product })}
               onCreateOrder={() => navigation.navigate('CreateOrder', { product })}
             />

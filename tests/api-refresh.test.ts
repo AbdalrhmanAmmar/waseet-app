@@ -23,7 +23,9 @@ test('API modules can reload against the same base API during development', () =
         const names = Object.keys(baseApi.endpoints).sort();
         assert.ok(names.includes('productDetails'));
         assert.ok(names.includes('orders'));
-        assert.ok(names.includes('salesOrderOptions'));
+        assert.ok(names.includes('catalog'));
+        // Sales uses the shared catalog now; Product/order-options is gone.
+        assert.ok(!names.includes('salesOrderOptions'));
         for (const file of files) {
           delete require.cache[require.resolve(file)];
           require(file);

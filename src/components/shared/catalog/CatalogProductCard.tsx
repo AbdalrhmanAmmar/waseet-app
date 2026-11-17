@@ -15,12 +15,16 @@ export function CatalogProductCard({
   item,
   list,
   merchant,
+  sales = false,
   onPress,
   onCreateOrder,
 }: {
   item: Product;
   list: boolean;
+  /** Shows the merchant's own price; only true for the Merchant role. */
   merchant: boolean;
+  /** Sales: expected price wording; unknown stock is checked by the server, not blocked. */
+  sales?: boolean;
   onPress: () => void;
   onCreateOrder: () => void;
 }) {
@@ -28,7 +32,8 @@ export function CatalogProductCard({
   const { fontScale } = useWindowDimensions();
   const stacked = list && fontScale > 1.25;
   const knownStock = item.stockKnown !== false && Number.isFinite(item.stock);
-  const out = !knownStock || item.stock <= 0;
+  const stockOpen = sales && !knownStock;
+  const out = stockOpen ? false : !knownStock || item.stock <= 0;
   const price = salePrice(item);
   const validPrice = Number.isFinite(price) && price >= 0;
   const merchantPrice = item.merchantSellPrice;
@@ -68,7 +73,11 @@ export function CatalogProductCard({
             {String(item.productCode)}
           </Text>
           <Text style={s.caption}>
-            {suggestedPrice(item) != null ? 'سعر البيع المقترح' : 'سعر البيع'}
+            {sales
+              ? 'سعر البيع المتوقع'
+              : suggestedPrice(item) != null
+                ? 'سعر البيع المقترح'
+                : 'سعر البيع'}
           </Text>
           <Text style={s.price}>
             {validPrice ? money(price) : '—'} <Text style={s.currency}>USD</Text>
@@ -85,16 +94,23 @@ export function CatalogProductCard({
         </View>
       </Pressable>
       <View style={s.action}>
-        <View style={s.stockRow}>
-          <View style={[s.stockDot, out && s.outDot]} />
-          <Text style={[s.stock, out && s.outText]}>
-            {!knownStock
-              ? 'التوفر غير محدد'
-              : out
-                ? 'نفدت الكمية'
-                : `متاح ${item.stock.toLocaleString('en-US')} قطعة`}
-          </Text>
-        </View>
+        {stockOpen ? (
+          <View style={s.stockRow}>
+            <Icon name="play-circle-outline" size={15} color={p.muted} />
+            <Text style={s.stock}>{item.videoUrl ? 'صور وفيديو' : 'عرض التفاصيل'}</Text>
+          </View>
+        ) : (
+          <View style={s.stockRow}>
+            <View style={[s.stockDot, out && s.outDot]} />
+            <Text style={[s.stock, out && s.outText]}>
+              {!knownStock
+                ? 'التوفر غير محدد'
+                : out
+                  ? 'نفدت الكمية'
+                  : `متاح ${item.stock.toLocaleString('en-US')} قطعة`}
+            </Text>
+          </View>
+        )}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`إنشاء طلب ${item.title}`}

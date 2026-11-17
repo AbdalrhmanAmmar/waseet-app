@@ -1,4 +1,3 @@
-import { isMerchantRole } from '@/auth/roles';
 import { deliveryMode } from '@/domain/order-workflow';
 import { primaryPhoneError } from '@/domain/order-phone';
 import { useEffect, useRef, useState } from 'react';
@@ -26,8 +25,7 @@ import {
   type OrderDraft,
 } from '@/domain/order-draft';
 import { formatMoney, suggestedPrice } from '@/domain/product-details';
-import { salesApi } from '@/api/sales-employee';
-import { salesOrderOptions } from '@/domain/sales-order-options';
+import { productForRole, seesMerchantPrice } from '@/domain/product-visibility';
 import { catalogErrorMessage } from '@/domain/catalog-error';
 import { catalogApi, refreshProductDetails, useDeliveryAreasQuery } from '@/api/shared/catalog';
 import { useCreateOrderMutation } from '@/api/shared/orders';
@@ -60,7 +58,7 @@ export default function CreateOrder({ navigation, route }: ScreenProps) {
     if (seed)
       initial.items = [
         draftItem(
-          isSales ? salesOrderOptions([seed])[0] : seed,
+          productForRole(seed, role),
           Math.max(1, Math.floor(Number(route.params.quantity) || 1)),
         ),
       ];
@@ -152,28 +150,8 @@ export default function CreateOrder({ navigation, route }: ScreenProps) {
       if (freshAreas.error || !freshAreas.data)
         throw freshAreas.error ?? new Error('تعذر تحميل مناطق التوصيل');
       const freshItems = [];
-      const options = isSales
-        ? await dispatch(
-            salesApi.endpoints.salesOrderOptions.initiate(String(userData.userId), {
-              subscribe: false,
-              forceRefetch: true,
-            }),
-          )
-        : null;
-      if (options && (options.error || !options.data))
-        throw options.error ?? new Error('تعذر تحديث خيارات المنتجات');
       for (const row of draft.items) {
-        if (options) {
-          const product = options.data?.find(
-            (item) => String(item.productCode) === String(row.product.productCode),
-          );
-          if (!product)
-            throw new Error(
-              `المنتج ${row.product.title} لم يعد ضمن خيارات الطلب. احذفه أو اختر منتجًا آخر.`,
-            );
-          freshItems.push({ ...row, product });
-          continue;
-        }
+        // Product/{id} returns the product already filtered to the prices this role may see.
         const result = await dispatch(
           refreshProductDetails({ product_id: row.product.productCode, user_id: userData.userId }),
         );
@@ -404,7 +382,7 @@ export default function CreateOrder({ navigation, route }: ScreenProps) {
                 row={row}
                 disabled={busy}
                 errors={errors}
-                merchant={isMerchantRole(role)}
+                merchant={seesMerchantPrice(role)}
                 sales={isSales}
                 onChange={(patch) => {
                   setDraft((previous) => ({
@@ -505,10 +483,14 @@ export default function CreateOrder({ navigation, route }: ScreenProps) {
                   caption: draft.items.some((row) => row.key === String(product.productCode))
                     ? 'مضاف بالفعل — عدّل كميته داخل الطلب'
                     : isSales
-                      ? `#${product.productCode} · سعر البيع المقترح: ${formatMoney(suggestedPrice(product))}`
+                      ? `#${product.productCode} · سعر البيع المتوقع: ${formatMoney(suggestedPrice(product))}${product.stockKnown !== false && Number.isFinite(product.stock) && product.stock <= 0 ? ' · نفدت الكمية' : ''}`
                       : `#${product.productCode} · ${product.stock > 0 ? `متاح ${product.stock} قطعة` : 'نفدت الكمية'}`,
                   disabled:
-                    (!isSales && (!Number.isFinite(product.stock) || product.stock <= 0)) ||
+                    (isSales
+                      ? product.stockKnown !== false &&
+                        Number.isFinite(product.stock) &&
+                        product.stock <= 0
+                      : !Number.isFinite(product.stock) || product.stock <= 0) ||
                     draft.items.some((row) => row.key === String(product.productCode)),
                 }))
               : (areas.data ?? []).map((area) => ({

@@ -1,4 +1,5 @@
-import { Redirect } from 'expo-router';
+import { useScreenProps } from '@/navigation/use-screen-props';
+import Screen from '@/screens/shared/ProductDetails';
 export default function Route() {
-  return <Redirect href="/sales-employee/products" />;
+  return <Screen {...useScreenProps()} />;
 }

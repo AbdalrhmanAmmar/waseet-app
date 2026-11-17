@@ -58,3 +58,31 @@ test('price filters accept Arabic digits and reject invalid or inverted ranges',
   ])
     assert.ok(priceRangeError({ ...defaultFilters, min, max }));
 });
+
+test('catalog search matches product codes typed in Arabic-Indic digits', () => {
+  const codes = [
+    {
+      id: 1,
+      productCode: 267661,
+      name: 'Mouse',
+      title: 'Mouse',
+      price: 17,
+      stock: 1,
+      category: '',
+    },
+    {
+      id: 2,
+      productCode: 185208,
+      name: 'حقيبة',
+      title: 'حقيبة',
+      price: 65,
+      stock: 1,
+      category: '',
+    },
+  ];
+  for (const query of ['٢٦٧٦٦١', '۲۶۷۶۶۱', '267661'])
+    assert.deepEqual(
+      filterProducts(codes, query, defaultFilters).map((item) => item.productCode),
+      [267661],
+    );
+});

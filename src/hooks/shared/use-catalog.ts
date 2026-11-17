@@ -1,17 +1,14 @@
 import { isMerchantRole } from '@/auth/roles';
 import { useCatalogInfiniteQuery } from '@/api/shared/catalog';
-import { useSalesOrderOptionsQuery } from '@/api/sales-employee';
 import { useSession } from './use-session';
 export function useCatalog() {
   const { userData, role } = useSession();
-  const isSales = role === 'SalesEmployee';
-  const query = useCatalogInfiniteQuery(String(userData?.userId ?? ''), {
-    skip: !userData || !isMerchantRole(role),
-  });
-  const sales = useSalesOrderOptionsQuery(String(userData?.userId ?? ''), {
-    skip: !userData || !isSales,
-    refetchOnMountOrArgChange: true,
-  });
+  // Product/all is the catalog for merchants, their employees and sales; the API layer
+  // strips the prices each role may not see.
+  const query = useCatalogInfiniteQuery(
+    { userId: String(userData?.userId ?? ''), role: String(role ?? '') },
+    { skip: !userData || !(isMerchantRole(role) || role === 'SalesEmployee') },
+  );
   const nextPageError = query.isError && query.direction === 'forward';
   const data = [
     ...new Map(
@@ -21,24 +18,6 @@ export function useCatalog() {
       ]),
     ).values(),
   ];
-  if (isSales)
-    return {
-      data: sales.currentData ?? [],
-      loading: sales.isLoading,
-      loadingMore: false,
-      hasMore: false,
-      fetching: sales.isFetching,
-      error: sales.error,
-      nextPageError: false,
-      retry: async () => {
-        if (!sales.isUninitialized && !sales.isFetching) await sales.refetch();
-      },
-      refresh: async () => {
-        if (!sales.isUninitialized && !sales.isFetching) await sales.refetch();
-      },
-      totalCount: sales.currentData?.length ?? 0,
-      loadMore: () => {},
-    };
   return {
     data,
     loading: query.isLoading,

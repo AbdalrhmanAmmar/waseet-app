@@ -69,7 +69,7 @@ Swagger يعلن غالبية استجابات النجاح بوصف `OK` دون
 
 ## Sales product order options
 
-`SalesEmployee` (including normalized `sales`) uses `GET Product/order-options` for the product list, order picker and pre-review revalidation. Contract supplied by the project owner: `{ isSuccess: true, message, data: [{ productCode, name, originalPrice, merchantSellPrice, expectedSellPrice, effectiveExpectedSellPrice }] }`. This is an unpaginated list. Sales normalization whitelists display fields and excludes `merchantSellPrice`; missing stock is not zero or a client-side ordering limit. No sales product detail GET is issued. Refreshing the options checks selected IDs without overwriting the operator's quantity, color or actual selling price. Stock validation remains authoritative on order submission. Merchant endpoints remain unchanged. See [sales workflow](sales-order-options.ar.md).
+`SalesEmployee` (including normalized `sales`) uses the shared catalog: `GET Product/all` for the product list and order picker, `GET Product/{id}` for details and pre-review revalidation. `Product/order-options` is no longer used. Every product is filtered by role where it enters the app (`productForRole`): sales receives identity, media, category, description, stock and `expectedSellPrice` only; `MerchantEmployee` receives everything except `merchantSellPrice`. The backend should also stop returning these fields to those roles. See [price visibility](product-price-visibility.ar.md).
 
 ## Management orders workspace
 

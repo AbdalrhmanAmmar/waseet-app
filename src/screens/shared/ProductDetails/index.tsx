@@ -27,7 +27,7 @@ export default function ProductDetails(props: ScreenProps) {
 }
 function Details({ navigation, id, initial }: ScreenProps & { id: string; initial?: Product }) {
   const detail = useProductDetails(id, initial);
-  const { product, merchant, stock } = detail;
+  const { product, merchant, sales, stock, stockOpen } = detail;
   const [copied, setCopied] = useState('');
   const [descriptionOpen, setDescriptionOpen] = useState(false);
   const { width, fontScale } = useWindowDimensions();
@@ -128,12 +128,14 @@ function Details({ navigation, id, initial }: ScreenProps & { id: string; initia
             <View style={s.identity}>
               <View style={s.meta}>
                 <Text style={s.category}>{product.categoryProvided ? product.category : ''}</Text>
-                <View style={[s.stock, stock === 0 && s.out]}>
-                  <View style={[s.dot, stock === 0 && { backgroundColor: '#A24B3F' }]} />
-                  <Text style={[s.stockText, stock === 0 && { color: '#A24B3F' }]}>
-                    {stock == null ? 'المخزون غير محدد' : stock > 0 ? 'متوفر' : 'نفدت الكمية'}
-                  </Text>
-                </View>
+                {!stockOpen && (
+                  <View style={[s.stock, stock === 0 && s.out]}>
+                    <View style={[s.dot, stock === 0 && { backgroundColor: '#A24B3F' }]} />
+                    <Text style={[s.stockText, stock === 0 && { color: '#A24B3F' }]}>
+                      {stock == null ? 'المخزون غير محدد' : stock > 0 ? 'متوفر' : 'نفدت الكمية'}
+                    </Text>
+                  </View>
+                )}
               </View>
               <Text accessibilityRole="header" style={s.title}>
                 {product.title}
@@ -182,7 +184,9 @@ function Details({ navigation, id, initial }: ScreenProps & { id: string; initia
               )}
               {merchant && <View style={compact ? s.dividerHorizontal : s.divider} />}
               <View style={s.priceCell}>
-                <Text style={s.priceLabel}>سعر البيع المقترح</Text>
+                <Text style={s.priceLabel}>
+                  {sales ? 'سعر البيع المتوقع' : 'سعر البيع المقترح'}
+                </Text>
                 <Text
                   testID="detail-suggested-price"
                   style={[s.price, merchant && s.secondaryPrice]}
@@ -209,20 +213,26 @@ function Details({ navigation, id, initial }: ScreenProps & { id: string; initia
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="زيادة الكمية"
-                  disabled={!detail.ready || stock == null || detail.quantity >= stock}
+                  disabled={
+                    !detail.ready || (!stockOpen && (stock == null || detail.quantity >= stock))
+                  }
                   onPress={() => detail.change(1)}
                   style={[
                     s.step,
                     s.plus,
-                    (!detail.ready || stock == null || detail.quantity >= stock) && s.disabled,
+                    (!detail.ready ||
+                      (!stockOpen && (stock == null || detail.quantity >= stock))) &&
+                      s.disabled,
                   ]}
                 >
                   <Icon name="plus" size={23} color="#fff" />
                 </Pressable>
               </View>
-              <Text style={s.centerCaption}>
-                {stock == null ? 'الكمية المتاحة غير محددة' : `المتاح: ${stock} قطعة`}
-              </Text>
+              {!stockOpen && (
+                <Text style={s.centerCaption}>
+                  {stock == null ? 'الكمية المتاحة غير محددة' : `المتاح: ${stock} قطعة`}
+                </Text>
+              )}
               {detail.unitPrice != null && (
                 <Text style={s.centerCaption}>
                   سعر البيع المبدئي: {formatMoney(detail.unitPrice)} · يمكن تعديله عند إنشاء الطلب

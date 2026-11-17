@@ -22,20 +22,21 @@ export const sortOptions: { id: Sort; label: string }[] = [
   { id: 'title_az', label: 'الاسم' },
 ];
 export const salePrice = (item: Product) => Number(item.effectiveExpectedSellPrice ?? item.price);
-export const normalizeSearch = (text: string) =>
-  text
-    .trim()
-    .toLocaleLowerCase('ar')
-    .normalize('NFKD')
-    .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
-    .replace(/[أإآ]/g, 'ا')
-    .replace(/ى/g, 'ي');
 export const normalizeNumber = (text: string) =>
   text
     .replace(/[٠-٩]/g, (c) => String(c.charCodeAt(0) - 1632))
     .replace(/[۰-۹]/g, (c) => String(c.charCodeAt(0) - 1776))
     .replace('٫', '.')
     .trim();
+// Arabic-Indic digits are folded too, so product codes typed on an Arabic keyboard match.
+export const normalizeSearch = (text: string) =>
+  normalizeNumber(text)
+    .trim()
+    .toLocaleLowerCase('ar')
+    .normalize('NFKD')
+    .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ى/g, 'ي');
 export function priceRangeError(filters: Filters) {
   for (const value of [filters.min, filters.max])
     if (value && (!Number.isFinite(Number(value)) || Number(value) < 0))

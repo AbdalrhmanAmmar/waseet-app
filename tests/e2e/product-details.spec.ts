@@ -244,3 +244,21 @@ test('video is loaded only on explicit play, supports playback and reports error
     .poll(() => page.locator('video').evaluate((el: HTMLVideoElement) => el.currentTime))
     .toBeGreaterThan(0);
 });
+
+for (const role of ['MerchantEmployee', 'SalesEmployee'])
+  test(`${role} details hide the merchant price and keep photo and video`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 950 });
+    await setup(page, { role, video: true });
+    await expect(page.getByRole('heading', { name: 'سماعات لاسلكية', exact: true })).toBeVisible();
+    await expect(page.getByTestId('detail-merchant-price')).toHaveCount(0);
+    await expect(page.getByText(/سعرك كتاجر|30\.00 USD/)).toHaveCount(0);
+    await expect(page.getByTestId('detail-suggested-price')).toHaveText('35.00 USD');
+    if (role === 'SalesEmployee')
+      await expect(page.locator('text=سعر البيع المتوقع >> visible=true').first()).toBeVisible();
+    await expect(page.getByRole('radio', { name: 'الصورة', exact: true })).toBeVisible();
+    await expect(page.getByRole('radio', { name: /الفيديو/ })).toBeVisible();
+    await page.getByRole('button', { name: 'إنشاء طلب بهذا المنتج', exact: true }).click();
+    await expect(
+      page.getByRole('textbox', { name: 'سعر بيع سماعات لاسلكية (USD)', exact: true }),
+    ).toHaveValue('35');
+  });

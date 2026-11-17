@@ -4,28 +4,16 @@ import { catalogPalette as p } from '@/components/shared/catalog/catalog-theme';
 import { formatMoney, optionalPrice } from '@/domain/product-details';
 import type { Product } from '@/types/models';
 
+// Sales sees one price only: the expected sell price.
 export function SalesProductPrices({ product }: { product: Product }) {
-  const expected = optionalPrice(product.expectedSellPrice);
-  const effective = optionalPrice(product.effectiveExpectedSellPrice);
-  const rows = [
-    { label: 'السعر الأصلي', value: optionalPrice(product.originalPrice), primary: false },
-    {
-      label: 'سعر البيع المتوقع',
-      value: expected,
-      primary: effective == null || effective === expected,
-    },
-    ...(effective != null && effective !== expected
-      ? [{ label: 'السعر المتوقع المطبق', value: effective, primary: true }]
-      : []),
-  ];
   return (
     <View style={s.prices}>
-      {rows.map((row) => (
-        <View key={row.label} style={[s.price, row.primary && s.active]}>
-          <Text style={s.label}>{row.label}</Text>
-          <Text style={[s.value, row.primary && s.primary]}>{formatMoney(row.value)}</Text>
-        </View>
-      ))}
+      <View style={[s.price, s.active]}>
+        <Text style={s.label}>سعر البيع المتوقع</Text>
+        <Text style={[s.value, s.primary]}>
+          {formatMoney(optionalPrice(product.expectedSellPrice))}
+        </Text>
+      </View>
     </View>
   );
 }
