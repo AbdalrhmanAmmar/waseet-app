@@ -115,3 +115,18 @@ test('empty delivery list is distinct from initial failure', async ({ page }) =>
   await page.getByRole('button', { name: 'إعادة المحاولة', exact: true }).click();
   await expect(page.getByText('لا توجد طلبات مسندة إليك حاليًا', { exact: true })).toBeVisible();
 });
+
+test('the order note reaches the delivery agent on the card and in details', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 1100 });
+  await setup(page);
+  const note = page.getByTestId('delivery-order-note-1048');
+  await expect(note).toContainText('اتصل قبل الوصول بربع ساعة');
+  // Orders without a note show no empty note row.
+  await expect(page.getByTestId('delivery-order-note-1049')).toHaveCount(0);
+  await page.getByTestId('delivery-order-1048').screenshot({
+    path: 'test-results/delivery-order-note-card.png',
+  });
+  await page.getByRole('button', { name: 'فتح طلب #1048', exact: true }).click();
+  await expect(page.getByTestId('order-note')).toContainText('اتصل قبل الوصول بربع ساعة');
+  await expect(page.getByText('ملاحظة الطلب', { exact: true })).toBeVisible();
+});

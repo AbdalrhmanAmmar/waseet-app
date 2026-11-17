@@ -25,6 +25,7 @@ export async function setup(
       customerMobile: '+963944123456',
       customerArea: 'المزة، دمشق',
       customerAddress: 'شارع الفيلات، بناء 12، الطابق الثاني',
+      note: 'اتصل قبل الوصول بربع ساعة، الجرس لا يعمل',
       status: options.initialStatus ?? (management ? 'Confirmed' : 'Out for Delivery'),
       orderTotalUSD: 35,
       items: [],

@@ -277,3 +277,32 @@ test('internal phone preserves format, external switch validates, second phone u
   expect(state.posts[0].second_customer_phone).toBe('أي قيمة / 123');
   expect(state.posts[0]).not.toHaveProperty('secondCustomerPhone');
 });
+
+test('order note is typed, counted, reviewed and sent as note', async ({ page }) => {
+  const state = await setup(page, 'Merchant');
+  await fill(page);
+  const note = page.getByLabel('ملاحظة الطلب (اختياري)', { exact: true });
+  await note.fill('  اتصل قبل الوصول، الباب الخلفي  ');
+  await expect(page.getByText('33/500', { exact: true })).toBeVisible();
+  await note.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: 'test-results/create-order-note.png', animations: 'disabled' });
+  await page.getByRole('button', { name: 'مراجعة الطلب', exact: true }).click();
+  await expect(page.getByTestId('review-order-note')).toContainText(
+    'اتصل قبل الوصول، الباب الخلفي',
+  );
+  await page.getByRole('button', { name: 'تأكيد وإنشاء الطلب', exact: true }).click();
+  await expect(page.getByText('تم إنشاء الطلب بنجاح', { exact: true })).toBeVisible();
+  expect(state.posts).toHaveLength(1);
+  expect(state.posts[0].note).toBe('اتصل قبل الوصول، الباب الخلفي');
+});
+
+test('an empty note is not sent and is not shown in review', async ({ page }) => {
+  const state = await setup(page, 'SalesEmployee');
+  await fill(page, true);
+  await page.getByLabel('ملاحظة الطلب (اختياري)', { exact: true }).fill('   ');
+  await page.getByRole('button', { name: 'مراجعة الطلب', exact: true }).click();
+  await expect(page.getByTestId('review-order-note')).toHaveCount(0);
+  await page.getByRole('button', { name: 'تأكيد وإنشاء الطلب', exact: true }).click();
+  await expect(page.getByText('تم إنشاء الطلب بنجاح', { exact: true })).toBeVisible();
+  expect('note' in state.posts[0]).toBe(false);
+});

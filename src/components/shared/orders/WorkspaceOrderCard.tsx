@@ -52,6 +52,26 @@ export function WorkspaceOrderCard({
           <Text style={s.address}>{order.customerArea || 'المنطقة غير متوفرة'}</Text>
         </View>
         <Text style={s.address}>{order.customerAddress || 'العنوان غير متوفر'}</Text>
+        {!!order.note?.trim() && (
+          <View
+            testID={`${variant}-order-note-${order.orderId}`}
+            accessibilityLabel={`ملاحظة الطلب: ${order.note.trim()}`}
+            style={{
+              flexDirection: 'row-reverse',
+              alignItems: 'flex-start',
+              gap: 6,
+              backgroundColor: '#FFF8EC',
+              borderRadius: 10,
+              paddingHorizontal: 10,
+              paddingVertical: 7,
+            }}
+          >
+            <Icon name="note-text-outline" size={17} color="#A56A1F" />
+            <Text numberOfLines={2} style={[s.address, { flex: 1, color: '#7A5418' }]}>
+              {order.note.trim()}
+            </Text>
+          </View>
+        )}
         {variant === 'management' &&
           order.createdAt &&
           Number.isFinite(new Date(order.createdAt).getTime()) && (

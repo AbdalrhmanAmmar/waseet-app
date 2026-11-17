@@ -47,6 +47,8 @@ export interface Order {
   oliveryStatus?: string | null;
   deliveryStatus?: string | null;
   orderType?: string | null;
+  /** Order note entered at creation (mobile or dashboard). */
+  note?: string | null;
   orderId: Id;
   customerName: string;
   status: string;
@@ -91,6 +93,8 @@ export interface OrderInput {
   secondCustomerPhone?: string;
   customerArea: string;
   customerAddress: string;
+  /** Order note; create only (PUT orders/{id} does not accept it). */
+  note?: string;
   items: { productCode: number; quantity: number; actualSellPriceUSD: number; color: string }[];
 }
 export interface StatusInput {

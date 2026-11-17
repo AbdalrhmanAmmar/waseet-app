@@ -83,3 +83,22 @@ test('draft price uses API suggested then merchant price, never invents zero for
   );
   assert.equal(draftItem(product({ productCode: 8, quantity: 1 })).price, '');
 });
+
+test('order note is optional, trimmed, capped at 500 and sent as `note`', async () => {
+  const { orderPayload, validateOrder, emptyOrder, ORDER_NOTE_MAX } =
+    await import('../src/domain/order-draft');
+  const { order: normalizeOrder } = await import('../src/api/normalizers');
+  const base = { ...emptyOrder(), customerName: 'عميل', customerArea: 'دمشق', items: [] };
+  assert.equal('note' in orderPayload({ ...base, note: '' }), false);
+  assert.equal('note' in orderPayload({ ...base, note: '   \n ' }), false);
+  assert.equal('note' in orderPayload({ ...base, note: undefined }), false);
+  assert.equal(orderPayload({ ...base, note: '  اتصل قبل الوصول \n' }).note, 'اتصل قبل الوصول');
+  const areas = [{ deliveryAreaId: 1, city: 'دمشق', fee: 5, isInternalDelivery: true }];
+  assert.equal(validateOrder({ ...base, note: 'x'.repeat(ORDER_NOTE_MAX) }, areas).note, undefined);
+  assert.ok(validateOrder({ ...base, note: 'x'.repeat(ORDER_NOTE_MAX + 1) }, areas).note);
+  // Server responses: note read whatever its casing, blank treated as absent.
+  assert.equal(normalizeOrder({ orderId: 1, note: ' اتصل ' }).note, 'اتصل');
+  assert.equal(normalizeOrder({ orderId: 1, Note: 'باب خلفي' }).note, 'باب خلفي');
+  assert.equal(normalizeOrder({ orderId: 1, note: '   ' }).note ?? null, null);
+  assert.equal(normalizeOrder({ orderId: 1 }).note ?? null, null);
+});

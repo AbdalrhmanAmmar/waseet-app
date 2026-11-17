@@ -115,6 +115,8 @@ export function order(item: Raw): Order {
         ['oliveryStatus', 'olivery_status', 'OliveryStatus', 'status', 'Status'],
       ),
     ),
+    note:
+      optionalText(firstDefined(item, ['note', 'Note', 'orderNote', 'order_note']))?.trim() || null,
     deliveryStatus: optionalText(
       firstDefined(item, ['deliveryStatus', 'delivery_status', 'DeliveryStatus']),
     ),

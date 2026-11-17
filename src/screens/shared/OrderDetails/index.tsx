@@ -222,6 +222,22 @@ function DetailsContent({
           </Text>
         )}
       </Card>
+      {!!order.note?.trim() && (
+        <Card style={{ backgroundColor: '#FFF8EC', borderColor: '#F0DDB8' }}>
+          <View
+            testID="order-note"
+            style={{ flexDirection: 'row-reverse', alignItems: 'flex-start', gap: 10 }}
+          >
+            <Icon name="note-text-outline" size={24} color="#A56A1F" />
+            <View style={{ flex: 1, gap: 4 }}>
+              <Text style={ui.title}>ملاحظة الطلب</Text>
+              <Text selectable style={{ color: p.ink, lineHeight: 24, textAlign: 'right' }}>
+                {order.note.trim()}
+              </Text>
+            </View>
+          </View>
+        </Card>
+      )}
       <Card>
         <Text style={ui.title}>منتجات الطلب</Text>
         {order.items.map((item, i) => (

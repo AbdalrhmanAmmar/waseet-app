@@ -23,6 +23,7 @@ import {
   validateOrder,
   type DraftErrors,
   type OrderDraft,
+  ORDER_NOTE_MAX,
 } from '@/domain/order-draft';
 import { formatMoney, suggestedPrice } from '@/domain/product-details';
 import { productForRole, seesMerchantPrice } from '@/domain/product-visibility';
@@ -84,6 +85,7 @@ export default function CreateOrder({ navigation, route }: ScreenProps) {
     draft.secondCustomerPhone ||
     draft.customerArea ||
     draft.customerAddress ||
+    draft.note?.trim() ||
     draft.items.length
   );
   const phoneMode = deliveryMode(draft.customerArea, areas.data ?? []);
@@ -363,6 +365,25 @@ export default function CreateOrder({ navigation, route }: ScreenProps) {
               placeholder="الشارع، المبنى، علامة مميزة"
               multiline
             />
+            <View style={{ gap: 4 }}>
+              <Field
+                editable={!busy}
+                label="ملاحظة الطلب (اختياري)"
+                value={draft.note ?? ''}
+                onChangeText={(value) => field('note', value)}
+                error={errors.note}
+                placeholder="مثال: الاتصال بالعميل قبل الوصول أو تفاصيل تساعد في التوصيل"
+                maxLength={ORDER_NOTE_MAX}
+                multiline
+                style={{ minHeight: 96, textAlignVertical: 'top' }}
+              />
+              <Text
+                accessibilityLabel={`عدد أحرف الملاحظة ${(draft.note ?? '').length} من ${ORDER_NOTE_MAX}`}
+                style={[s.caption, { textAlign: 'left' }]}
+              >
+                {(draft.note ?? '').length}/{ORDER_NOTE_MAX}
+              </Text>
+            </View>
           </View>
           <View
             onLayout={(event) => {
@@ -550,6 +571,12 @@ export default function CreateOrder({ navigation, route }: ScreenProps) {
                     </Text>
                   ))}
                 </View>
+                {!!draft.note?.trim() && (
+                  <View style={s.card} testID="review-order-note">
+                    <Text style={s.subtitle}>ملاحظة الطلب</Text>
+                    <Text style={s.label}>{draft.note.trim()}</Text>
+                  </View>
+                )}
                 <View style={s.card}>
                   <Text style={s.subtitle}>منتجات الطلب</Text>
                   {draft.items.map((row) => (

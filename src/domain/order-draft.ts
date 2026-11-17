@@ -17,8 +17,12 @@ export interface OrderDraft {
   secondCustomerPhone?: string;
   customerArea: string;
   customerAddress: string;
+  /** Free text for the delivery (e.g. call before arriving). Optional, sent as `note`. */
+  note?: string;
   items: DraftItem[];
 }
+// Same limit the dashboard and backend apply to POST orders `note`.
+export const ORDER_NOTE_MAX = 500;
 export type DraftErrors = Record<string, string>;
 export const emptyOrder = (): OrderDraft => ({
   customerName: '',
@@ -26,6 +30,7 @@ export const emptyOrder = (): OrderDraft => ({
   secondCustomerPhone: '',
   customerArea: '',
   customerAddress: '',
+  note: '',
   items: [],
 });
 export const draftItem = (product: Product, quantity = 1): DraftItem => ({
@@ -68,6 +73,8 @@ export function validateOrder(
     errors.customerArea = 'رسوم هذه المنطقة غير متاحة حاليًا';
   if (draft.customerAddress.trim().length < 4)
     errors.customerAddress = 'أدخل عنوانًا تفصيليًا من أربعة أحرف على الأقل';
+  if ((draft.note?.trim().length ?? 0) > ORDER_NOTE_MAX)
+    errors.note = `ملاحظة الطلب لا تتجاوز ${ORDER_NOTE_MAX} حرف`;
   if (!draft.items.length) errors.items = 'أضف منتجًا واحدًا على الأقل';
   const seen = new Set<string>();
   draft.items.forEach((row) => {
@@ -104,6 +111,7 @@ export const orderPayload = (draft: OrderDraft, mode: DeliveryMode = 'internal')
     : {}),
   customerArea: draft.customerArea,
   customerAddress: draft.customerAddress.trim(),
+  ...(draft.note?.trim() ? { note: draft.note.trim() } : {}),
   items: draft.items.map((row) => ({
     productCode: Number(row.product.productCode),
     quantity: Number(normalizeNumber(row.quantity)),
