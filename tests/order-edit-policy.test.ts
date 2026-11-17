@@ -3,6 +3,9 @@ import test from 'node:test';
 import { orderEditDecision } from '../src/domain/order-edit-policy';
 import { can } from '../src/auth/permissions';
 import { guardedOrderUpdate } from '../src/api/shared/order-guards';
+import { orderDetails } from '../src/api/normalizers';
+import { resolveDeliveryMode } from '../src/domain/order-delivery-list';
+import { orderVersion } from '../src/domain/order-workflow';
 import type { Order, OrderInput } from '../src/types/models';
 const actor = { role: 'ManagementEmployee', userId: 7 };
 const order: Order = {
@@ -72,4 +75,124 @@ test('external editing follows dashboard OR rule and uses only raw Olivery statu
     orderEditDecision({ ...external, oliveryStatus: 'waiting' }, actor, 'unknown').allowed,
     false,
   );
+});
+
+// Full "When Order Details Can Be Modified" sheet, every status including the newer ones
+// (Ready for Dispatch, refused reversals, In_Company, Olivery return close-out states).
+const INTERNAL_STATUSES = [
+  'Processing',
+  'Confirmed',
+  'Ready for Dispatch',
+  'Out for Delivery',
+  'Postponed',
+  'Stuck',
+  'Delivered',
+  'Refused on Delivery',
+  'Cancelled',
+  'Completed',
+  'Completed_return',
+  'Closed',
+];
+test('internal: management edits in every status, whatever shape the Olivery fields take', () => {
+  const shapes = [
+    { name: 'olivery: null', raw: { olivery: null } },
+    { name: 'oliveryOrderId: null', raw: { oliveryOrderId: null } },
+    { name: 'Olivery fields omitted', raw: {} },
+  ];
+  const areas = [{ deliveryAreaId: 1, city: 'دمشق', fee: 3, isInternalDelivery: true }];
+  for (const { name, raw } of shapes)
+    for (const status of INTERNAL_STATUSES) {
+      const current = orderDetails(
+        { orderId: 5, status, orderType: 'Normal', customerArea: 'دمشق', items: [], ...raw },
+        5,
+      );
+      const mode = resolveDeliveryMode(current, areas);
+      assert.equal(mode, 'internal', name);
+      assert.equal(orderEditDecision(current, actor, mode).allowed, true, `${name} / ${status}`);
+      for (const role of ['Merchant', 'MerchantEmployee', 'SalesEmployee', 'DeliveryAgent'])
+        assert.equal(orderEditDecision(current, { role, userId: 7 }, mode).allowed, false);
+    }
+});
+test('internal: an edit goes through when the API omits the Olivery fields', async () => {
+  const current = {
+    orderId: 21,
+    status: 'Refused on Delivery',
+    orderType: 'Normal',
+    customerName: 'عميل',
+    customerMobile: '0991234567',
+    customerArea: 'دمشق',
+    customerAddress: 'شارع النصر 12',
+    items: [],
+  };
+  const input: OrderInput = {
+    customerName: 'عميل',
+    customerMobile: '0991234567',
+    customerArea: 'دمشق',
+    customerAddress: 'شارع النصر 14',
+    items: [{ productCode: 11, quantity: 1, actualSellPriceUSD: 15, color: 'أسود' }],
+  } as OrderInput;
+  const puts: unknown[] = [];
+  const result = await guardedOrderUpdate(
+    { orderId: 21, input, expectedVersion: orderVersion(orderDetails(current, 21)) },
+    (args) => {
+      if (args.url === 'delivery-areas')
+        return { data: [{ deliveryAreaId: 1, city: 'دمشق', fee: 3, isInternalDelivery: true }] };
+      if (args.method === 'PUT') {
+        puts.push(args.data);
+        return { data: current };
+      }
+      return { data: current };
+    },
+    actor,
+  );
+  assert.equal(result.error, undefined);
+  assert.deepEqual(puts, [input]);
+});
+test('external: Processing/Stuck/Confirmed OR raw waiting/printing_waiting, never In_Company', () => {
+  const statuses = [
+    'Processing',
+    'Stuck',
+    'Confirmed',
+    'Printed Confirmed',
+    'In_Company',
+    'Cancelled',
+  ];
+  const olivery = [
+    null,
+    'waiting',
+    'بالانتظار',
+    'printing_waiting',
+    'waiting_printed',
+    'picking_up',
+    'picked_up',
+    'delivered',
+    'rejected',
+    'canceled',
+    'branch_returned',
+    'completed_returned',
+  ];
+  for (const status of statuses)
+    for (const oliveryStatus of olivery) {
+      const current = { ...order, oliveryOrderId: 88, status, oliveryStatus };
+      const code = oliveryStatus === 'بالانتظار' ? 'waiting' : oliveryStatus;
+      const expected =
+        status !== 'In_Company' &&
+        (['Processing', 'Stuck', 'Confirmed'].includes(status) ||
+          ['waiting', 'printing_waiting'].includes(code ?? ''));
+      for (const role of ['ManagementEmployee', 'Merchant', 'SalesEmployee', 'DeliveryAgent'])
+        assert.equal(
+          orderEditDecision(current, { role, userId: 7 }, 'external').allowed,
+          role === 'ManagementEmployee' && expected,
+          `${role} / ${status} / ${oliveryStatus}`,
+        );
+      // The filtered DeliveryStatus must never open the window on its own.
+      assert.equal(
+        orderEditDecision(
+          { ...current, oliveryStatus: 'picked_up', deliveryStatus: 'waiting' },
+          actor,
+          'external',
+        ).allowed,
+        ['Processing', 'Stuck', 'Confirmed'].includes(status),
+      );
+    }
 });

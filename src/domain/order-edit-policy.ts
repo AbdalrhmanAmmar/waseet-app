@@ -10,8 +10,10 @@ export function orderEditDecision(order: Order, actor: OrderActor | null, mode: 
   if (normalizeStatus(order.orderType) === 'return')
     return no('بيانات طلب المرتجع للعرض فقط. استخدم إجراءات المرتجع لمتابعته.');
   if (mode === 'internal') {
-    if (order.oliveryOrderId !== null || normalizeStatus(order.orderType) !== 'normal')
-      return no('بيانات نوع الطلب أو جهة التوصيل غير مكتملة. حدّث الطلب قبل التعديل.');
+    // Internal mode already excludes Olivery-routed orders, and the API may omit the
+    // Olivery fields entirely on internal orders, so they are not required here.
+    if (normalizeStatus(order.orderType) !== 'normal')
+      return no('بيانات نوع الطلب غير مكتملة. حدّث الطلب قبل التعديل.');
     return { allowed: true, reason: 'يمكن تعديل بيانات الطلب الداخلي في أي حالة.' };
   }
   if (inCompany(order)) return no('الطلب موجود في الشركة (In_Company) — لا يمكن تعديل تفاصيله.');

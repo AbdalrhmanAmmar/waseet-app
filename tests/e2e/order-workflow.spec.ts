@@ -543,6 +543,26 @@ test('internal return stages and normal cancelled closure have distinct actions'
   );
   await expect(page.getByRole('button', { name: 'تعديل الطلب', exact: true })).toBeEnabled();
 });
+for (const status of ['Refused on Delivery', 'Ready for Dispatch', 'Completed']) {
+  test(`internal ${status} order is editable even when the API omits Olivery fields`, async ({
+    page,
+  }) => {
+    const api = await setup(page, 'ManagementEmployee');
+    api.state.order.status = status;
+    Reflect.deleteProperty(api.state.order, 'oliveryOrderId');
+    await page.getByRole('button', { name: /^تحديث حالة (التوصيل|زحل)$/ }).click();
+    await expect(page.getByRole('button', { name: 'تعديل الطلب', exact: true })).toBeEnabled();
+    await page.getByRole('button', { name: 'تعديل الطلب', exact: true }).click();
+    await expect(page).toHaveURL(/edit-order/);
+    await page.getByRole('textbox', { name: 'العنوان التفصيلي *', exact: true }).fill('عنوان معدل');
+    await page.getByRole('button', { name: 'مراجعة التعديلات', exact: true }).click();
+    await page.getByRole('button', { name: 'تأكيد وحفظ التعديلات', exact: true }).click();
+    await expect(page.getByText('تم حفظ تعديلات الطلب بنجاح', { exact: true })).toBeVisible();
+    expect(api.writes).toHaveLength(1);
+    expect(api.writes[0].method).toBe('PUT');
+    expect(api.writes[0].body.customerAddress).toBe('عنوان معدل');
+  });
+}
 test('refused internal order can be delivered after all, with a required reason', async ({
   page,
 }) => {
