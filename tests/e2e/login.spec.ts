@@ -65,7 +65,9 @@ test('login validates locally, moves focus, toggles password and prevents resubm
   await expect(email).toBeFocused();
   expect(calls).toBe(0);
   await email.fill('invalid');
-  await expect(page.getByText('بريد إلكتروني غير صالح', { exact: true })).toBeVisible();
+  await expect(
+    page.getByText('اكتب البريد بهذا الشكل: name@example.com', { exact: true }),
+  ).toBeVisible();
   await email.fill('test@example.com');
   await email.press('Enter');
   await expect(password).toBeFocused();

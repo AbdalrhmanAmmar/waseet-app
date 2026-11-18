@@ -1,350 +1,150 @@
-import { COLORS, FONTS, hp, wp } from '@/theme/index';
-import { Platform, StyleSheet } from 'react-native';
-
+import { StyleSheet } from 'react-native';
+import { palette as p, typography as t } from '@/theme/tokens';
 export const styles = StyleSheet.create({
-  bg: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-  },
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
-  },
-  scroll: {
-    paddingHorizontal: wp(5),
-    paddingTop: hp(7),
-    paddingBottom: hp(6),
-  },
-  scrollKeyboard: {
-    paddingBottom: hp(15),
-  },
   header: {
-    position: 'absolute',
-    top: hp(5.5),
-    zIndex: 10,
-    ...Platform.select({
-      ios: {
-        left: wp(4),
-      },
-      android: {
-        left: wp(4),
-      },
-    }),
-  },
-  backBtn: {
-    width: hp(4.8),
-    height: hp(4.8),
-    borderRadius: hp(1.4),
-    backgroundColor: COLORS.white,
-    justifyContent: 'center',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-  },
-  brand: {
-    alignItems: 'center',
-    marginBottom: hp(2.5),
-  },
-  logoCircle: {
-    width: hp(8.5),
-    height: hp(8.5),
-    borderRadius: hp(2.2),
-    backgroundColor: '#EDF6F1',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 4,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    borderWidth: 1.5,
-    borderColor: '#FFE4DB',
-  },
-  content: {
-    flex: 1,
-  },
-  title: {
-    fontSize: hp(3),
-    fontFamily: FONTS.fontFamilyBold,
-    color: '#111A2C',
-    textAlign: 'center',
-    marginBottom: hp(0.5),
-  },
-  subtitle: {
-    fontSize: hp(1.55),
-    fontFamily: FONTS.fontFamilyRegular,
-    color: '#64748B',
-    textAlign: 'center',
-    marginBottom: hp(2.5),
-  },
-
-  // Form Section Group Card
-  sectionGroup: {
-    backgroundColor: COLORS.white,
-    borderRadius: hp(2),
-    padding: hp(1.8),
-    marginBottom: hp(2),
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: hp(1.4),
-    paddingBottom: hp(1),
-    borderBottomWidth: 1,
-    borderBottomColor: '#F8FAFC',
-  },
-  sectionIconBox: {
-    width: hp(3.4),
-    height: hp(3.4),
-    borderRadius: hp(1),
-    backgroundColor: '#EDF6F1',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sectionTitleText: {
-    fontSize: hp(1.6),
-    fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.charcoal,
-  },
-
-  // Roles Grid (Compact)
-  userTypeRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'space-between',
-    rowGap: hp(1),
+    gap: 12,
   },
-  userTypeCard: {
-    width: '48.5%',
-    flexDirection: 'row',
+  brand: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8, flex: 1 },
+  logo: { width: 38, height: 38 },
+  brandName: { fontFamily: t.bold, fontSize: 21, lineHeight: 31, color: p.deep },
+  back: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: p.border,
+    backgroundColor: '#fff',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: hp(1.2),
-    paddingVertical: hp(1),
-    paddingHorizontal: wp(2.5),
-    borderWidth: 1.2,
-    borderColor: '#E2E8F0',
+    justifyContent: 'center',
   },
-  userTypeCardActive: {
-    borderColor: COLORS.primary,
-    backgroundColor: '#EDF6F1',
+  title: { fontFamily: t.bold, fontSize: 27, lineHeight: 38, color: p.deep, textAlign: 'right' },
+  description: { fontSize: 14, lineHeight: 23, color: p.muted, textAlign: 'right' },
+  caption: { fontSize: 12, lineHeight: 21, color: p.muted, textAlign: 'right' },
+  sectionTitle: {
+    fontFamily: t.bold,
+    fontSize: 15,
+    lineHeight: 24,
+    color: p.deep,
+    textAlign: 'right',
   },
-  userTypeIcon: {
-    marginRight: 6,
+  steps: {
+    flexDirection: 'row-reverse',
+    borderRadius: 16,
+    backgroundColor: '#EDF3ED',
+    padding: 9,
+    gap: 6,
   },
-  userTypeTitle: {
-    fontSize: hp(1.35),
-    fontFamily: FONTS.fontFamilyBold,
-    color: '#334155',
+  step: {
     flex: 1,
-  },
-  userTypeTitleActive: {
-    color: COLORS.primary,
-  },
-  userTypeCheck: {
-    marginLeft: 4,
-  },
-
-  // Inputs Row
-  inputsRow: {
-    flexDirection: 'row',
-    gap: hp(1.5),
-  },
-  inputFlex: {
-    flex: 1,
-  },
-
-  // Country Picker Box
-  countryPickerBox: {
-    flexDirection: 'row',
+    minHeight: 34,
+    flexDirection: 'row-reverse',
     alignItems: 'center',
-    gap: 4,
-    paddingLeft: hp(0.8),
+    justifyContent: 'center',
+    gap: 6,
+  },
+  stepCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#DEE6DF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeStep: { backgroundColor: p.primary },
+  stepNumber: { color: p.muted, fontSize: 12, lineHeight: 20, fontFamily: t.bold },
+  stepLabel: { fontSize: 12, lineHeight: 20, color: p.muted },
+  activeStepLabel: { color: p.primary, fontFamily: t.bold },
+  roles: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8 },
+  role: {
+    flexBasis: '47%',
+    flexGrow: 1,
+    minHeight: 72,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: p.border,
+    borderRadius: 15,
+    backgroundColor: '#fff',
+    gap: 5,
+  },
+  roleSelected: { backgroundColor: p.soft, borderColor: p.primary },
+  roleIcon: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
+  roleTitle: { fontSize: 14, lineHeight: 22, fontFamily: t.bold, color: p.ink, textAlign: 'right' },
+  footerRow: { flexDirection: 'row-reverse', gap: 10 },
+  footerCaption: { fontSize: 12, lineHeight: 20, textAlign: 'center', color: p.muted },
+  dial: {
+    flexDirection: 'row',
+    direction: 'ltr',
+    alignItems: 'center',
+    gap: 5,
+    minHeight: 48,
     borderRightWidth: 1,
-    borderRightColor: '#E2E8F0',
-    marginRight: hp(1),
+    borderColor: p.border,
+    paddingRight: 9,
+    marginLeft: -4,
   },
-  countryCode: {
-    fontSize: hp(1.5),
-    fontFamily: FONTS.fontFamilyBold,
-    color: '#1E293B',
-  },
-
-  // Submit Button
-  submitBtn: {
-    backgroundColor: COLORS.primary,
-    borderRadius: hp(1.6),
-    height: hp(6.5),
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: hp(1),
-    marginBottom: hp(2.5),
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  submitBtnDisabled: {
-    opacity: 0.7,
-  },
-  submitText: {
-    fontSize: hp(1.8),
-    fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.white,
-  },
-
-  // Login Row
-  loginRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: hp(0.5),
-    marginBottom: hp(4),
-    gap: 4,
-  },
-  loginHint: {
-    fontSize: hp(1.5),
-    fontFamily: FONTS.fontFamilyRegular,
-    color: '#64748B',
-  },
-  loginLink: {
-    fontSize: hp(1.5),
-    fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.primary,
-  },
-
-  // Modals
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: COLORS.white,
-    borderTopLeftRadius: hp(2.5),
-    borderTopRightRadius: hp(2.5),
-    paddingBottom: hp(4),
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: hp(2),
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  modalTitle: {
-    fontSize: hp(1.8),
-    fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.charcoal,
-  },
-  cancelText: {
-    fontSize: hp(1.6),
-    color: COLORS.gray,
-    fontFamily: FONTS.fontFamilyMedium,
-  },
-  confirmText: {
-    fontSize: hp(1.6),
-    color: COLORS.primary,
-    fontFamily: FONTS.fontFamilyBold,
-  },
-
-  // City Selection
-  cityListContainer: {
-    paddingHorizontal: 16,
-    paddingTop: hp(1.5),
-    paddingBottom: hp(2),
-  },
-  cityItem: {
-    flexDirection: 'row',
+  flag: { fontSize: 18, lineHeight: 25 },
+  callingCode: { writingDirection: 'ltr', fontFamily: t.medium, fontSize: 14, lineHeight: 23 },
+  cities: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  city: { padding: 10, borderWidth: 1, borderColor: p.border, borderRadius: 12, minHeight: 44 },
+  link: { color: p.primary, fontFamily: t.bold, fontSize: 13, lineHeight: 22 },
+  summaryTop: {
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: hp(1.6),
-    paddingHorizontal: 14,
-    borderRadius: hp(1.4),
-    marginBottom: hp(1),
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-  },
-  cityItemSelected: {
-    backgroundColor: '#EDF6F1',
-    borderColor: COLORS.primary,
-  },
-  cityIconBox: {
-    width: hp(4.2),
-    height: hp(4.2),
-    borderRadius: hp(1.2),
-    backgroundColor: COLORS.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  cityIconBoxSelected: {
-    backgroundColor: '#EDF6F1',
-    borderColor: '#C9E3D5',
-  },
-  cityName: {
-    fontSize: hp(1.6),
-    fontFamily: FONTS.fontFamilyBold,
-    color: COLORS.charcoal,
-  },
-  cityNameSelected: {
-    color: COLORS.primary,
-  },
-
-  inputIcon: {
-    marginRight: 8,
-  },
-  hiddenCountryPicker: {
-    width: 0,
-    height: 0,
-    opacity: 0,
-  },
-  modalHeaderSpacer: {
-    width: hp(2.6),
-  },
-  cityItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 10,
   },
-
-  // Date Picker
-  pickerRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 10,
-    height: hp(25),
+  summaryAction: {
+    minHeight: 44,
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 3,
   },
-  pickerContainer: {
+  summaryName: { fontSize: 15, lineHeight: 24, fontFamily: t.bold },
+  email: {
     flex: 1,
+    minWidth: 0,
+    fontSize: 14,
+    lineHeight: 22,
+    writingDirection: 'ltr',
+    textAlign: 'right',
   },
-  pickerLabel: {
-    textAlign: 'center',
-    fontSize: hp(1.5),
-    color: COLORS.gray,
-    marginTop: 8,
-    fontFamily: FONTS.fontFamilyMedium,
+  login: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingBottom: 4,
   },
-  picker: {
-    height: hp(20),
-    color: COLORS.charcoal,
+  successIcon: {
+    alignSelf: 'center',
+    width: 100,
+    height: 100,
+    borderRadius: 35,
+    backgroundColor: p.soft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 18,
+  },
+  keyboardToolbar: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderColor: p.border,
+    paddingHorizontal: 16,
+  },
+  keyboardAction: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 46,
+    paddingHorizontal: 12,
   },
 });

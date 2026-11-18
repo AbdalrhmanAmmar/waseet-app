@@ -13,6 +13,8 @@ async function contact(page: Page) {
 test('registration validates steps, preserves fields, retries failure and submits without Olivery', async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 390, height: 1000 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   let payload: Record<string, unknown> | undefined;
   let calls = 0;
   await page.route('**/api/**', async (route) => {
@@ -37,9 +39,19 @@ test('registration validates steps, preserves fields, retries failure and submit
   await personal(page);
   await contact(page);
   await expect(page.getByText(/أوليفر|Olivery/i)).toHaveCount(0);
+  await page.getByRole('heading', { name: 'بيانات التواصل', exact: true }).click();
+  await page.getByTestId('signup-content').evaluate((element) => {
+    element.scrollTop = 0;
+  });
+  await expect(page.getByRole('button', { name: 'متابعة', exact: true })).toBeInViewport({
+    ratio: 1,
+  });
+  await expect(page.getByRole('button', { name: 'السابق', exact: true })).toBeInViewport({
+    ratio: 1,
+  });
   await page.screenshot({
     path: 'test-results/signup-contact.png',
-    fullPage: true,
+    fullPage: false,
     animations: 'disabled',
   });
   await page.getByRole('button', { name: 'السابق', exact: true }).click();
@@ -51,18 +63,23 @@ test('registration validates steps, preserves fields, retries failure and submit
   await page.getByPlaceholder('أعد كتابة كلمة المرور').fill('different-password');
   await page.getByRole('button', { name: 'إنشاء الحساب', exact: true }).click();
   await expect(page.getByText('كلمات المرور غير متطابقة', { exact: true })).toBeVisible();
+  await expect(page.getByPlaceholder('أعد كتابة كلمة المرور')).toBeFocused();
   expect(calls).toBe(0);
   await page.getByPlaceholder('أعد كتابة كلمة المرور').fill('test-password');
+  await page.getByRole('heading', { name: 'أمان حسابك', exact: true }).click();
+  await page.getByTestId('signup-content').evaluate((element) => {
+    element.scrollTop = 0;
+  });
   await page.screenshot({
     path: 'test-results/signup-confirm.png',
-    fullPage: true,
+    fullPage: false,
     animations: 'disabled',
   });
   await page.getByRole('button', { name: 'إنشاء الحساب', exact: true }).click();
   await expect(page.getByText('البريد مسجل بالفعل', { exact: true })).toBeVisible();
   await expect(page.getByPlaceholder('8 أحرف على الأقل')).toHaveValue('test-password');
   await page.getByRole('button', { name: 'إنشاء الحساب', exact: true }).click();
-  await expect(page.getByText('أهلًا بك في وسيط', { exact: true })).toBeVisible();
+  await expect(page.getByText('أهلًا بك في الوسيط الذكي', { exact: true })).toBeVisible();
   expect(calls).toBe(2);
   expect(payload).toEqual({
     firstName: 'أحمد',

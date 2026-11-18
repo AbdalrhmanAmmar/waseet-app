@@ -1,7 +1,14 @@
 import * as yup from 'yup';
+import { registrationPhone } from '@/domain/auth-inputs';
+const authEmail = () =>
+  yup
+    .string()
+    .trim()
+    .required('البريد الإلكتروني مطلوب')
+    .email('اكتب البريد بهذا الشكل: name@example.com');
 
 export const loginSchema = yup.object().shape({
-  email: yup.string().trim().required('البريد الإلكتروني مطلوب').email('بريد إلكتروني غير صالح'),
+  email: authEmail(),
   password: yup.string().required('كلمة المرور مطلوبة'),
 });
 
@@ -9,12 +16,16 @@ export const signUpSchema = yup.object().shape({
   firstName: yup.string().trim().required('الاسم الأول مطلوب'),
   secondName: yup.string().trim().required('الاسم الثاني مطلوب'),
   lastName: yup.string().trim().required('اسم العائلة مطلوب'),
-  email: yup.string().trim().required('البريد الإلكتروني مطلوب').email('بريد إلكتروني غير صالح'),
+  email: authEmail(),
   phoneNumber: yup
     .string()
     .trim()
     .required('رقم الهاتف مطلوب')
-    .matches(/^\d{7,15}$/, 'أدخل رقم هاتف صحيحًا من 7 إلى 15 رقمًا'),
+    .test('registration-phone', function (value) {
+      if (!value) return true;
+      const result = registrationPhone(value, this.options.context?.callingCode ?? '963');
+      return result.error ? this.createError({ message: result.error }) : true;
+    }),
   country: yup.string().trim().required('الدولة مطلوبة'),
   city: yup.string().notRequired(),
   address: yup.string().trim().required('العنوان مطلوب'),
