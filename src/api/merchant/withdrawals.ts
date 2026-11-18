@@ -7,11 +7,43 @@ import {
 } from '@/domain/withdrawal';
 import { isAccountRestricted } from '@/auth/permissions';
 import type { RootState } from '@/store';
+import { merchantAccess } from '@/domain/merchant-access';
+import {
+  readMerchantWithdrawals,
+  withdrawalFilterError,
+  type WithdrawalFilters,
+  type WithdrawalRecord,
+} from '@/domain/merchant-finance';
 
 export const withdrawalsApi = baseApi.injectEndpoints({
   overrideExisting: process.env.NODE_ENV === 'development',
   endpoints: (build) => ({
+    merchantWithdrawals: build.query<
+      WithdrawalRecord[],
+      { merchantId: string } & WithdrawalFilters
+    >({
+      async queryFn({ merchantId, ...filters }, api, _options, query) {
+        if (!merchantAccess((api.getState() as RootState).AuthSlice.userData, merchantId))
+          return { error: { status: 403, message: 'سجل السحوبات متاح للتاجر النشط فقط.' } };
+        const invalid = withdrawalFilterError(filters);
+        if (invalid) return { error: { status: 'INVALID_FILTER', message: invalid } };
+        const result = await query({ url: 'withdrawal-requests/mine', params: filters });
+        if (result.error) return { error: result.error };
+        try {
+          return { data: readMerchantWithdrawals(result.data, merchantId) };
+        } catch (error) {
+          return {
+            error: {
+              status: 'INVALID_RESPONSE',
+              message: error instanceof Error ? error.message : 'تعذر قراءة سجل السحوبات.',
+            },
+          };
+        }
+      },
+      providesTags: ['Withdrawals'],
+    }),
     merchantWithdrawalRequest: build.mutation<null, { amount: number; note: string }>({
+      invalidatesTags: ['Withdrawals', 'Profile'],
       async queryFn(body, api, _options, baseQuery) {
         const user = (api.getState() as RootState).AuthSlice.userData;
         const reject = (message: string) => ({
@@ -56,4 +88,4 @@ export const withdrawalsApi = baseApi.injectEndpoints({
     }),
   }),
 });
-export const { useMerchantWithdrawalRequestMutation } = withdrawalsApi;
+export const { useMerchantWithdrawalRequestMutation, useMerchantWithdrawalsQuery } = withdrawalsApi;

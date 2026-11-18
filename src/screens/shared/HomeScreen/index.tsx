@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { AppState, Pressable, RefreshControl, ScrollView, View } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import ScreenContainer from '@/components/shared/ScreenContainer';
 import Text from '@/components/shared/CustomText';
@@ -19,6 +19,7 @@ import { periodBounds } from '@/domain/home-orders';
 import { palette as p } from '@/theme/tokens';
 import type { ScreenProps } from '@/navigation/use-screen-props';
 export default function HomeScreen({ navigation }: ScreenProps) {
+  const router = useRouter();
   const { userData, role } = useSession();
   const dispatch = useAppDispatch();
   const [days, setDays] = useState<7 | 30>(7);
@@ -115,6 +116,21 @@ export default function HomeScreen({ navigation }: ScreenProps) {
               ابدأ طلب العميل وتابع تقدمه خطوة بخطوة.
             </Text>
           </View>
+        )}
+        {role === 'Merchant' && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="إدارة الموظفين"
+            onPress={() => router.push('/merchant/employees')}
+            style={[s.card, s.row]}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={s.title}>إدارة الموظفين</Text>
+              <Text style={s.caption}>فريق متجرك، والموافقات، وحالات الحسابات</Text>
+            </View>
+            <Icon name="account-group-outline" size={30} color={p.primary} />
+            <Icon name="chevron-left" size={22} color={p.primary} />
+          </Pressable>
         )}
         <View style={{ gap: 10 }}>
           <Button

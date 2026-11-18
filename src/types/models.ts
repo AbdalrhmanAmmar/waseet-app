@@ -20,6 +20,9 @@ export interface User {
   dollarBalance?: number | null;
   balanceUpdatedAt?: number;
   balanceStale?: boolean;
+  withdrawnAmount?: number | null;
+  withdrawnUpdatedAt?: number;
+  withdrawnStale?: boolean;
   [key: string]: unknown;
 }
 export interface Product {

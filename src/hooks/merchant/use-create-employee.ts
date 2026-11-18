@@ -3,6 +3,8 @@ import { createMerchantEmployee } from '@/api/merchant/employees';
 import { useSession } from '@/hooks/shared/use-session';
 import { employeeErrors, employeeInput, type EmployeeForm } from '@/domain/merchant-employee';
 import type { ApiError } from '@/types/models';
+import { useAppDispatch } from '@/hooks/shared/use-store';
+import { baseApi } from '@/api/base-api';
 export const emptyEmployee: EmployeeForm = {
   firstName: '',
   lastName: '',
@@ -11,6 +13,7 @@ export const emptyEmployee: EmployeeForm = {
   confirmPassword: '',
 };
 export function useCreateEmployee() {
+  const dispatch = useAppDispatch();
   const { role, restricted } = useSession();
   const [form, setForm] = useState<EmployeeForm>({ ...emptyEmployee });
   const [submitted, setSubmitted] = useState(false);
@@ -30,6 +33,7 @@ export function useCreateEmployee() {
     try {
       const input = employeeInput(form);
       await createMerchantEmployee(input);
+      dispatch(baseApi.util.invalidateTags(['MerchantEmployees']));
       setCreated({ name: `${input.firstName} ${input.lastName}`, email: input.email });
       setForm({ ...emptyEmployee });
     } catch (e) {

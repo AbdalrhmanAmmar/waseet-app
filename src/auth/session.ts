@@ -1,5 +1,5 @@
 import type { User } from '@/types/models';
-import { balanceUpdate } from '@/domain/balance';
+import { balanceUpdate, withdrawnUpdate } from '@/domain/balance';
 import { normalizeRole } from './roles';
 export function normalizeUser(raw: Record<string, any>, previous?: User | null): User {
   const role = normalizeRole(raw.role ?? previous?.role);
@@ -12,6 +12,7 @@ export function normalizeUser(raw: Record<string, any>, previous?: User | null):
     ...previous,
     ...raw,
     ...balanceUpdate(raw, previous),
+    ...withdrawnUpdate(raw),
     rejectionReason: raw.rejectionReason,
     userId,
     role,

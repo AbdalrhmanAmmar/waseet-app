@@ -73,6 +73,12 @@ export default function CreateEmployeeScreen() {
               </Text>
               <Button title="العودة إلى حسابي" onPress={back} />
               <Button
+                title="عرض الموظفين"
+                secondary
+                icon="account-group-outline"
+                onPress={() => router.dismissTo('/merchant/employees')}
+              />
+              <Button
                 title="إضافة موظف آخر"
                 secondary
                 onPress={() => {

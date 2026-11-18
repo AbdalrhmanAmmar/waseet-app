@@ -75,6 +75,24 @@ export function BalanceCard() {
           'الرصيد غير متاح حاليًا'
         )}
       </Text>
+      {user?.role === 'Merchant' && (
+        <View style={{ borderTopWidth: 1, borderColor: '#FFFFFF26', paddingTop: 14, gap: 5 }}>
+          <View style={s.row}>
+            <Text style={s.balanceLabel}>المبلغ المسحوب</Text>
+            <Icon name="bank-check" size={23} color="#C6E7DB" />
+          </View>
+          <Text testID="withdrawn-amount" style={[s.amount, { fontSize: 27, lineHeight: 39 }]}>
+            {hidden
+              ? '••••••'
+              : busy
+                ? 'جارٍ التحديث…'
+                : failed || user.withdrawnStale || user.withdrawnAmount == null
+                  ? 'غير متاح'
+                  : `${formatBalance(user.withdrawnAmount)} USD`}
+          </Text>
+          <Text style={s.balanceMeta}>إجمالي المبالغ المصروفة لك</Text>
+        </View>
+      )}
       <View style={[s.row, { justifyContent: 'flex-start' }]}>
         <View
           style={{
@@ -98,25 +116,48 @@ export function BalanceCard() {
       </View>
       {stale && time && <Text style={s.balanceMeta}>آخر قيمة مؤكدة: {time}</Text>}
       {user?.role === 'Merchant' && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="طلب سحب"
-          onPress={() => router.push('/merchant/withdrawal')}
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: 14,
-            padding: 14,
-            alignItems: 'center',
-            flexDirection: 'row-reverse',
-            justifyContent: 'center',
-            gap: 10,
-          }}
-        >
-          <Icon name="bank-transfer-out" size={22} color="#103E32" />
-          <Text style={{ color: '#103E32', fontFamily: 'Tajawal-Bold', fontSize: 16 }}>
-            طلب سحب
-          </Text>
-        </Pressable>
+        <View style={{ gap: 10 }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="طلب سحب"
+            onPress={() => router.push('/merchant/withdrawal')}
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: 14,
+              padding: 14,
+              alignItems: 'center',
+              flexDirection: 'row-reverse',
+              justifyContent: 'center',
+              gap: 10,
+            }}
+          >
+            <Icon name="bank-transfer-out" size={22} color="#103E32" />
+            <Text style={{ color: '#103E32', fontFamily: 'Tajawal-Bold', fontSize: 16 }}>
+              طلب سحب
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="سجل السحوبات"
+            onPress={() => router.push('/merchant/withdrawals')}
+            style={{
+              borderRadius: 14,
+              padding: 14,
+              minHeight: 50,
+              borderWidth: 1,
+              borderColor: '#FFFFFF50',
+              alignItems: 'center',
+              flexDirection: 'row-reverse',
+              justifyContent: 'center',
+              gap: 10,
+            }}
+          >
+            <Icon name="history" size={22} color="#fff" />
+            <Text style={{ color: '#fff', fontFamily: 'Tajawal-Bold', fontSize: 16 }}>
+              سجل السحوبات
+            </Text>
+          </Pressable>
+        </View>
       )}
     </LinearGradient>
   );

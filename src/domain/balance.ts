@@ -1,4 +1,24 @@
 import type { User } from '@/types/models';
+const withdrawnKeys = [
+  'totalPaidUSD',
+  'TotalPaidUSD',
+  'withdrawnAmount',
+  'totalWithdrawnAmount',
+  'amountWithdrawn',
+  'WithdrawnAmount',
+  'TotalWithdrawnAmount',
+  'AmountWithdrawn',
+] as const;
+export function withdrawnUpdate(raw: Record<string, unknown>) {
+  const key = withdrawnKeys.find((name) => Object.hasOwn(raw, name));
+  const amount = key ? balanceNumber(raw[key]) : null;
+  const value = amount !== null && amount >= 0 ? amount : null;
+  return {
+    withdrawnAmount: value,
+    withdrawnUpdatedAt: value === null ? undefined : Date.now(),
+    withdrawnStale: value === null,
+  };
+}
 export function balanceNumber(value: unknown): number | null {
   if (typeof value !== 'number' && typeof value !== 'string') return null;
   if (typeof value === 'string' && !value.trim()) return null;
@@ -22,6 +42,11 @@ export function loginUser(body: Record<string, any>) {
   const user = body.user ?? body;
   return {
     ...user,
+    ...Object.fromEntries(
+      withdrawnKeys
+        .filter((key) => user[key] === undefined && body[key] !== undefined)
+        .map((key) => [key, body[key]]),
+    ),
     ...(user.dollarBalance === undefined && body.dollarBalance !== undefined
       ? { dollarBalance: body.dollarBalance }
       : {}),

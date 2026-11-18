@@ -1,5 +1,9 @@
 # مطابقة الخادم الجديد
 
+## رصيد التاجر وإدارة موظفيه — 18 نوفمبر 2026
+
+أضيف عرض المبلغ المسحوب من `GET User/{id}` وسجل الحساب من `GET withdrawal-requests/mine` بفلاتر `status` و`fromDate` و`toDate`. إدارة موظفي التاجر تستخدم `GET User/employees` و`GET User/employees/{id}` و`PUT User/employees/{id}/status?status=…` دون body و`DELETE User/employees/{id}`. القيمتان المستخدمتان للموافقة والرفض هما `Approved` و`Rejected` كما في عميل إدارة المستخدمين الحالي؛ Swagger لا يحدد enum للحقل ولا schemas لاستجابات النجاح. تظل مطابقة بيانات الحساب الحقيقي وصلاحيات الباك إند شرطًا للاعتماد التشغيلي. [التنفيذ والتحقق والمعاينات](merchant-finance-employees.ar.md).
+
 تمت قراءة Swagger بتاريخ 2026-09-18 بنجاح HTTP 200 من:
 
 [Swagger JSON](https://smart-broker-bcd9bzfvagd5f8dx.westus-01.azurewebsites.net/swagger/v1/swagger.json)

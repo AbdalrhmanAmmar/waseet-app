@@ -37,6 +37,8 @@ export const bootstrapSession = createAsyncThunk('auth/bootstrap', async () => {
         ...normalizeUser(saved),
         balanceUpdatedAt: saved.balanceUpdatedAt,
         balanceStale: true,
+        withdrawnUpdatedAt: saved.withdrawnUpdatedAt,
+        withdrawnStale: true,
       },
     };
   } catch {

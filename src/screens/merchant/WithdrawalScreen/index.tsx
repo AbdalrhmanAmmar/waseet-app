@@ -87,6 +87,15 @@ export default function WithdrawalScreen() {
             طلبك وصل بنجاح. إرسال الطلب لا يعني اكتمال التحويل، وسيظهر الرصيد وفق تحديثات حسابك.
           </Text>
           <Button
+            title="عرض سجل السحوبات"
+            icon="history"
+            onPress={() => {
+              result.reset();
+              router.dismissTo('/merchant/withdrawals');
+            }}
+            style={{ alignSelf: 'stretch' }}
+          />
+          <Button
             title="العودة إلى حسابك"
             onPress={() => {
               result.reset();

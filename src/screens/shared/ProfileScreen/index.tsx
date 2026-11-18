@@ -75,12 +75,20 @@ export default function ProfileScreen({ navigation }: ScreenProps) {
         />
         {role === 'Merchant' && <BalanceCard key={String(userId)} />}
         {role === 'Merchant' && !restricted && (
-          <Button
-            title="إضافة موظف"
-            secondary
-            icon="account-plus-outline"
-            onPress={() => router.push('/merchant/create-employee')}
-          />
+          <View style={{ gap: 12 }}>
+            <Button
+              title="إدارة الموظفين"
+              secondary
+              icon="account-group-outline"
+              onPress={() => router.push('/merchant/employees')}
+            />
+            <Button
+              title="إضافة موظف"
+              secondary
+              icon="account-plus-outline"
+              onPress={() => router.push('/merchant/create-employee')}
+            />
+          </View>
         )}
         <Card>
           <Text style={ui.title}>بيانات الحساب</Text>

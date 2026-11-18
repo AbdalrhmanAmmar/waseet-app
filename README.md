@@ -120,3 +120,5 @@ npm run test:e2e
 - [تقرير إنشاء الطلب المباشر واللون](docs/order-create-design.ar.md)
 
 - [تقرير الرئيسية الجديدة والرصيد والرسم البياني](docs/home-dashboard.ar.md)
+
+- [رصيد التاجر والمبلغ المسحوب وسجل السحوبات وإدارة الموظفين](docs/merchant-finance-employees.ar.md)
