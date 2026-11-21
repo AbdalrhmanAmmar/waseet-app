@@ -16,7 +16,8 @@ test('role permissions separate catalog, profits and order actions', () => {
   assert.equal(can('SalesEmployee', 'profit.read'), false);
   for (const role of ROLES) {
     assert.equal(can(role, 'orders.status'), true);
-    assert.equal(can(role, 'orders.edit'), role === 'ManagementEmployee');
+    // Everyone who creates orders may edit their own; the delivery agent never edits.
+    assert.equal(can(role, 'orders.edit'), role !== 'DeliveryAgent');
   }
   assert.equal(can('DeliveryAgent', 'orders.create'), false);
   assert.equal(can('DeliveryAgent', 'orders.status'), true);

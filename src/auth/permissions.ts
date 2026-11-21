@@ -13,6 +13,8 @@ const permissions: Record<Role, readonly Permission[]> = {
     'catalog.read',
     'orders.create',
     'orders.status',
+    // Own orders only, before confirmation (see order-edit-policy).
+    'orders.edit',
     'orders.issues.read',
     'orders.issues.create',
     'profit.read',
@@ -21,6 +23,8 @@ const permissions: Record<Role, readonly Permission[]> = {
     'catalog.read',
     'orders.create',
     'orders.status',
+    // Own orders only, before confirmation (see order-edit-policy).
+    'orders.edit',
     'orders.issues.read',
     'orders.issues.create',
     'profit.read',
@@ -29,6 +33,8 @@ const permissions: Record<Role, readonly Permission[]> = {
     'catalog.read',
     'orders.create',
     'orders.status',
+    // Own orders only, before confirmation (see order-edit-policy).
+    'orders.edit',
     'orders.issues.read',
     'orders.issues.create',
   ],

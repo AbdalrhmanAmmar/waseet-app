@@ -77,18 +77,19 @@ export function externalActionReason(o: Order, target: string) {
     return 'رقم تسلسل الشحنة غير متاح؛ حدّث التفاصيل قبل إكمال المرتجع.';
   return null;
 }
+// "When Order Details Can Be Modified" — external orders, the same window for every role:
+// never In_Company; otherwise Processing/Stuck/Confirmed OR raw Olivery waiting/printing_waiting.
+export const externalEditWindowOpen = (o: Order) =>
+  !inCompany(o) &&
+  (['processing', 'stuck', 'confirmed'].includes(normalizeStatus(o.status)) ||
+    ['waiting', 'printing_waiting'].includes(shipmentCode(o.oliveryStatus)));
 export function canEditExternal(
   o: Order,
   actor: OrderActor | null | undefined,
   mode: DeliveryMode,
 ) {
   return (
-    mode === 'external' &&
-    actorActive(actor) &&
-    isManagement(actor) &&
-    !inCompany(o) &&
-    (['processing', 'stuck', 'confirmed'].includes(normalizeStatus(o.status)) ||
-      ['waiting', 'printing_waiting'].includes(shipmentCode(o.oliveryStatus)))
+    mode === 'external' && actorActive(actor) && isManagement(actor) && externalEditWindowOpen(o)
   );
 }
 export const externalActionCopy: Record<string, { label: string; effect: string }> = {

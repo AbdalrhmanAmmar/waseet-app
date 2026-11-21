@@ -96,6 +96,12 @@ export function order(item: Raw): Order {
   return {
     ...item,
     userId: item.userId ?? item.UserId,
+    // UserId is the owner merchant for an employee-created order; this names the employee.
+    createdByMerchantEmployeeId: firstDefined(item, [
+      'createdByMerchantEmployeeId',
+      'created_by_merchant_employee_id',
+      'CreatedByMerchantEmployeeId',
+    ]),
     orderType: item.orderType ?? item.order_type ?? item.OrderType,
     deliveryMode: item.deliveryMode ?? item.delivery_mode ?? item.DeliveryMode,
     oliveryOrderId: reference(

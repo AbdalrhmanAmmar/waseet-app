@@ -1,4 +1,4 @@
-import { orderEditDecision } from '@/domain/order-edit-policy';
+import { canEditOrders, orderEditDecision } from '@/domain/order-edit-policy';
 import { returnSettlementSnapshot } from '@/domain/internal-return';
 import {
   externalTargets,
@@ -146,8 +146,7 @@ export async function guardedOrderUpdate(
   query: Query,
   actor?: OrderActor | null,
 ): Promise<Result> {
-  if (actor?.role !== 'ManagementEmployee')
-    return fail('تعديل بيانات الطلب متاح لموظف الإدارة فقط.');
+  if (!canEditOrders(actor?.role)) return fail('تعديل بيانات الطلب غير متاح لحسابك.');
   const key = String(args.orderId);
   if (pendingOrders.has(key) || uncertainStatuses.has(key))
     return fail('يوجد إجراء قيد التنفيذ أو التحقق لهذا الطلب.');

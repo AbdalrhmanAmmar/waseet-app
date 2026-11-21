@@ -50,6 +50,9 @@ export interface Order {
   oliveryStatus?: string | null;
   deliveryStatus?: string | null;
   orderType?: string | null;
+  userId?: Id | null;
+  /** Set when a MerchantEmployee created the order (userId is then the owner merchant). */
+  createdByMerchantEmployeeId?: Id | null;
   /** Order note entered at creation (mobile or dashboard). */
   note?: string | null;
   orderId: Id;

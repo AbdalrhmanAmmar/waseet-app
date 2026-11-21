@@ -265,13 +265,23 @@ test('delivered order supports issue creation and resolution like the dashboard'
     body: { resolutionNote: 'تم التواصل وإرسال المنتج الناقص' },
   });
 });
+// The base order is Processing and belongs to user 7 (userId), with no employee creator.
+async function expectOwnEditButton(page: Page, role: Role) {
+  const button = page.getByRole('button', { name: 'تعديل الطلب', exact: true });
+  if (role === 'DeliveryAgent') return expect(button).toHaveCount(0);
+  if (role === 'MerchantEmployee') {
+    await expect(button).toBeDisabled();
+    return expect(page.getByText(/تعذر التحقق من منشئ الطلب/)).toBeVisible();
+  }
+  return expect(button).toBeEnabled();
+}
 for (const role of Object.keys(paths) as Role[]) {
   test(`${role}: internal status and complete editing use guarded endpoints`, async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     const api = await setup(page, role);
     if (role !== 'ManagementEmployee') {
-      await expect(page.getByRole('button', { name: 'تعديل الطلب', exact: true })).toHaveCount(0);
+      await expectOwnEditButton(page, role);
       await page.getByRole('button', { name: 'تحديث حالة الطلب', exact: true }).click();
       await expect(page.getByRole('radio')).toHaveCount(1);
       await page.getByRole('radio', { name: 'ملغي', exact: true }).click();
@@ -323,10 +333,7 @@ for (const role of Object.keys(paths) as Role[]) {
     page,
   }) => {
     const api = await setup(page, role, true);
-    if (role === 'ManagementEmployee')
-      await expect(page.getByRole('button', { name: 'تعديل الطلب', exact: true })).toBeEnabled();
-    else
-      await expect(page.getByRole('button', { name: 'تعديل الطلب', exact: true })).toHaveCount(0);
+    await expectOwnEditButton(page, role);
     api.state.order.status = 'Stuck';
     await page.getByRole('button', { name: 'تحديث حالة الطلب', exact: true }).click();
     const sheet = page.getByTestId(`${roleVariant(role)}-status-sheet`);
@@ -345,6 +352,67 @@ for (const role of Object.keys(paths) as Role[]) {
   });
 }
 
+async function editAddress(page: Page, address: string) {
+  await page.getByRole('button', { name: 'تعديل الطلب', exact: true }).click();
+  await expect(page).toHaveURL(/edit-order/);
+  await page.getByRole('textbox', { name: 'العنوان التفصيلي *', exact: true }).fill(address);
+  await page.getByRole('button', { name: 'مراجعة التعديلات', exact: true }).click();
+  await page.getByRole('button', { name: 'تأكيد وحفظ التعديلات', exact: true }).click();
+  await expect(page.getByText('تم حفظ تعديلات الطلب بنجاح', { exact: true })).toBeVisible();
+}
+test('sales edits its own internal order before confirmation', async ({ page }) => {
+  const api = await setup(page, 'SalesEmployee');
+  await editAddress(page, 'عنوان من المبيعات');
+  expect(api.writes).toHaveLength(1);
+  expect(api.writes[0].method).toBe('PUT');
+  expect(api.writes[0].body.customerAddress).toBe('عنوان من المبيعات');
+});
+test('merchant employee edits only orders it created', async ({ page }) => {
+  const api = await setup(page, 'MerchantEmployee');
+  Object.assign(api.state.order, { createdByMerchantEmployeeId: 8 });
+  await page.getByRole('button', { name: /^تحديث حالة (التوصيل|زحل)$/ }).click();
+  await expect(page.getByRole('button', { name: 'تعديل الطلب', exact: true })).toBeDisabled();
+  await expect(
+    page.getByText('يمكنك تعديل الطلبات التي أنشأتها فقط.', { exact: true }),
+  ).toBeVisible();
+  Object.assign(api.state.order, { createdByMerchantEmployeeId: 7 });
+  await page.getByRole('button', { name: /^تحديث حالة (التوصيل|زحل)$/ }).click();
+  await editAddress(page, 'عنوان من موظف التاجر');
+  expect(api.writes.map((write) => write.method)).toEqual(['PUT']);
+});
+test('merchant cannot edit a confirmed internal order and is told why', async ({ page }) => {
+  const api = await setup(page, 'Merchant');
+  api.state.order.status = 'Confirmed';
+  await page.getByRole('button', { name: /^تحديث حالة (التوصيل|زحل)$/ }).click();
+  await expect(page.getByRole('button', { name: 'تعديل الطلب', exact: true })).toBeDisabled();
+  await expect(page.getByText(/«قيد المعالجة» و«عالق» فقط/)).toBeVisible();
+  await page.getByRole('button', { name: 'تعديل الطلب', exact: true }).scrollIntoViewIfNeeded();
+  await page.screenshot({ path: 'test-results/owner-edit-locked.png', animations: 'disabled' });
+  expect(api.writes).toHaveLength(0);
+});
+test('an order confirmed while the owner edits is not saved', async ({ page }) => {
+  const api = await setup(page, 'SalesEmployee');
+  await page.getByRole('button', { name: 'تعديل الطلب', exact: true }).click();
+  await page.getByRole('textbox', { name: 'العنوان التفصيلي *', exact: true }).fill('عنوان متأخر');
+  await page.getByRole('button', { name: 'مراجعة التعديلات', exact: true }).click();
+  api.state.order.status = 'Confirmed';
+  await page.getByRole('button', { name: 'تأكيد وحفظ التعديلات', exact: true }).click();
+  await expect(page.getByRole('alert').last()).toContainText('قيد المعالجة');
+  expect(api.writes).toHaveLength(0);
+});
+test('sales external order: editable while Zuhal waits, locked once In_Company', async ({
+  page,
+}) => {
+  const api = await setup(page, 'SalesEmployee', true);
+  Object.assign(api.state.order, { status: 'Printed Confirmed', oliveryStatus: 'waiting' });
+  await page.getByRole('button', { name: /^تحديث حالة (التوصيل|زحل)$/ }).click();
+  await expect(page.getByRole('button', { name: 'تعديل الطلب', exact: true })).toBeEnabled();
+  Object.assign(api.state.order, { status: 'In_Company' });
+  await page.getByRole('button', { name: /^تحديث حالة (التوصيل|زحل)$/ }).click();
+  await expect(page.getByRole('button', { name: 'تعديل الطلب', exact: true })).toBeDisabled();
+  await expect(page.getByText(/In_Company/).first()).toBeVisible();
+  expect(api.writes).toHaveLength(0);
+});
 for (const role of ['Merchant', 'MerchantEmployee', 'SalesEmployee'] as const) {
   test(`${role}: visible internal stuck order can be resolved without ownership metadata`, async ({
     page,
@@ -822,14 +890,13 @@ test('external provider rejection preserves local status and retained notes', as
   expect(api.writes).toHaveLength(1);
 });
 
-for (const role of ['Merchant', 'MerchantEmployee', 'SalesEmployee', 'DeliveryAgent'] as const)
-  test(`${role}: direct edit URL cannot open the editor`, async ({ page }) => {
-    const api = await setup(page, role);
-    await navigate(page, `/${paths[role]}/edit-order?id=21`);
-    await expect(page.getByRole('alert')).toHaveText('تعديل بيانات الطلب متاح لموظف الإدارة فقط.');
-    await expect(page.getByRole('textbox')).toHaveCount(0);
-    expect(api.writes).toHaveLength(0);
-  });
+test('DeliveryAgent: direct edit URL cannot open the editor', async ({ page }) => {
+  const api = await setup(page, 'DeliveryAgent');
+  await navigate(page, `/${paths.DeliveryAgent}/edit-order?id=21`);
+  await expect(page.getByRole('alert')).toHaveText('تعديل بيانات الطلب غير متاح لحسابك.');
+  await expect(page.getByRole('textbox')).toHaveCount(0);
+  expect(api.writes).toHaveLength(0);
+});
 test('return details cannot be edited even by assigned management', async ({ page }) => {
   const api = await setup(page, 'ManagementEmployee');
   api.state.order.orderType = 'Return';

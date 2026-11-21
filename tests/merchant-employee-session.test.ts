@@ -26,7 +26,7 @@ test('employee login, hydration and profile refresh preserve employee identity a
     assert.equal(rolePaths[session.role], '/merchant');
     assert.equal(isMerchantRole(session.role), true);
     assert.equal(can(session.role, 'profit.read'), true);
-    assert.equal(can(session.role, 'orders.edit'), false);
+    assert.equal(can(session.role, 'orders.edit'), true);
   }
   assert.equal(normalizeRole(' merchantemployee '), 'MerchantEmployee');
   assert.ok(!(PUBLIC_ROLES as readonly string[]).includes('MerchantEmployee'));

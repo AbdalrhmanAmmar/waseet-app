@@ -57,7 +57,7 @@ export default function EditOrderRoute() {
       <ScreenContainer>
         <Header title="تعديل الطلب" />
         <View style={ui.page}>
-          <Text accessibilityRole="alert">تعديل بيانات الطلب متاح لموظف الإدارة فقط.</Text>
+          <Text accessibilityRole="alert">تعديل بيانات الطلب غير متاح لحسابك.</Text>
           <Button
             title="العودة إلى تفاصيل الطلب"
             onPress={() => props.navigation.replace('OrderDetails', { orderId: id })}
